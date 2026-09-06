@@ -1,8 +1,8 @@
-# Wink
+# FAA — Fast at any Accuracy
 
-**Everything you need, in a wink.** 🛒
+**FAA it, get it, love it.** Everyday essentials, delivered in minutes. 🛵
 
-Local grocery delivery for **Hospet (Hosapete), Vijayanagara district, Karnataka** — a customer PWA, a rider app and an admin console over a Postgres core.
+Local grocery delivery for **Hospet (Hosapete), Vijayanagara district, Karnataka** — a customer PWA, a rider app and an admin console over a Postgres core. (The project began as "Wink"; the Cloudflare Pages project and a few internal names still carry that.)
 
 No national quick-commerce platform serves Hospet. Blinkit, Zepto, Swiggy Instamart and Flipkart Minutes have all skipped it, and Amazon Hub Delivery is not open for pincode 583201 (verified September 2026). Around 200,000 people here have no delivery service at all.
 
@@ -42,6 +42,8 @@ Everything that touches stock or money goes through one of these. Nothing else m
 **`place_order()`** — atomic reserve-and-create. Locks every inventory row in a deterministic order (by `product_id`, to avoid deadlock), verifies availability, **recomputes the total server-side** from `products.mrp_paise`, and reserves stock — all in one transaction. A total sent by the client is used only as a cross-check and is rejected on mismatch.
 
 **`transition_order()`** — the only legal way to move an order's status. Validates the transition, applies the stock and cash side effects, and writes an audit event, atomically.
+
+Both derive **who is calling from `auth.uid()`**, never from their parameters (`0011_authz.sql`): staff may do anything legal, the assigned rider may pick up and deliver, the customer may cancel their own order inside `store_config.cancel_window_minutes`, and anyone else gets `NOT_AUTHORIZED`. A null `auth.uid()` is the trusted service context (psql, `service_role`), which is what the SQL suites and any future webhook run as.
 
 ```
 PLACED ──> CONFIRMED ──> PICKING ──> PACKED ──> OUT_FOR_DELIVERY ──> DELIVERED
@@ -168,6 +170,24 @@ everything migrations need.
 `auth.uid()` and the `anon` / `authenticated` roles for plain Postgres;
 Supabase has real versions and the shim would overwrite them.
 
+### Test phone numbers (no SMS provider needed)
+
+Customers sign in by phone OTP. Until an SMS provider is configured, add test
+numbers in Supabase → Authentication → Providers → Phone → **Test phone numbers**,
+e.g. `+919900000001 → 123456`. Those numbers sign in with the fixed code and
+behave exactly like real customers.
+
+### Store settings
+
+`store_config` is a single row: support phone and WhatsApp number (shown on
+the Help screen and on every order), the customer cancellation window, and an
+open/closed switch with a message. Edit it in the SQL editor for now:
+
+```sql
+update store_config set phone = '+91XXXXXXXXXX', whatsapp = '+91XXXXXXXXXX',
+  cancel_window_minutes = 5, is_open = true;
+```
+
 ### Creating the first admin
 
 The admin console needs a Supabase auth user linked to an `admin_users` row. Being signed in is not enough — every admin RPC re-checks `is_admin()` server-side.
@@ -186,15 +206,16 @@ Sign in at `/admin`.
 ### Verifying correctness
 
 ```bash
-npm run db:reset
-psql -d hospet_test -f supabase/tests/lifecycle_test.sql
-psql -d hospet_test -f supabase/tests/rls_test.sql
-./supabase/tests/oversell_test.sh hospet_test 40
+npm run db:test           # reset with EVERY migration, then lifecycle + RLS + oversell
+npm test                  # Vitest: phone normaliser, pricing rule, reorder, geo, money, search
+node scripts/bundle-budget.mjs   # gzipped JS behind "/" after `npm run build`; fails over 200 KB
 ```
 
-`local_auth_shim.sql` stubs `auth.uid()` and the `anon`/`authenticated` roles so the RLS policies can be exercised on plain Postgres. **Never run the shim against Supabase** — it has real versions of all of it.
+`db:test` needs a role that can create databases (`PGUSER=<superuser> npm run db:test` if your shell defaults to another role).
 
-The lifecycle suite covers 36 assertions: price-tamper rejection, illegal transitions, reservation release on cancel, restocking after a cancelled pack, bill recomputation on a short pick, COD cash reconciliation, and the append-only guarantee.
+`local_auth_shim.sql` stubs `auth.uid()`, `auth.jwt()`, the `anon`/`authenticated` roles and just enough of the `storage` schema so every migration applies on plain Postgres. **Never run the shim against Supabase** — it has real versions of all of it.
+
+The lifecycle suite covers ~110 assertions: price-tamper rejection, illegal transitions, reservation release on cancel, restocking after a cancelled pack, bill recomputation on a short pick, COD cash reconciliation, the append-only guarantee, and (T6–T13) every authorisation branch — impersonating seeded customers, the rider and the owner by setting the JWT claim and switching to the `authenticated` role — plus the address book invariants and the tracking helpers.
 
 **The oversell test is the important one.** It fires N concurrent `place_order()` calls at a product with limited stock and asserts that exactly as many succeed as there were units — no more. Verified at 40-way concurrency with zero deadlocks.
 
@@ -208,7 +229,7 @@ PASS  no oversell under 40-way concurrency (sold exactly 5 of 5)
 
 Overselling destroys customer trust faster than slow delivery does. It is the one thing in this system that cannot be wrong.
 
-The RLS suite (8 assertions) proves the anon key can read the catalogue but cannot read another customer's orders, insert an order, alter stock, delete records, or call `place_order()` without logging in.
+The RLS suite proves the anon key can read the catalogue but cannot read another customer's orders, insert an order, alter stock, delete records, or call the order functions without logging in; that a rider sees the customer and address of an assigned live order and nothing else; and that a customer sees only themself.
 
 One subtlety worth knowing when reading these tests: **RLS filters rows, it does not raise.** A blocked `UPDATE` matches zero rows and returns successfully. Assertions must therefore check rows affected, not catch an exception.
 
@@ -218,18 +239,24 @@ One subtlety worth knowing when reading these tests: **RLS filters rows, it does
 
 ```
 src/
-  api/          typed Supabase queries — catalogue, orders, inventory
-  components/   ProductCard, QtyStepper, StickyCartBar
-  hooks/        useCatalogue — cache-first load with live availability
-  lib/          supabase client, money helpers (paise ⇄ rupees)
+  api/          typed Supabase queries — catalogue, customer, inventory, rider, admin
+  auth/         AuthProvider (session), RequireAuth (route guard)
+  components/   ProductCard, QtyStepper, StickyCartBar, BottomSheet, ErrorBoundary,
+                shop/ (ShopHeader, BrandLockup, BrandSheet, ProductSheet, AddressChooserSheet)
+  hooks/        useCatalogue (shared via ShopLayout), usePricing
+  lib/          pricing (mirrors place_order's fee rule), phone, eta, reorder, geo, money, errors
   pages/
-    shop/       customer surface  (lazy)
+    shop/       ShopLayout + Home/Category/Search/Cart/Orders/Account/Help,
+                Login, Checkout, OrderTracking, Addresses, AddressEdit   (lazy)
     rider/      rider surface     (lazy)
     admin/      admin surface     (lazy)
-  store/        cart (localStorage-backed, survives refresh)
-  theme/        MUI theme
+  store/        cart (localStorage), customer (profile, addresses, zones, store settings)
+  theme/        MUI theme + brand constants (colours, copy, asset paths)
+public/brand/   logo assets cut from the master (mark, wordmark, full logo)
+scripts/        db-reset.sh, db-test.sh, bundle-budget.mjs, remote-psql.sh
 supabase/
-  migrations/   0001_schema.sql, 0002_functions.sql, 0003_rls.sql
+  migrations/   0001 … 0014 (schema, functions, RLS, admin ops, images, import,
+                zones, geolocation, authz, profile/addresses, catalogue detail, tracking)
   tests/        lifecycle_test.sql, rls_test.sql, oversell_test.sh,
                 local_auth_shim.sql (local only)
   seed.sql
@@ -241,20 +268,20 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 
 ### The three surfaces
 
-**Customer** (`/`) — shop, search, cart, phone-OTP sign-in, checkout, live order tracking, order history and reorder.
+**Customer** (`/`) — tap the logo for the brand sheet; home and category grids (`/category/:id`), a product sheet over any page (`?product=<id>`), search with recent searches (`/search`), a cart that shows the same zone fee as checkout, phone-OTP sign-in (`/login?returnTo=`), an account tab with name edit and sign-out, an address book with labels, a default, soft delete and a Leaflet/OpenStreetMap pin (`/account/addresses`), checkout from the address book, live tracking with ETA, timeline, rider card, cancel-within-window and WhatsApp/call to the store (`/order/:id`), order history with paging and a reorder that rebuilds the cart, and Help (`/help`).
 
 **Admin** (`/admin`)
 
 | Screen | Purpose |
 |---|---|
 | **Orders** | Live kanban board by status, updated over Supabase realtime rather than polling. One-tap advance on each card. |
-| **Order detail** | Full items and customer, short-pick entry, rider assignment, every legal transition. |
+| **Order detail** | Full items and customer, short-pick entry, rider assignment at any live status (the rider then sees the order and taps "Picked up"), every legal transition. |
 | **New order** | Manual entry — the screen the WhatsApp pilot runs on. Goes through the same `place_order()` path as a customer checkout, so stock and pricing behave identically. |
-| **Catalogue** | Add and edit products, including photos taken on a phone. Images are downscaled to 480px and re-encoded before upload. |
+| **Catalogue** | Add and edit products (with a description for the product sheet), including photos taken on a phone. Images are downscaled to 480px and re-encoded before upload. |
 | **Stock** | Set on-hand per SKU via `admin_adjust_stock()`, which records a `stock_movements` row every time. Reserved units belong to live orders and cannot be adjusted away. |
 | **Riders** | Add riders, activate/deactivate, and settle each day's cash against what the system expects. |
 
-**Rider** (`/rider`) — today's deliveries, one-tap call and map, mark delivered or failed, running cash total. Built for one thumb in sunlight.
+**Rider** (`/rider`) — orders assigned to them, live (a new assignment appears without a reload), with the customer's name, phone, landmark and map link; "Picked up" at the store, then Delivered (with a cash confirmation on COD) or Couldn't deliver. Built for one thumb in sunlight.
 
 ### Product images
 
@@ -274,7 +301,8 @@ Riders lose signal in stairwells and half the lanes in Hospet. Every rider actio
 - [x] **Phase 2** — customer PWA: checkout, phone OTP, order tracking, history, reorder
 - [x] **Phase 3** — rider app: assigned orders, offline-tolerant delivery marking, cash collection
 - [x] **Phase 3b** — product images, catalogue and rider management
-- [ ] **Phase 4** — Razorpay UPI with webhook verification, FCM push
+- [x] **app-v2** — authorised order functions, account + address book, product sheet + search, single pricing rule, tracking with ETA/rider/cancel, rider pickup flow, FAA brand
+- [ ] **Next** — web push on order events, Razorpay UPI with webhook verification, offers/banners, ratings, Kannada UI
 
 **Phone OTP needs an SMS provider** configured in Supabase (Authentication → Providers → Phone). Until one is set, sending a code fails with a clear message rather than hanging.
 
