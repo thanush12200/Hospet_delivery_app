@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Box, Skeleton, Typography } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { AddressChooserSheet } from '@/components/shop/AddressChooserSheet'
 import { ProductCard } from '@/components/ProductCard'
 import { StickyCartBar } from '@/components/StickyCartBar'
 import { BottomNav } from '@/components/BottomNav'
@@ -10,12 +12,28 @@ import { CategoryTiles } from '@/components/shop/CategoryTiles'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { searchProducts } from '@/api/catalogue'
 import { useCart } from '@/store/cartContext'
+import { useCustomer } from '@/store/customerContext'
+import { addressLabel, addressLine } from '@/lib/address'
 
 export default function ShopHome() {
   const { catalogue, availability, loading, error } = useCatalogue()
   const cart = useCart()
+  const customer = useCustomer()
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
+  const [chooser, setChooser] = useState(false)
+
+  // What the header says under the delivery promise. A saved address wins;
+  // otherwise the area picked on this device; otherwise ask.
+  const addr = customer.defaultAddress
+  const headerHint = addr ? `${addressLabel(addr)} ·` : customer.activeZone ? 'Deliver to' : undefined
+  const headerAddress = addr ? addressLine(addr)
+    : customer.activeZone ? `${customer.activeZone.name}, Hospet`
+    : 'Select your delivery area'
+  const initial = customer.profile
+    ? (customer.profile.name?.trim()[0] ?? customer.profile.phone.slice(-2)).toUpperCase()
+    : null
 
   // All filtering runs against the IndexedDB-cached catalogue. No network,
   // no debounce, no spinner -- results update as the user types.
@@ -47,8 +65,13 @@ export default function ShopHome() {
       <ShopHeader
         query={query}
         onQueryChange={setQuery}
-        address="Chittawadgi, Hospet · 583201"
+        address={headerAddress}
+        addressHint={headerHint}
+        onAddressClick={() => setChooser(true)}
+        onAccountClick={() => navigate(customer.status === 'anon' ? '/login?returnTo=/account' : '/account')}
+        accountInitial={initial}
       />
+      <AddressChooserSheet open={chooser} onClose={() => setChooser(false)} returnTo="/" />
 
       <CategoryIconRail
         categories={catalogue?.categories ?? []}

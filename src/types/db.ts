@@ -41,7 +41,11 @@ export interface Zone {
   lat: number | null
   lng: number | null
   radius_m: number | null
+  /** Subtotal at or above which delivery is free; null = never free. */
+  free_delivery_above_paise: number | null
 }
+
+export type AddressLabel = 'HOME' | 'WORK' | 'OTHER'
 
 export interface Address {
   id: string
@@ -52,6 +56,15 @@ export interface Address {
   lat: number | null
   lng: number | null
   is_default: boolean
+  label: AddressLabel
+  /** Soft-deleted addresses stay for order history; the client hides them. */
+  deleted_at: string | null
+}
+
+export interface Customer {
+  id: string
+  phone: string
+  name: string | null
 }
 
 export interface OrderItem {
