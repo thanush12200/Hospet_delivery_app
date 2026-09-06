@@ -245,3 +245,303 @@ begin
     raise notice 'PASS  T1d order_events append-only enforced';
   end;
 end $$;
+
+-- ================================================================
+-- Authorisation (0011). These impersonate a signed-in user the same way
+-- rls_test.sql does: set the JWT sub claim for this transaction and switch
+-- to the authenticated role. Seeded identities:
+--   customer A  auth 7777…01   customer B  auth 7777…02
+--   rider       auth 7777…11   owner       auth 7777…21
+-- ================================================================
+
+create or replace function as_user(p_uid text) returns void
+language plpgsql as $$
+begin
+  perform set_config('request.jwt.claim.sub', p_uid, true);
+  execute 'set local role authenticated';
+end $$;
+
+-- Back to the service context: reset role AND clear the claim, otherwise
+-- auth.uid() keeps returning the last impersonated user for the rest of the
+-- transaction.
+create or replace function as_service() returns void
+language plpgsql as $$
+begin
+  execute 'reset role';
+  perform set_config('request.jwt.claim.sub', '', true);
+end $$;
+
+-- ============================================================ TEST 6
+-- place_order: only the customer themself, or staff, may order for a customer.
+do $$
+declare r jsonb;
+begin
+  perform as_user('77777777-0000-0000-0000-000000000002');           -- customer B
+  r := place_order('44444444-0000-0000-0000-000000000001',           -- as A
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb,
+                   'COD');
+  perform as_service();
+  perform assert_eq('T6 customer cannot order as another customer', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000002');
+  r := place_order('44444444-0000-0000-0000-000000000002',           -- as themself
+                   '55555555-0000-0000-0000-000000000002',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb,
+                   'COD');
+  perform as_service();
+  perform assert_eq('T6 customer orders for themself', r->>'ok', 'true');
+  perform assert_eq('T6 customer order audited as CUSTOMER',
+    (select actor_type::text from order_events where order_id = (r->>'order_id')::uuid), 'CUSTOMER');
+
+  perform as_user('77777777-0000-0000-0000-000000000021');           -- owner
+  r := place_order('44444444-0000-0000-0000-000000000001',           -- WhatsApp order for A
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb,
+                   'COD');
+  perform as_service();
+  perform assert_eq('T6 staff may order for any customer', r->>'ok', 'true');
+  perform assert_eq('T6 staff order audited as ADMIN',
+    (select actor_type::text from order_events where order_id = (r->>'order_id')::uuid), 'ADMIN');
+  perform assert_eq('T6 staff order actor is the admin row',
+    (select actor_id from order_events where order_id = (r->>'order_id')::uuid),
+    '88888888-0000-0000-0000-000000000001'::uuid);
+
+  -- Clean up so later stock assertions are not disturbed.
+  perform transition_order((r->>'order_id')::uuid, 'CANCELLED', 'ADMIN');
+end $$;
+
+-- ============================================================ TEST 7
+-- transition_order as a rider: only their own assigned order, only pickup
+-- and delivery; assignment at PACKED via assign_rider().
+do $$
+declare r jsonb; v_order uuid; v_events int; v_cash_before int;
+begin
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb,
+                   'COD');
+  v_order := (r->>'order_id')::uuid;
+  perform transition_order(v_order, 'CONFIRMED', 'ADMIN');
+  perform transition_order(v_order, 'PICKING',   'ADMIN');
+  perform transition_order(v_order, 'PACKED',    'ADMIN');
+
+  perform as_user('77777777-0000-0000-0000-000000000011');           -- rider, unassigned
+  r := transition_order(v_order, 'OUT_FOR_DELIVERY', 'RIDER');
+  perform as_service();
+  perform assert_eq('T7 unassigned rider refused', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000002');           -- customer B as "ADMIN"
+  r := transition_order(v_order, 'OUT_FOR_DELIVERY', 'ADMIN', null, null, null,
+                        '66666666-0000-0000-0000-000000000001');
+  perform as_service();
+  perform assert_eq('T7 customer claiming ADMIN refused', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000002');           -- customer B as "RIDER"
+  r := transition_order(v_order, 'OUT_FOR_DELIVERY', 'RIDER');
+  perform as_service();
+  perform assert_eq('T7 customer claiming RIDER refused', r->>'error', 'NOT_AUTHORIZED');
+
+  select count(*) into v_events from order_events where order_id = v_order;
+  perform as_user('77777777-0000-0000-0000-000000000021');           -- owner assigns
+  r := assign_rider(v_order, '66666666-0000-0000-0000-000000000001');
+  perform as_service();
+  perform assert_eq('T7 assign_rider ok', r->>'ok', 'true');
+  perform assert_eq('T7 assign_rider audited',
+    (select count(*) from order_events where order_id = v_order)::int, v_events + 1);
+  perform assert_eq('T7 order carries the rider',
+    (select rider_id from orders where id = v_order), '66666666-0000-0000-0000-000000000001'::uuid);
+
+  perform as_user('77777777-0000-0000-0000-000000000002');           -- customer cannot assign
+  r := assign_rider(v_order, '66666666-0000-0000-0000-000000000001');
+  perform as_service();
+  perform assert_eq('T7 customer cannot assign a rider', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000011');           -- assigned rider
+  r := transition_order(v_order, 'CANCELLED', 'RIDER');
+  perform as_service();
+  perform assert_eq('T7 rider cannot cancel', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000011');
+  r := transition_order(v_order, 'OUT_FOR_DELIVERY', 'RIDER');              -- Picked up
+  perform as_service();
+  perform assert_eq('T7 assigned rider picks up', r->>'ok', 'true');
+
+  select coalesce(cash_expected_paise, 0) into v_cash_before from rider_settlements
+   where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = current_date;
+
+  perform as_user('77777777-0000-0000-0000-000000000011');
+  r := transition_order(v_order, 'DELIVERED', 'RIDER',
+                        '00000000-0000-0000-0000-000000000000');            -- bogus actor id ignored
+  perform as_service();
+  perform assert_eq('T7 assigned rider delivers', r->>'ok', 'true');
+  perform assert_eq('T7 event actor is the real rider',
+    (select actor_id from order_events where order_id = v_order and to_status = 'DELIVERED'),
+    '66666666-0000-0000-0000-000000000001'::uuid);
+  perform assert_eq('T7 cash booked to the rider',
+    (select cash_expected_paise from rider_settlements
+      where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = current_date),
+    v_cash_before + (select total_paise from orders where id = v_order));
+  perform assert_eq('T7 payment collected by the rider',
+    (select collected_by_rider_id from payments where order_id = v_order),
+    '66666666-0000-0000-0000-000000000001'::uuid);
+end $$;
+
+-- ============================================================ TEST 8
+-- The office marking a dispatched COD order delivered must book the cash
+-- against the order's rider, not crash on a null rider (the old behaviour).
+do $$
+declare r jsonb; v_order uuid;
+begin
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb,
+                   'COD');
+  v_order := (r->>'order_id')::uuid;
+  perform transition_order(v_order, 'CONFIRMED', 'ADMIN');
+  perform transition_order(v_order, 'PICKING',   'ADMIN');
+  perform transition_order(v_order, 'PACKED',    'ADMIN');
+
+  r := transition_order(v_order, 'OUT_FOR_DELIVERY', 'ADMIN');
+  perform assert_eq('T8 dispatch without a rider refused', r->>'error', 'NO_RIDER');
+
+  r := transition_order(v_order, 'OUT_FOR_DELIVERY', 'ADMIN', null, null, null,
+                        '00000000-0000-0000-0000-000000000000');
+  perform assert_eq('T8 unknown rider refused', r->>'error', 'INVALID_RIDER');
+
+  perform transition_order(v_order, 'OUT_FOR_DELIVERY', 'ADMIN', null, null, null,
+                           '66666666-0000-0000-0000-000000000001');
+
+  perform as_user('77777777-0000-0000-0000-000000000021');           -- owner, no rider param
+  r := transition_order(v_order, 'DELIVERED', 'ADMIN');
+  perform as_service();
+  perform assert_eq('T8 admin delivered with rider on the order', r->>'ok', 'true');
+  perform assert_eq('T8 cash collected by the order rider, not the admin',
+    (select collected_by_rider_id from payments where order_id = v_order),
+    '66666666-0000-0000-0000-000000000001'::uuid);
+end $$;
+
+-- ============================================================ TEST 9
+-- Customer cancellation: own order, early statuses, inside the window.
+do $$
+declare r jsonb; v_order uuid; v_reserved_before int;
+begin
+  select reserved into v_reserved_before from inventory
+   where product_id = '22222222-0000-0000-0000-000000000001';
+
+  perform as_user('77777777-0000-0000-0000-000000000001');           -- customer A
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb,
+                   'COD');
+  perform as_service();
+  v_order := (r->>'order_id')::uuid;
+
+  perform as_user('77777777-0000-0000-0000-000000000002');           -- customer B
+  r := transition_order(v_order, 'CANCELLED', 'CUSTOMER');
+  perform as_service();
+  perform assert_eq('T9 other customer cannot cancel', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := transition_order(v_order, 'CONFIRMED', 'CUSTOMER');
+  perform as_service();
+  perform assert_eq('T9 customer cannot advance', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := transition_order(v_order, 'CANCELLED', 'CUSTOMER', null, 'changed my mind');
+  perform as_service();
+  perform assert_eq('T9 own cancel inside window ok', r->>'ok', 'true');
+  perform assert_eq('T9 reservation released',
+    (select reserved from inventory where product_id = '22222222-0000-0000-0000-000000000001'),
+    v_reserved_before);
+
+  -- Too late: backdate a fresh order past the window.
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb,
+                   'COD');
+  v_order := (r->>'order_id')::uuid;
+  update orders set placed_at = now() - interval '30 minutes' where id = v_order;
+
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := transition_order(v_order, 'CANCELLED', 'CUSTOMER');
+  perform as_service();
+  perform assert_eq('T9 cancel after window refused', r->>'error', 'CANCEL_WINDOW_CLOSED');
+
+  -- Once picking has started the customer cannot cancel at all.
+  perform transition_order(v_order, 'CONFIRMED', 'ADMIN');
+  perform transition_order(v_order, 'PICKING',   'ADMIN');
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := transition_order(v_order, 'CANCELLED', 'CUSTOMER');
+  perform as_service();
+  perform assert_eq('T9 cancel at PICKING refused', r->>'error', 'NOT_AUTHORIZED');
+  perform transition_order(v_order, 'CANCELLED', 'ADMIN');              -- tidy up
+end $$;
+
+-- ============================================================ TEST 10
+-- Free-delivery threshold and store-closed gate.
+do $$
+declare r jsonb;
+begin
+  update zones set free_delivery_above_paise = 30000
+   where id = '33333333-0000-0000-0000-000000000001';
+
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb,
+                   'COD');                                              -- 35000 >= 30000
+  perform assert_eq('T10 fee waived above threshold',
+    (select delivery_fee_paise from orders where id = (r->>'order_id')::uuid), 0);
+  perform assert_eq('T10 total excludes the fee', (r->>'total_paise')::int, 35000);
+  perform transition_order((r->>'order_id')::uuid, 'CANCELLED', 'ADMIN');
+
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb,
+                   'COD');                                              -- 16500 < 30000
+  perform assert_eq('T10 fee charged below threshold',
+    (select delivery_fee_paise from orders where id = (r->>'order_id')::uuid), 2000);
+  perform transition_order((r->>'order_id')::uuid, 'CANCELLED', 'ADMIN');
+
+  update zones set free_delivery_above_paise = null
+   where id = '33333333-0000-0000-0000-000000000001';
+
+  update store_config set is_open = false, closed_message = 'Back at 7am';
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb,
+                   'COD');
+  perform as_service();
+  perform assert_eq('T10 customer blocked while closed', r->>'error', 'STORE_CLOSED');
+  perform assert_eq('T10 closed message returned', r->>'message', 'Back at 7am');
+
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb,
+                   'COD');
+  perform as_service();
+  perform assert_eq('T10 staff may still order while closed', r->>'ok', 'true');
+  perform transition_order((r->>'order_id')::uuid, 'CANCELLED', 'ADMIN');
+  update store_config set is_open = true, closed_message = null;
+end $$;
+
+-- ============================================================ TEST 11
+-- settle_rider_cash is staff only.
+do $$
+declare r jsonb;
+begin
+  perform as_user('77777777-0000-0000-0000-000000000011');           -- the rider themself
+  r := settle_rider_cash('66666666-0000-0000-0000-000000000001', current_date, 0, 'nope');
+  perform as_service();
+  perform assert_eq('T11 rider cannot settle their own cash', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  r := settle_rider_cash('66666666-0000-0000-0000-000000000001', current_date, 0, 'eod');
+  perform as_service();
+  perform assert_eq('T11 staff settles', r->>'ok', 'true');
+end $$;
+
+drop function as_user(text);
+drop function as_service();
