@@ -101,6 +101,21 @@ npm run db:test           # reset, then run the full test suite
 
 Or apply to Supabase by running the files in `supabase/migrations/` in order.
 
+### Creating the first admin
+
+The admin console needs a Supabase auth user linked to an `admin_users` row. Being signed in is not enough — every admin RPC re-checks `is_admin()` server-side.
+
+1. Supabase dashboard → **Authentication → Users → Add user**. Email + password, tick **Auto Confirm User**.
+2. Then run, with that email:
+
+```sql
+insert into admin_users (name, phone, auth_uid, role)
+select 'Owner', '+91XXXXXXXXXX', id, 'OWNER'
+from auth.users where email = 'you@example.com';
+```
+
+Sign in at `/admin`.
+
 ### Verifying correctness
 
 ```bash
@@ -155,11 +170,23 @@ supabase/
 
 Routes are code-split so a customer never downloads the admin or rider bundle.
 
+MUI is deliberately **not** forced into a single manual chunk. Doing that pulled admin-only components (Autocomplete, pickers) into the shared vendor bundle and pushed the customer route over budget — shoppers were paying to download admin UI they can never reach. Letting Rollup split by actual usage keeps the shop lean.
+
+### Admin console
+
+| Screen | Purpose |
+|---|---|
+| **Orders** | Live kanban board by status, updated over Supabase realtime rather than polling. One-tap advance on each card. |
+| **Order detail** | Full items and customer, short-pick entry, rider assignment, every legal transition. |
+| **New order** | Manual entry — the screen the WhatsApp pilot runs on. Goes through the same `place_order()` path as a customer checkout, so stock and pricing behave identically. |
+| **Stock** | Set on-hand per SKU via `admin_adjust_stock()`, which records a `stock_movements` row every time. Reserved units belong to live orders and cannot be adjusted away. |
+
 ---
 
 ## Roadmap
 
 - [x] **Phase 1** — schema, atomic order functions, RLS policies, test suite, app scaffold
+- [x] **Phase 1b** — admin console: order board, order detail, manual entry, stock
 - [ ] **Phase 2** — customer PWA: checkout, phone OTP, order tracking
 - [ ] **Phase 3** — rider app: assigned orders, offline-tolerant delivery marking, cash collection
 - [ ] **Phase 4** — Razorpay UPI with webhook verification, FCM push, daily rider settlement

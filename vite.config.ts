@@ -12,9 +12,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 250,
     rollupOptions: {
       output: {
+        // Only the framework is force-grouped. MUI is deliberately NOT a
+        // single manual chunk: doing that pulled admin-only components
+        // (Autocomplete, pickers) into the shared vendor bundle, so customers
+        // paid to download admin UI they can never reach. Letting Rollup split
+        // it by actual usage keeps the shop lean.
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
-          mui: ['@mui/material', '@emotion/react', '@emotion/styled'],
         },
       },
     },
