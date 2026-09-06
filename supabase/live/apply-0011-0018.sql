@@ -1,4 +1,4 @@
--- FAA: migrations 0011-0017 in one paste for the Supabase SQL editor.
+-- FAA: migrations 0011-0018 in one paste for the Supabase SQL editor.
 -- Safe to run more than once. Generated from supabase/migrations/.
 
 -- ======================= supabase/migrations/0011_authz.sql =======================
@@ -2053,5 +2053,12 @@ begin
   return v_id;
 end $$;
 
--- Sanity check: should list admin_receive_return, admin_verify_payment, rider_deliver
-select string_agg(proname, ', ' order by proname) from pg_proc where proname in ('admin_receive_return','admin_verify_payment','rider_deliver');
+-- ======================= supabase/migrations/0018_free_delivery_200.sql =======================
+-- 0018_free_delivery_200.sql — free delivery on orders of ₹200 and above.
+-- Zones without a threshold get ₹200; new zones default to it. A zone
+-- deliberately set to another figure is left alone. Editable per area in
+-- Admin -> Delivery areas.
+alter table zones alter column free_delivery_above_paise set default 20000;
+update zones set free_delivery_above_paise = 20000 where free_delivery_above_paise is null;
+
+select name, free_delivery_above_paise, sla_minutes from zones;

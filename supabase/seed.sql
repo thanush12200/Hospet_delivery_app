@@ -18,8 +18,10 @@ insert into inventory (product_id, on_hand, reserved) values
   ('22222222-0000-0000-0000-000000000002', 10, 0),
   ('22222222-0000-0000-0000-000000000003',  1, 0);   -- deliberately scarce
 
-insert into zones (id, name, delivery_fee_paise, min_order_paise) values
-  ('33333333-0000-0000-0000-000000000001', 'Chittawadgi', 2000, 10000);
+-- No free-delivery threshold on the test zone (the live default is ₹200), so
+-- the fee assertions below stay exact; T10 sets one explicitly.
+insert into zones (id, name, delivery_fee_paise, min_order_paise, free_delivery_above_paise) values
+  ('33333333-0000-0000-0000-000000000001', 'Chittawadgi', 2000, 10000, null);
 
 -- auth_uid values mirror what Supabase Auth would assign. Tests impersonate a
 -- user by setting request.jwt.claim.sub to one of these and switching to the

@@ -25,7 +25,7 @@ interface Draft {
 
 const EMPTY: Draft = {
   id: null, name: '', name_kn: '', fee: '20', min: '150',
-  is_active: true, lat: null, lng: null, radius: '1200', freeAbove: '', sla: '15',
+  is_active: true, lat: null, lng: null, radius: '1200', freeAbove: '200', sla: '15',
 }
 
 /**

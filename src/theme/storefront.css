@@ -141,3 +141,36 @@ button:disabled { cursor: default; }
   .local-note h2 { font-size: 25px; }.header-inner { padding: 14px; gap: 11px; }.header-brand img:last-child { height: 22px !important; }.delivery-location strong { font-size: 12px; }
 }
 @media (max-width: 360px) { .banner-copy { max-width: 76%; }.grocery-banner h1 { font-size: 23px; }.banner-stamp { display: none; }.grocery-banner { padding-left: 14px; }.product-photo { height: 126px; }.product-purchase { padding-inline: 7px; gap: 2px; }.product-purchase strong { font-size: 13px; }.section-heading h2 { font-size: 18px; } }
+
+/* ---- splash: the brand moment on a cold load ---- */
+.splash { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; opacity: 1; transition: opacity .38s ease; }
+.splash-out { opacity: 0; pointer-events: none; }
+.splash-card { background: #fff; border-radius: 28px; padding: 22px; box-shadow: 0 18px 50px rgba(0,0,0,.25); animation: splash-in .55s cubic-bezier(.2,.9,.3,1.2) both; }
+.splash-card img { display: block; width: min(280px, 70vw); height: auto; }
+.splash-expansion { margin: 0; color: #fff; font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .95; animation: splash-rise .5s .25s ease both; }
+.splash-dots { display: flex; gap: 8px; margin-top: 6px; }
+.splash-dots span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.85); animation: splash-dot 1s infinite ease-in-out; }
+.splash-dots span:nth-child(2) { animation-delay: .15s; }
+.splash-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes splash-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes splash-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: .95; transform: none; } }
+@keyframes splash-dot { 0%, 80%, 100% { transform: scale(.6); opacity: .5; } 40% { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .splash-card, .splash-expansion, .splash-dots span { animation: none; } }
+
+/* ---- free delivery nudge ---- */
+.free-delivery { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #eef4ff; border: 1px solid #d6e2ff; color: #1d3a8a; }
+.free-delivery.is-reached { background: #eaf7ee; border-color: #cfe9d7; color: #1b6b3a; }
+.free-delivery-icon { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: #2f63e5; color: #fff; flex-shrink: 0; }
+.free-delivery.is-reached .free-delivery-icon { background: #2e9e5b; }
+.free-delivery-icon svg { width: 22px; height: 22px; }
+.free-delivery-text { flex: 1; min-width: 0; }
+.free-delivery-text strong { display: block; font-size: 14px; font-weight: 800; line-height: 1.2; }
+.free-delivery-text span { display: block; font-size: 12px; opacity: .8; margin-top: 2px; }
+.free-delivery-track { height: 5px; border-radius: 3px; background: rgba(0,0,0,.08); margin-top: 8px; overflow: hidden; }
+.free-delivery-fill { height: 100%; border-radius: 3px; background: #2f63e5; transition: width .4s ease; }
+.free-delivery.is-reached .free-delivery-fill { background: #2e9e5b; }
+.free-delivery.is-compact { padding: 8px 12px; border-radius: 10px; }
+.free-delivery.is-compact .free-delivery-icon { width: 28px; height: 28px; }
+.free-delivery.is-compact .free-delivery-icon svg { width: 17px; height: 17px; }
+.free-delivery.is-compact strong { font-size: 12.5px; }
+.free-delivery.is-compact .free-delivery-track { margin-top: 5px; height: 4px; }

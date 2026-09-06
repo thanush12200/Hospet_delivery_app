@@ -7,6 +7,7 @@ import { CustomerProvider } from '@/store/customer'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { RequireAuth } from '@/auth/RequireAuth'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { SplashScreen } from '@/components/SplashScreen'
 
 // Route-level splitting: a customer must never download the admin or rider
 // bundle. This is what keeps the shop inside its budget.
@@ -57,6 +58,7 @@ export default function App() {
           <CustomerProvider>
             <CartProvider>
               <BrowserRouter>
+                <SplashScreen />
                 <Suspense fallback={<LinearProgress />}>
                   <Routes>
                     {/* Tabbed shell: shared catalogue, tab bar, cart bar, product sheet. */}
