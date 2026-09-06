@@ -7,6 +7,7 @@ import { BottomSheet } from '@/components/BottomSheet'
 import { setDefaultAddress } from '@/api/customer'
 import { useCustomer } from '@/store/customerContext'
 import { addressLabel, addressLine } from '@/lib/address'
+import { BRAND_TINT } from '@/theme/brand'
 
 /**
  * "Deliver to" chooser used by the home header and by checkout.
@@ -60,7 +61,7 @@ export function AddressChooserSheet({
                   sx={{
                     display: 'flex', alignItems: 'center', gap: 1.25, p: 1.5,
                     border: '1.5px solid', borderColor: active ? 'primary.main' : 'divider',
-                    borderRadius: 2.5, cursor: 'pointer', bgcolor: active ? '#F1F8F5' : '#fff',
+                    borderRadius: 2.5, cursor: 'pointer', bgcolor: active ? BRAND_TINT : '#fff',
                   }}
                 >
                   <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -109,7 +110,7 @@ export function AddressChooserSheet({
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       p: 1.25, px: 1.5, border: '1.5px solid',
                       borderColor: active ? 'primary.main' : 'divider',
-                      borderRadius: 2, cursor: 'pointer', bgcolor: active ? '#F1F8F5' : '#fff',
+                      borderRadius: 2, cursor: 'pointer', bgcolor: active ? BRAND_TINT : '#fff',
                     }}
                   >
                     <Typography variant="body2" fontWeight={active ? 700 : 500}>

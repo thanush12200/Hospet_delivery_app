@@ -15,6 +15,7 @@ import { mapsLink } from '@/lib/geo'
 import { useAuth } from '@/auth/authContext'
 import { paiseToRupees } from '@/lib/money'
 import AdminLogin from '../admin/AdminLogin'
+import { BRAND_GRADIENT } from '@/theme/brand'
 
 const POLL_MS = 60000
 
@@ -118,7 +119,7 @@ export default function MyDeliveries() {
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: '#F4F6F8', pb: 4 }}>
       <Box sx={{
-        background: 'linear-gradient(165deg, #0E8A62 0%, #0B6E4F 100%)', color: '#fff',
+        background: BRAND_GRADIENT, color: '#fff',
         px: 2, pt: 'calc(16px + env(safe-area-inset-top))', pb: 2.5,
       }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">

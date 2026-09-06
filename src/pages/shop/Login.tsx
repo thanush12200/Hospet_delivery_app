@@ -9,6 +9,7 @@ import { linkMyCustomer } from '@/api/customer'
 import { useAuth } from '@/auth/authContext'
 import { safeReturnTo } from '@/lib/returnTo'
 import { toE164 } from '@/lib/phone'
+import { BrandLockup } from '@/components/shop/BrandLockup'
 import { useCustomer } from '@/store/customerContext'
 
 const RESEND_SECONDS = 30
@@ -81,7 +82,7 @@ export default function Login() {
       </IconButton>
 
       <Box sx={{ maxWidth: 360, mx: 'auto', pt: 4 }}>
-        <Typography sx={{ fontWeight: 800, fontSize: 30, color: 'primary.main' }}>Wink</Typography>
+        <Box sx={{ mb: 1 }}><BrandLockup height={30} /></Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {sent ? 'Enter the code we just sent you' : 'Sign in with your mobile number'}
         </Typography>

@@ -13,6 +13,7 @@ import {
   GEO_MESSAGE, getCurrentCoords, nearestZone, type GeoError, type LatLng,
 } from '@/lib/geo'
 import { useCustomer } from '@/store/customerContext'
+import { BRAND_TINT } from '@/theme/brand'
 import type { AddressLabel } from '@/types/db'
 
 // Leaflet (~40 KB gzipped + tiles) is only ever needed here.
@@ -126,7 +127,7 @@ export default function AddressEditPage() {
               role="button" tabIndex={0}
               onClick={() => setShowMap(true)}
               onKeyDown={(e) => { if (e.key === 'Enter') setShowMap(true) }}
-              sx={{ height: 120, borderRadius: 3, bgcolor: '#EEF6F2', display: 'grid', placeItems: 'center',
+              sx={{ height: 120, borderRadius: 3, bgcolor: BRAND_TINT, display: 'grid', placeItems: 'center',
                     cursor: 'pointer', border: '1px dashed', borderColor: 'primary.light' }}
             >
               <Typography variant="body2" color="primary" fontWeight={700}>📍 Pin your door on the map</Typography>

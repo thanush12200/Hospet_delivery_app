@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
       window.location.reload()
       return
     }
-    console.error('Wink crashed:', error, info.componentStack)
+    console.error('FAA crashed:', error, info.componentStack)
   }
 
   render() {

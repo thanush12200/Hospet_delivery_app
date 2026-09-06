@@ -5,12 +5,13 @@ import { useSearchParams } from 'react-router-dom'
 import { SubPageBar } from '@/components/shop/SubPageBar'
 import { telLink, waLink } from '@/lib/contact'
 import { useCustomer } from '@/store/customerContext'
+import { BRAND } from '@/theme/brand'
 
 export default function HelpPage() {
   const { storeConfig } = useCustomer()
   const [params] = useSearchParams()
   const orderNo = params.get('order')
-  const text = orderNo ? `Hi, I need help with order ${orderNo}` : 'Hi, I need some help with Wink'
+  const text = orderNo ? `Hi, I need help with order ${orderNo}` : `Hi, I need some help with ${BRAND.name}`
 
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: '#fff', pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)' }}>
@@ -56,10 +57,13 @@ export default function HelpPage() {
 
         <Divider sx={{ my: 3 }} />
         <Box id="about">
-          <Typography variant="h6" gutterBottom>About Wink</Typography>
+          <Box sx={{ maxWidth: 260, mx: 'auto', mb: 1.5 }}>
+            <img src={BRAND.logo} alt={`${BRAND.name} logo`} style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </Box>
+          <Typography variant="h6" gutterBottom>About {BRAND.name}</Typography>
           <Typography variant="body2" color="text.secondary">
-            Everything you need, in a wink. Groceries and household essentials at MRP, delivered across Hospet
-            from our own store. No national app serves this town, so we built one.
+            {BRAND.name} stands for {BRAND.expansion}. {BRAND.tagline}: everyday essentials at MRP, delivered in
+            minutes across {BRAND.city} from our own store. No national app serves this town, so we built one.
           </Typography>
         </Box>
       </Box>

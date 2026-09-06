@@ -20,7 +20,7 @@ export default function AdminLogin() {
   return (
     <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '100dvh', p: 2 }}>
       <Paper sx={{ p: 3, width: '100%', maxWidth: 380, border: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main' }}>Wink</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main' }}>FAA</Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>Staff sign in</Typography>
 
         <form onSubmit={onSubmit}>

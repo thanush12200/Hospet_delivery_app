@@ -1,18 +1,19 @@
 import { createTheme } from '@mui/material/styles'
+import { BRAND } from './brand'
 
 /**
- * Deliberately not a clone of any existing brand. The layout follows the
- * conventions Indian quick-commerce users already know (category rail, product
- * grid, stepper buttons, sticky cart bar) because familiarity reduces friction,
- * but the identity is our own.
+ * Palette lifted from the FAA logo: the scooter red as primary, near-black
+ * ink for text and the secondary button, green kept only for "success"
+ * states (delivered, paid) where red would read as an error.
  */
 export const theme = createTheme({
   palette: {
-    primary:   { main: '#0B6E4F', dark: '#08543C', light: '#2E9B77' },
-    secondary: { main: '#F4B400' },
-    success:   { main: '#0B6E4F' },
+    primary:   { main: BRAND.red, dark: BRAND.redDark, light: '#FF6A61', contrastText: '#fff' },
+    secondary: { main: BRAND.ink, contrastText: '#fff' },
+    success:   { main: '#1B8A4C' },
+    warning:   { main: '#E8930C' },
     background:{ default: '#FFFFFF', paper: '#FFFFFF' },
-    text:      { primary: '#14181F', secondary: '#5B6472' },
+    text:      { primary: BRAND.ink, secondary: '#5B6472' },
     divider:   '#EDEFF3',
   },
   shape: { borderRadius: 12 },
