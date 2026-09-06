@@ -1,0 +1,46 @@
+import { paiseToRupees } from '@/lib/money'
+import type { PlaceOrderResult, TransitionError } from '@/types/db'
+
+/**
+ * Human copy for every error the order functions can answer with. The raw
+ * enum used to reach the screen for anything the caller had not mapped
+ * ("PRODUCT_UNAVAILABLE" in a red box is not something a customer can act on).
+ */
+export function describePlaceOrderError(r: Extract<PlaceOrderResult, { ok: false }>): string {
+  switch (r.error) {
+    case 'OUT_OF_STOCK':
+      return `Just sold out: ${(r.shortages ?? [])
+        .map((s) => `${s.name} (${s.available} left)`).join(', ')}`
+    case 'BELOW_MIN_ORDER':
+      return `Minimum order for this area is ${paiseToRupees(r.min_order_paise ?? 0)}`
+    case 'PRICE_MISMATCH':
+      return 'Prices changed while you were shopping. Please review your cart.'
+    case 'PRODUCT_UNAVAILABLE':
+      return 'One of the items is no longer available. Please remove it from your cart.'
+    case 'INVALID_ADDRESS':
+      return 'That address is no longer deliverable. Please pick or add another.'
+    case 'INVALID_QTY':
+      return 'One of the quantities is invalid. Please review your cart.'
+    case 'EMPTY_CART':
+      return 'Your cart is empty.'
+    case 'STORE_CLOSED':
+      return r.message?.trim() || 'The store is closed right now. Please try again later.'
+    case 'NOT_AUTHORIZED':
+      return 'Please sign in again to place this order.'
+    default:
+      return 'Could not place the order. Please try again.'
+  }
+}
+
+export function describeTransitionError(code: TransitionError | string | undefined): string {
+  switch (code) {
+    case 'NOT_AUTHORIZED':      return 'You are not allowed to change this order.'
+    case 'ILLEGAL_TRANSITION':  return 'This order has already moved on.'
+    case 'CANCEL_WINDOW_CLOSED': return 'The cancellation window has closed. Call the store and we will help.'
+    case 'NO_RIDER':            return 'Assign a rider before sending the order out.'
+    case 'INVALID_RIDER':       return 'That rider is not active.'
+    case 'ORDER_CLOSED':        return 'This order is complete; nothing more to do.'
+    case 'NO_SUCH_ORDER':       return 'Order not found.'
+    default:                    return 'The change was refused. Please refresh and try again.'
+  }
+}

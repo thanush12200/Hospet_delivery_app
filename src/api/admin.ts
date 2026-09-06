@@ -1,18 +1,20 @@
 import { supabase } from '@/lib/supabase'
 import type {
-  Address, Order, OrderItem, OrderStatus, PaymentMethod, PlaceOrderResult, Zone,
+  Address, Order, OrderItem, OrderStatus, PaymentMethod, PlaceOrderResult,
+  TransitionResult, Zone,
 } from '@/types/db'
 
 export interface AdminOrder extends Order {
   customers: { name: string | null; phone: string } | null
   addresses: { line1: string; landmark: string | null } | null
+  riders: { name: string; phone: string } | null
   order_items: OrderItem[]
 }
 
 export interface Rider { id: string; name: string; phone: string; is_active: boolean }
 
 const ORDER_SELECT =
-  '*, customers(name, phone), addresses(line1, landmark), order_items(*)'
+  '*, customers(name, phone), addresses(line1, landmark), riders(name, phone), order_items(*)'
 
 /** Orders currently in play. Terminal ones are excluded from the board. */
 export async function listActiveOrders(): Promise<AdminOrder[]> {
@@ -40,17 +42,15 @@ export async function getAdminOrder(id: string): Promise<AdminOrder> {
   return data as unknown as AdminOrder
 }
 
-export interface TransitionResult {
-  ok: boolean
-  error?: string
-  from?: OrderStatus
-  to?: OrderStatus
-  total_paise?: number
-}
+export type { TransitionResult }
 
 /**
  * The ONLY way to move an order. Never update orders.status directly --
  * a database trigger rejects it.
+ *
+ * The server derives who is acting from the session; actorType is the hat
+ * being claimed (ADMIN here) and is verified against admin_users. A rider is
+ * needed to send an order out: pass riderId, or assign one first.
  *
  * fulfilment is meaningful only when moving to PACKED, and records a short
  * pick. The server then recomputes the bill from what was actually packed.
@@ -72,6 +72,18 @@ export async function transitionOrder(args: {
     p_note: args.note ?? null,
     p_fulfilment: args.fulfilment ?? null,
     p_rider_id: args.riderId ?? null,
+  })
+  if (error) throw error
+  return data as TransitionResult
+}
+
+/**
+ * Attach a rider before dispatch so the order shows up in their app while it
+ * is still being packed. Staff only; the server writes an audit event.
+ */
+export async function assignRider(orderId: string, riderId: string): Promise<TransitionResult> {
+  const { data, error } = await supabase.rpc('assign_rider', {
+    p_order_id: orderId, p_rider_id: riderId,
   })
   if (error) throw error
   return data as TransitionResult

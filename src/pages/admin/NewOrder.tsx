@@ -10,6 +10,7 @@ import {
   placeOrderForCustomer,
 } from '@/api/admin'
 import { useCatalogue } from '@/hooks/useCatalogue'
+import { describePlaceOrderError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { Address, PaymentMethod, Product, Zone } from '@/types/db'
 
@@ -80,13 +81,7 @@ export default function NewOrder() {
         note: note.trim() || undefined,
       })
       if (!r.ok) {
-        setError(
-          r.error === 'OUT_OF_STOCK'
-            ? `Out of stock: ${r.shortages?.map((s) => `${s.name} (${s.available} left)`).join(', ')}`
-            : r.error === 'BELOW_MIN_ORDER'
-              ? `Below the minimum order for this zone (${paiseToRupees(r.min_order_paise ?? 0)})`
-              : r.error,
-        )
+        setError(describePlaceOrderError(r))
         return
       }
       navigate(`/admin/orders/${r.order_id}`)

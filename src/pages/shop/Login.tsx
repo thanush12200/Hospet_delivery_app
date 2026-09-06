@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert, Box, Button, Stack, TextField, Typography,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { linkMyCustomer } from '@/api/customer'
+import { toE164 } from '@/lib/phone'
+
+const RESEND_SECONDS = 30
 
 /**
  * Phone OTP sign-in.
@@ -23,29 +26,35 @@ export default function Login() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
   const navigate = useNavigate()
 
-  const e164 = () => {
-    const digits = phone.replace(/\D/g, '')
-    return digits.startsWith('91') ? `+${digits}` : `+91${digits.slice(-10)}`
-  }
+  const e164 = toE164(phone)
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
 
   async function sendCode() {
+    if (!e164) { setError('Enter a 10-digit mobile number.'); return }
     setBusy(true); setError(null)
-    const { error } = await supabase.auth.signInWithOtp({ phone: e164() })
+    const { error } = await supabase.auth.signInWithOtp({ phone: e164 })
     if (error) setError(error.message)
-    else setSent(true)
+    else { setSent(true); setCooldown(RESEND_SECONDS) }
     setBusy(false)
   }
 
   async function verify() {
+    if (!e164) return
     setBusy(true); setError(null)
     const { error } = await supabase.auth.verifyOtp({
-      phone: e164(), token: code.trim(), type: 'sms',
+      phone: e164, token: code.trim(), type: 'sms',
     })
     if (error) { setError(error.message); setBusy(false); return }
     try {
-      await linkMyCustomer(e164(), name.trim() || undefined)
+      await linkMyCustomer(e164, name.trim() || undefined)
       navigate('/checkout')
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
@@ -74,7 +83,7 @@ export default function Login() {
                 onChange={(e) => setName(e.target.value)}
               />
               <Button
-                variant="contained" size="large" disabled={busy || phone.replace(/\D/g, '').length < 10}
+                variant="contained" size="large" disabled={busy || !e164}
                 onClick={() => void sendCode()}
               >
                 {busy ? 'Sending…' : 'Send code'}
@@ -82,18 +91,25 @@ export default function Login() {
             </>
           ) : (
             <>
-              <Typography variant="body2">Code sent to {e164()}</Typography>
+              <Typography variant="body2">Code sent to {e164}</Typography>
               <TextField
-                label="6-digit code" value={code} size="small" fullWidth
-                onChange={(e) => setCode(e.target.value)} inputMode="numeric"
+                label="6-digit code" value={code} size="small" fullWidth autoFocus
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                inputMode="numeric"
+                inputProps={{ autoComplete: 'one-time-code', pattern: '[0-9]*', maxLength: 6 }}
               />
-              <Button variant="contained" size="large" disabled={busy || code.trim().length < 4}
+              <Button variant="contained" size="large" disabled={busy || code.trim().length !== 6}
                 onClick={() => void verify()}>
                 {busy ? 'Checking…' : 'Verify'}
               </Button>
-              <Button size="small" onClick={() => { setSent(false); setCode('') }}>
-                Change number
-              </Button>
+              <Stack direction="row" justifyContent="space-between">
+                <Button size="small" onClick={() => { setSent(false); setCode('') }}>
+                  Change number
+                </Button>
+                <Button size="small" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>
+                  {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
+                </Button>
+              </Stack>
             </>
           )}
         </Stack>

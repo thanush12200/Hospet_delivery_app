@@ -4,6 +4,7 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { listActiveOrders, subscribeToOrders, transitionOrder, type AdminOrder } from '@/api/admin'
+import { describeTransitionError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { OrderStatus } from '@/types/db'
 
@@ -48,10 +49,16 @@ export default function OrderBoard() {
   }, [refresh])
 
   async function advance(o: AdminOrder, to: OrderStatus) {
+    // Sending out needs a rider on the order. Without one, the detail screen
+    // is where it gets assigned -- go there instead of failing.
+    if (to === 'OUT_FOR_DELIVERY' && !o.rider_id) {
+      navigate(`/admin/orders/${o.id}`)
+      return
+    }
     setBusyId(o.id)
     try {
       const r = await transitionOrder({ orderId: o.id, to })
-      if (!r.ok) setError(`${o.order_no}: ${r.error}`)
+      if (!r.ok) setError(`${o.order_no}: ${describeTransitionError(r.error)}`)
       await refresh()
     } catch (e) {
       setError((e as Error).message)
@@ -108,12 +115,17 @@ export default function OrderBoard() {
                       <Typography variant="caption">{o.order_items.length} items</Typography>
                       <Typography variant="body2" fontWeight={700}>{paiseToRupees(o.total_paise)}</Typography>
                     </Stack>
-                    <Chip
-                      size="small"
-                      label={o.payment_method}
-                      color={o.payment_method === 'COD' ? 'default' : 'success'}
-                      sx={{ mt: 0.5, height: 18, fontSize: 10 }}
-                    />
+                    <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }}>
+                      <Chip
+                        size="small"
+                        label={o.payment_method}
+                        color={o.payment_method === 'COD' ? 'default' : 'success'}
+                        sx={{ height: 18, fontSize: 10 }}
+                      />
+                      {o.riders && (
+                        <Chip size="small" label={`🛵 ${o.riders.name}`} sx={{ height: 18, fontSize: 10 }} />
+                      )}
+                    </Stack>
 
                     {col.next && (
                       <Button
@@ -121,7 +133,9 @@ export default function OrderBoard() {
                         disabled={busyId === o.id}
                         onClick={(e) => { e.stopPropagation(); void advance(o, col.next!) }}
                       >
-                        {busyId === o.id ? '…' : col.nextLabel}
+                        {busyId === o.id ? '…'
+                          : col.next === 'OUT_FOR_DELIVERY' && !o.rider_id ? 'Assign rider'
+                          : col.nextLabel}
                       </Button>
                     )}
                   </Paper>

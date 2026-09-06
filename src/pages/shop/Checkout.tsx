@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/auth/authContext'
 import { GEO_MESSAGE, getCurrentCoords, nearestZone, type Coords, type GeoError } from '@/lib/geo'
 import { useCart } from '@/store/cartContext'
+import { describePlaceOrderError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { Address, PaymentMethod, Zone } from '@/types/db'
 import Login from './Login'
@@ -105,7 +106,14 @@ export default function Checkout() {
   }
 
   async function submit() {
-    if (!customerId || !addressId) return
+    if (!addressId) return
+    if (!customerId) {
+      // Signed in, but no customer row is linked to this session (an admin
+      // or rider account, or a failed link after OTP). Say so rather than
+      // sitting on an enabled button that does nothing.
+      setError('This account is not set up as a customer. Sign in with your mobile number to order.')
+      return
+    }
     setBusy(true); setError(null)
     try {
       const r = await placeMyOrder({
@@ -115,15 +123,7 @@ export default function Checkout() {
         note: note.trim() || undefined,
       })
       if (!r.ok) {
-        setError(
-          r.error === 'OUT_OF_STOCK'
-            ? `Just sold out: ${r.shortages?.map((s) => `${s.name} (${s.available} left)`).join(', ')}`
-            : r.error === 'BELOW_MIN_ORDER'
-              ? `Minimum order for this area is ${paiseToRupees(r.min_order_paise ?? 0)}`
-              : r.error === 'PRICE_MISMATCH'
-                ? 'Prices changed while you were shopping — please review your cart.'
-                : r.error,
-        )
+        setError(describePlaceOrderError(r))
         return
       }
       cart.clear()
