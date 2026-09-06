@@ -10,6 +10,7 @@ import { PRODUCT_PARAM } from '@/components/shop/ProductSheet'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
+import { BRAND } from '@/theme/brand'
 
 export default function ShopHome() {
   const { catalogue, availability, loading, error } = useCatalogue()
@@ -38,7 +39,7 @@ export default function ShopHome() {
   return (
     <div className="shop-home">
       {!categoryId && <PromoBanner freeAbovePaise={customer.activeZone?.free_delivery_above_paise ?? null}
-        zoneName={customer.activeZone?.name} minutes={customer.activeZone?.sla_minutes ?? 45} />}
+        zoneName={customer.activeZone?.name} minutes={customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} />}
       {!categoryId && catalogue && <CategoryTiles categories={catalogue.categories} products={catalogue.products}
         onSelect={(id) => navigate(`/category/${id}`)} limit={8} />}
       {customer.storeConfig?.is_open === false && <div className="store-closed" role="status">{customer.storeConfig.closed_message || 'The store is closed right now. You can still build your basket for later.'}</div>}

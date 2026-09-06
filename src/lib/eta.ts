@@ -1,3 +1,4 @@
+import { BRAND } from '@/theme/brand'
 import type { OrderStatus } from '@/types/db'
 
 export const TERMINAL: OrderStatus[] = ['DELIVERED', 'CANCELLED', 'FAILED']
@@ -5,7 +6,7 @@ export const isTerminal = (s: OrderStatus) => TERMINAL.includes(s)
 
 /** placed_at + the zone's promise, as a Date. */
 export function promisedAt(placedAt: string, slaMinutes: number | null | undefined): Date {
-  return new Date(new Date(placedAt).getTime() + (slaMinutes ?? 45) * 60000)
+  return new Date(new Date(placedAt).getTime() + (slaMinutes ?? BRAND.promiseMinutes) * 60000)
 }
 
 export function formatClock(d: Date): string {

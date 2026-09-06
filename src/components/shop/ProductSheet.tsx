@@ -9,6 +9,7 @@ import { useCatalogue } from '@/hooks/useCatalogue'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
 import type { Product } from '@/types/db'
+import { BRAND } from '@/theme/brand'
 
 export const PRODUCT_PARAM = 'product'
 
@@ -103,7 +104,7 @@ export function ProductSheet() {
             <Typography variant="body2" sx={{ mb: 2, whiteSpace: 'pre-line' }}>{product.description}</Typography>
           ) : (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Sold at MRP, delivered from our Hospet store in about 45 minutes.
+              Sold at MRP, delivered from our Hospet store in about {BRAND.promiseMinutes} minutes.
             </Typography>
           )}
 
