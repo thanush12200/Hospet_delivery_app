@@ -1,53 +1,28 @@
-import { Box, Typography } from '@mui/material'
-import { categoryIcon, TILE_TINTS } from '@/constants/categoryIcons'
-import { CARD_SHADOW } from '@/theme/brand'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import { Button } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { ProductImage } from './ProductImage'
 import type { Category, Product } from '@/types/db'
 
-/** Shop-by-category grid, with a live count so nothing looks emptier than it is. */
-export function CategoryTiles({
-  categories, products, onSelect,
-}: {
-  categories: Category[]
-  products: Product[]
-  onSelect: (id: string) => void
+export function CategoryTiles({ categories, products, onSelect, limit }: {
+  categories: Category[]; products: Product[]; onSelect: (id: string) => void; limit?: number
 }) {
+  const navigate = useNavigate()
   if (categories.length === 0) return null
-
   return (
-    <Box sx={{ px: 2, pt: 2.5 }}>
-      <Typography sx={{ fontWeight: 800, fontSize: 16, mb: 1.25 }}>
-        Shop by category
-      </Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 1.25 }}>
-        {categories.map((c, i) => {
-          const n = products.filter((p) => p.category_id === c.id).length
-          return (
-            <Box
-              key={c.id}
-              onClick={() => onSelect(c.id)}
-              sx={{
-                bgcolor: TILE_TINTS[i % TILE_TINTS.length],
-                borderRadius: 3, p: 1.5, cursor: 'pointer',
-                border: '1px solid rgba(255,255,255,0.9)', boxShadow: CARD_SHADOW,
-                display: 'flex', flexDirection: 'column', gap: 0.5,
-                minHeight: 96, justifyContent: 'space-between',
-                transition: 'transform .12s',
-                '&:active': { transform: 'scale(0.97)' },
-              }}
-            >
-              <Typography sx={{ fontSize: 26, lineHeight: 1 }}>{categoryIcon(c.name)}</Typography>
-              <Box>
-                <Typography sx={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.2 }}>
-                  {c.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10.5 }}>
-                  {n} {n === 1 ? 'item' : 'items'}
-                </Typography>
-              </Box>
-            </Box>
-          )
+    <section className="category-section">
+      <div className="section-heading"><div><span className="eyebrow">THE DAILY LINEUP</span><h2>What&apos;s on your list?</h2></div>
+        {limit && <Button color="success" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/categories')}>All categories</Button>}
+      </div>
+      <div className="category-grid">
+        {categories.slice(0, limit).map((c, i) => {
+          const items = products.filter((p) => p.category_id === c.id)
+          return <button className={`category-tile category-tone-${i % 5}`} key={c.id} onClick={() => onSelect(c.id)}>
+            <div className="category-photo"><ProductImage src={items.find((p) => p.image_url)?.image_url ?? null} name={c.name} /></div>
+            <strong>{c.name}</strong><small>{items.length} {items.length === 1 ? 'item' : 'items'}</small>
+          </button>
         })}
-      </Box>
-    </Box>
+      </div>
+    </section>
   )
 }

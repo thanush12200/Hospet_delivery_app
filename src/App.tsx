@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useParams } from 'react-router-dom'
 import { CssBaseline, LinearProgress, ThemeProvider } from '@mui/material'
 import { theme } from '@/theme'
 import { CartProvider } from '@/store/cart'
@@ -42,6 +42,10 @@ function ProductRedirect() {
   return <Navigate to={`/?product=${encodeURIComponent(id)}`} replace />
 }
 
+function CustomerFlow() {
+  return <div className="flow-shell"><Outlet /></div>
+}
+
 export default function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -67,6 +71,7 @@ export default function App() {
                       </Route>
                     </Route>
                     <Route path="/product/:id" element={<ProductRedirect />} />
+                    <Route element={<CustomerFlow />}>
                     <Route path="/login" element={<Login />} />
 
                     {/* Full-screen flows without the tab bar. */}
@@ -76,6 +81,7 @@ export default function App() {
                       <Route path="/account/addresses" element={<AddressesPage />} />
                       <Route path="/account/addresses/new" element={<AddressEditPage />} />
                       <Route path="/account/addresses/:id" element={<AddressEditPage />} />
+                    </Route>
                     </Route>
 
                     <Route path="/admin" element={<AdminLayout />}>

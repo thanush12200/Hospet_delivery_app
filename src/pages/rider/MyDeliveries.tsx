@@ -117,7 +117,7 @@ export default function MyDeliveries() {
   const out = orders.filter((o) => o.status === 'OUT_FOR_DELIVERY')
 
   return (
-    <Box sx={{ minHeight: '100dvh', bgcolor: '#F4F6F8', pb: 4 }}>
+    <Box sx={{ minHeight: '100dvh', bgcolor: '#F5F7F1', pb: 4, maxWidth: 640, mx: 'auto' }}>
       <Box sx={{
         background: BRAND_GRADIENT, color: '#fff',
         px: 2, pt: 'calc(16px + env(safe-area-inset-top))', pb: 2.5,

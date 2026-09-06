@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CartContext, CART_STORAGE_KEY, type CartApi, type CartLine } from './cartContext'
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({ children, storageKey = CART_STORAGE_KEY }: { children: ReactNode; storageKey?: string }) {
   // The cart lives in localStorage so a refresh or a dropped connection never
   // loses the basket — the most common cause of an abandoned order.
   const [lines, setLines] = useState<CartLine[]>(() => {
     try {
-      const raw = localStorage.getItem(CART_STORAGE_KEY)
+      const raw = localStorage.getItem(storageKey)
       return raw ? (JSON.parse(raw) as CartLine[]) : []
     } catch { return [] }
   })
 
   useEffect(() => {
-    try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(lines)) } catch { /* quota */ }
-  }, [lines])
+    try { localStorage.setItem(storageKey, JSON.stringify(lines)) } catch { /* quota */ }
+  }, [lines, storageKey])
 
   const api = useMemo<CartApi>(() => ({
     lines,

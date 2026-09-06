@@ -1,42 +1,32 @@
-import { Box, Stack, Typography } from '@mui/material'
-import { BRAND, BRAND_GRADIENT, CARD_SHADOW } from '@/theme/brand'
+import { Button } from '@mui/material'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
+import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined'
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import { paiseToRupees } from '@/lib/money'
 
-/**
- * A single honest promise rather than a fake discount banner. FAA sells at
- * MRP -- inventing a "70% OFF" flash would be a lie, and in a town this size
- * word travels faster than any campaign.
- */
-export function PromoBanner({ freeAbovePaise, zoneName }: { freeAbovePaise: number | null; zoneName?: string }) {
+export function PromoBanner({ freeAbovePaise, zoneName, minutes = 45 }: {
+  freeAbovePaise: number | null; zoneName?: string; minutes?: number
+}) {
   return (
-    <Box sx={{ px: 2, pt: 2 }}>
-      <Box
-        sx={{
-          position: 'relative', overflow: 'hidden',
-          borderRadius: 3.5, p: 2, pr: 13, minHeight: 104,
-          background: BRAND_GRADIENT, color: '#fff', boxShadow: CARD_SHADOW,
-        }}
-      >
-        <Stack spacing={0.5}>
-          <Typography sx={{ fontWeight: 900, fontSize: 18, lineHeight: 1.15 }}>
-            {freeAbovePaise != null
-              ? `Free delivery over ${paiseToRupees(freeAbovePaise)}`
-              : 'Every item at MRP'}
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.92, lineHeight: 1.35 }}>
-            {freeAbovePaise != null
-              ? `${zoneName ? `In ${zoneName}. ` : ''}No markups, straight from our ${BRAND.city} store.`
-              : `No markups, ever. Straight from our ${BRAND.city} store in minutes.`}
-          </Typography>
-        </Stack>
-        <Box
-          component="img" src={BRAND.mark} alt="" aria-hidden decoding="async"
-          sx={{
-            position: 'absolute', right: -6, bottom: -4, width: 128, height: 'auto',
-            filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.25))',
-          }}
-        />
-      </Box>
-    </Box>
+    <>
+      <section className="grocery-banner" aria-labelledby="grocery-heading">
+        <div className="banner-copy">
+          <span className="eyebrow"><span className="status-dot" /> YOUR HOSPET STORE</span>
+          <h1 id="grocery-heading">Your daily groceries.<br /><span>Delivered.</span></h1>
+          <p>From the first chai to the last-minute essentials.<br className="desktop-break" /> Your daily shop, delivered in about {minutes} minutes.</p>
+          <Button variant="contained" color="success" endIcon={<ArrowForwardIcon />}
+            onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            Shop essentials
+          </Button>
+        </div>
+        <div className="banner-stamp"><strong>{minutes}</strong><span>MINUTES</span><small>from store to door</small></div>
+      </section>
+      <div className="shop-promises">
+        <span><LocalShippingOutlinedIcon />{freeAbovePaise != null ? `Free delivery over ${paiseToRupees(freeAbovePaise)}${zoneName ? ` in ${zoneName}` : ''}` : 'Delivered from our Hospet store'}</span>
+        <span><VerifiedOutlinedIcon />Every item at MRP</span>
+        <span><PaymentsOutlinedIcon />Cash or UPI at your door</span>
+      </div>
+    </>
   )
 }

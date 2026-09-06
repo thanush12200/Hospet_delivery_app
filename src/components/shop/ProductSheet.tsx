@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Box, Chip, Stack, Typography } from '@mui/material'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BottomSheet } from '@/components/BottomSheet'
+import { ProductImage } from './ProductImage'
 import { QtyStepper } from '@/components/QtyStepper'
 import { categoryIcon } from '@/constants/categoryIcons'
 import { useCatalogue } from '@/hooks/useCatalogue'
@@ -64,9 +65,9 @@ export function ProductSheet() {
             aspectRatio: '4 / 3', bgcolor: '#F7F8FA', borderRadius: 3, display: 'grid', placeItems: 'center',
             overflow: 'hidden', mb: 1.5, opacity: outOfStock ? 0.5 : 1,
           }}>
-            {product.image_url
-              ? <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              : <Typography sx={{ fontSize: 72 }} aria-hidden>{categoryIcon(category?.name ?? product.name)}</Typography>}
+            <Box sx={{ width: '100%', height: '100%', minHeight: 0, '& > img': { width: '100%', height: '100%', objectFit: 'contain' } }}>
+              <ProductImage src={product.image_url} name={product.name} eager />
+            </Box>
           </Box>
 
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>

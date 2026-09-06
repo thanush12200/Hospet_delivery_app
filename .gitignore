@@ -8,6 +8,7 @@ dist-ssr
 *.tsbuildinfo
 .vite
 coverage
+artifacts/ui/
 
 # Local DB connection string — contains the database password. Never commit.
 .pgurl

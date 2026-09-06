@@ -23,16 +23,18 @@ export function QtyStepper({
     return (
       <Button
         variant="outlined"
+        color="success"
         size="small"
         onClick={onAdd}
         disabled={disabled}
         fullWidth={fullWidth}
         sx={{
-          minWidth: 72, borderWidth: 1.5, fontWeight: 700,
+          width: fullWidth ? '100%' : 80, minWidth: 80, height: 36, borderWidth: 1.5, fontWeight: 800,
+          fontSize: 12, px: 0.5, bgcolor: '#F0F8F1', flexShrink: 0,
           '&:hover': { borderWidth: 1.5 },
         }}
       >
-        {disabled ? 'Out of stock' : 'ADD'}
+        {disabled ? 'Sold out' : 'ADD +'}
       </Button>
     )
   }
@@ -40,8 +42,8 @@ export function QtyStepper({
     <Box
       sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        bgcolor: 'primary.main', color: '#fff', borderRadius: 1.5,
-        minWidth: 72, width: fullWidth ? '100%' : undefined, height: 32,
+        bgcolor: 'success.main', color: '#fff', borderRadius: '6px',
+        minWidth: 80, width: fullWidth ? '100%' : 80, height: 36, flexShrink: 0,
       }}
     >
       <IconButton size="small" onClick={onRemove} sx={{ color: '#fff', p: 0.5 }} aria-label="Remove one">
