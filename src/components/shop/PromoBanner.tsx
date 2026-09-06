@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
-import BoltIcon from '@mui/icons-material/Bolt'
+import { BRAND, BRAND_GRADIENT, CARD_SHADOW } from '@/theme/brand'
 import { paiseToRupees } from '@/lib/money'
 
 /**
@@ -9,29 +9,33 @@ import { paiseToRupees } from '@/lib/money'
  */
 export function PromoBanner({ freeAbovePaise, zoneName }: { freeAbovePaise: number | null; zoneName?: string }) {
   return (
-    <Box sx={{ px: 2, pt: 1.5 }}>
+    <Box sx={{ px: 2, pt: 2 }}>
       <Box
         sx={{
-          borderRadius: 3, p: 2,
-          background: 'linear-gradient(135deg, #FFF4F3 0%, #FFE3E1 100%)',
-          border: '1px solid #FBD5D3',
+          position: 'relative', overflow: 'hidden',
+          borderRadius: 3.5, p: 2, pr: 13, minHeight: 104,
+          background: BRAND_GRADIENT, color: '#fff', boxShadow: CARD_SHADOW,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <BoltIcon sx={{ color: 'primary.main' }} />
-          <Box>
-            <Typography sx={{ fontWeight: 800, fontSize: 15, color: 'text.primary' }}>
-              {freeAbovePaise != null
-                ? `Free delivery over ${paiseToRupees(freeAbovePaise)}${zoneName ? ` in ${zoneName}` : ''}`
-                : 'Every item at MRP, no markups'}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {freeAbovePaise != null
-                ? 'Straight from our Hospet warehouse · every item at MRP'
-                : 'Straight from our Hospet warehouse in about 45 minutes'}
-            </Typography>
-          </Box>
+        <Stack spacing={0.5}>
+          <Typography sx={{ fontWeight: 900, fontSize: 18, lineHeight: 1.15 }}>
+            {freeAbovePaise != null
+              ? `Free delivery over ${paiseToRupees(freeAbovePaise)}`
+              : 'Every item at MRP'}
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.92, lineHeight: 1.35 }}>
+            {freeAbovePaise != null
+              ? `${zoneName ? `In ${zoneName}. ` : ''}No markups, straight from our ${BRAND.city} store.`
+              : `No markups, ever. Straight from our ${BRAND.city} store in minutes.`}
+          </Typography>
         </Stack>
+        <Box
+          component="img" src={BRAND.mark} alt="" aria-hidden decoding="async"
+          sx={{
+            position: 'absolute', right: -6, bottom: -4, width: 128, height: 'auto',
+            filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.25))',
+          }}
+        />
       </Box>
     </Box>
   )

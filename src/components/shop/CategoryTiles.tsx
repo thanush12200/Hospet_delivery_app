@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { categoryIcon, TILE_TINTS } from '@/constants/categoryIcons'
+import { CARD_SHADOW } from '@/theme/brand'
 import type { Category, Product } from '@/types/db'
 
 /** Shop-by-category grid, with a live count so nothing looks emptier than it is. */
@@ -26,7 +27,8 @@ export function CategoryTiles({
               onClick={() => onSelect(c.id)}
               sx={{
                 bgcolor: TILE_TINTS[i % TILE_TINTS.length],
-                borderRadius: 2.5, p: 1.5, cursor: 'pointer',
+                borderRadius: 3, p: 1.5, cursor: 'pointer',
+                border: '1px solid rgba(255,255,255,0.9)', boxShadow: CARD_SHADOW,
                 display: 'flex', flexDirection: 'column', gap: 0.5,
                 minHeight: 96, justifyContent: 'space-between',
                 transition: 'transform .12s',

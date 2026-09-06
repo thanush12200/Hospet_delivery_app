@@ -28,7 +28,7 @@ export function BottomNav() {
       elevation={0}
       sx={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 1100,
-        borderTop: '1px solid', borderColor: 'divider', bgcolor: '#fff',
+        bgcolor: '#fff', boxShadow: '0 -4px 16px rgba(20,24,31,0.08)',
         pb: 'env(safe-area-inset-bottom)',
       }}
     >

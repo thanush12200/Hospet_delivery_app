@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material/styles'
-import { BRAND } from './brand'
+import { BRAND, PAGE_BG } from './brand'
 
 /**
  * Palette lifted from the FAA logo: the scooter red as primary, near-black
@@ -12,7 +12,7 @@ export const theme = createTheme({
     secondary: { main: BRAND.ink, contrastText: '#fff' },
     success:   { main: '#1B8A4C' },
     warning:   { main: '#E8930C' },
-    background:{ default: '#FFFFFF', paper: '#FFFFFF' },
+    background:{ default: PAGE_BG, paper: '#FFFFFF' },
     text:      { primary: BRAND.ink, secondary: '#5B6472' },
     divider:   '#EDEFF3',
   },

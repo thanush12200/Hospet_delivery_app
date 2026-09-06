@@ -62,7 +62,7 @@ export default function ShopHome() {
   }
 
   return (
-    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', bgcolor: '#fff', minHeight: '100dvh' }}>
+    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh' }}>
       <ShopHeader
         query=""
         onQueryChange={() => {}}

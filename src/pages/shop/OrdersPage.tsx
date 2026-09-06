@@ -10,7 +10,7 @@ import { paiseToRupees } from '@/lib/money'
 import { buildReorderLines } from '@/lib/reorder'
 import { useCart } from '@/store/cartContext'
 import type { OrderStatus } from '@/types/db'
-import { BRAND_GRADIENT } from '@/theme/brand'
+import { BRAND_GRADIENT, CARD_SHADOW } from '@/theme/brand'
 
 const TONE: Record<OrderStatus, 'default' | 'primary' | 'success' | 'error' | 'warning'> = {
   PLACED: 'primary', CONFIRMED: 'primary', PICKING: 'primary',
@@ -66,7 +66,7 @@ export default function OrdersPage() {
   }
 
   const shell = (children: React.ReactNode) => (
-    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh', bgcolor: '#fff' }}>
+    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh' }}>
       <Box sx={{
         background: BRAND_GRADIENT, color: '#fff',
         px: 2, pt: 'calc(16px + env(safe-area-inset-top))', pb: 2.5, borderRadius: '0 0 20px 20px',
@@ -115,7 +115,7 @@ export default function OrdersPage() {
   return shell(
     <Stack spacing={1.25} sx={{ px: 2, pt: 2 }}>
       {orders.map((o) => (
-        <Paper key={o.id} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', cursor: 'pointer' }}
+        <Paper key={o.id} sx={{ p: 1.5, borderRadius: 3, boxShadow: CARD_SHADOW, cursor: 'pointer' }}
           onClick={() => navigate(`/order/${o.id}`)}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="body2" fontWeight={700}>{o.order_no}</Typography>

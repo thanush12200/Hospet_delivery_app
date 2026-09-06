@@ -12,6 +12,7 @@ import { describePlaceOrderError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
+import { CARD_SHADOW } from '@/theme/brand'
 import type { PaymentMethod } from '@/types/db'
 
 /**
@@ -75,7 +76,7 @@ export default function Checkout() {
   const canPlace = !!address && !busy && !pricing.belowMin && !closed && !!customer.customerId
 
   return (
-    <Box sx={{ pb: 16, bgcolor: '#fff', minHeight: '100dvh' }}>
+    <Box sx={{ pb: 16, minHeight: '100dvh' }}>
       <SubPageBar title="Checkout" backTo="/cart" />
 
       <Box sx={{ px: 2, pt: 2 }}>
@@ -87,7 +88,7 @@ export default function Checkout() {
         )}
 
         <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>Deliver to</Typography>
-        <Paper sx={{ p: 1.5, mb: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Paper sx={{ p: 1.5, mb: 2, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
           {address ? (
             <Stack direction="row" alignItems="flex-start" spacing={1}>
               <Typography sx={{ fontSize: 20 }} aria-hidden>{label?.icon}</Typography>
@@ -115,7 +116,7 @@ export default function Checkout() {
         <AddressChooserSheet open={chooser} onClose={() => setChooser(false)} returnTo="/checkout" />
 
         <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>Order</Typography>
-        <Paper sx={{ p: 1.5, mb: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Paper sx={{ p: 1.5, mb: 2, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
           <Stack divider={<Divider />}>
             {cart.lines.map((l) => (
               <Stack key={l.product.id} direction="row" justifyContent="space-between" sx={{ py: 0.75 }}>

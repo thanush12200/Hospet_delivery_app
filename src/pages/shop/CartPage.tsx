@@ -11,6 +11,7 @@ import { usePricing } from '@/hooks/usePricing'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
+import { CARD_SHADOW } from '@/theme/brand'
 
 export default function CartPage() {
   const cart = useCart()
@@ -56,7 +57,7 @@ export default function CartPage() {
           </Alert>
         )}
 
-        <Stack divider={<Divider />} spacing={0}>
+        <Stack divider={<Divider />} spacing={0} sx={{ bgcolor: '#fff', borderRadius: 3, px: 1.5, boxShadow: CARD_SHADOW }}>
           {cart.lines.map((l) => {
             const a = stock.get(l.product.id)
             const over = a !== undefined && a < l.qty
@@ -90,7 +91,7 @@ export default function CartPage() {
           })}
         </Stack>
 
-        <Box sx={{ mt: 3, p: 2, bgcolor: '#F7F8FA', borderRadius: 2 }}>
+        <Box sx={{ mt: 2, p: 2, bgcolor: '#fff', borderRadius: 3, boxShadow: CARD_SHADOW }}>
           <Typography variant="subtitle2" gutterBottom>Bill summary</Typography>
           <Row label="Item total" value={paiseToRupees(pricing.subtotalPaise)} />
           <Row
