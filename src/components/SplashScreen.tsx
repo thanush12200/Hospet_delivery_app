@@ -2,44 +2,50 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { BRAND } from '@/theme/brand'
 
-/** The logo's own red, not the green of the status banners. */
+/** The logo's own red. */
 const SPLASH_BG = `linear-gradient(160deg, #FF8578 0%, #F4453C 45%, ${BRAND.redDark} 100%)`
 
-const MIN_MS = 1400   // long enough to register, short enough not to annoy
-const FADE_MS = 380
+/** The ride: in from the left, a beat under the wordmark, off to the right. */
+const RIDE_MS = 1650
+const FADE_MS = 300
+/** When the app behind may open its first sheet (welcome / location). */
+export const SPLASH_TOTAL_MS = RIDE_MS + FADE_MS
 
 /**
- * The brand moment on a cold load: the logo on a red field, then a fade into
- * the app. Shown on every full page load of the customer app (not on staff
- * or rider routes, and not on in-app navigation). Kept short on purpose;
- * the catalogue is loading behind it anyway.
+ * The brand moment on a cold load: the FAA scooter rides in across a red
+ * field, stops under the wordmark for a beat, then speeds off the right
+ * edge and the app is there. Shown on every full page load of the customer
+ * app (not on staff or rider routes, not on in-app navigation). Reduced
+ * motion gets a still logo for a moment instead.
  */
 export function SplashScreen() {
   const { pathname } = useLocation()
   const staff = /^\/(admin|rider|preview)(\/|$)/.test(pathname)
   const [phase, setPhase] = useState<'show' | 'fade' | 'done'>(staff ? 'done' : 'show')
+  const reduce = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
     if (staff) return
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    const t1 = setTimeout(() => setPhase('fade'), reduce ? 700 : MIN_MS)
-    const t2 = setTimeout(() => setPhase('done'), (reduce ? 700 : MIN_MS) + FADE_MS)
+    const hold = reduce ? 700 : RIDE_MS
+    const t1 = setTimeout(() => setPhase('fade'), hold)
+    const t2 = setTimeout(() => setPhase('done'), hold + FADE_MS)
     return () => { clearTimeout(t1); clearTimeout(t2) }
-  }, [staff])
+  }, [staff, reduce])
 
   if (phase === 'done') return null
   return (
     <div
-      className={`splash${phase === 'fade' ? ' splash-out' : ''}`}
+      className={`splash${phase === 'fade' ? ' splash-out' : ''}${reduce ? ' splash-still' : ''}`}
       style={{ background: SPLASH_BG }}
       role="status"
       aria-label={`${BRAND.name} is loading`}
     >
-      <div className="splash-card">
-        <img src={BRAND.logo} alt="" width={280} height={280} decoding="sync" />
+      <div className="splash-stage">
+        <div className="splash-road" aria-hidden />
+        <img className="splash-scooter" src={BRAND.mark} alt="" width={220} height={220} decoding="sync" />
       </div>
+      <img className="splash-wordmark" src={BRAND.wordmark} alt={BRAND.name} width={200} height={70} decoding="sync" />
       <p className="splash-expansion">{BRAND.expansion}</p>
-      <div className="splash-dots" aria-hidden><span /><span /><span /></div>
     </div>
   )
 }
