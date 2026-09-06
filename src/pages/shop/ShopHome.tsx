@@ -6,10 +6,12 @@ import { ProductCard } from '@/components/ProductCard'
 import { CategoryIconRail } from '@/components/shop/CategoryIconRail'
 import { PromoBanner } from '@/components/shop/PromoBanner'
 import { CategoryTiles } from '@/components/shop/CategoryTiles'
+import { DealsBoard } from '@/components/shop/DealsBoard'
 import { PRODUCT_PARAM } from '@/components/shop/ProductSheet'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
+import { unitPrice } from '@/lib/price'
 import { BRAND } from '@/theme/brand'
 
 export default function ShopHome() {
@@ -30,8 +32,8 @@ export default function ShopHome() {
   const visible = useMemo(() => {
     const items = (catalogue?.products ?? []).filter((p) => (!categoryId || p.category_id === categoryId)
       && (!inStock || (availability.get(p.id) ?? 0) > 0))
-    if (sort === 'price-low') items.sort((a, b) => a.mrp_paise - b.mrp_paise)
-    if (sort === 'price-high') items.sort((a, b) => b.mrp_paise - a.mrp_paise)
+    if (sort === 'price-low') items.sort((a, b) => unitPrice(a) - unitPrice(b))
+    if (sort === 'price-high') items.sort((a, b) => unitPrice(b) - unitPrice(a))
     if (sort === 'name') items.sort((a, b) => a.name.localeCompare(b.name))
     return items
   }, [catalogue, categoryId, inStock, availability, sort])
@@ -40,6 +42,7 @@ export default function ShopHome() {
     <div className="shop-home">
       {!categoryId && <PromoBanner freeAbovePaise={customer.activeZone?.free_delivery_above_paise ?? null}
         zoneName={customer.activeZone?.name} minutes={customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} />}
+      {!categoryId && catalogue && <DealsBoard products={catalogue.products} categories={catalogue.categories} config={customer.storeConfig} />}
       {!categoryId && catalogue && <CategoryTiles categories={catalogue.categories} products={catalogue.products}
         onSelect={(id) => navigate(`/category/${id}`)} limit={8} />}
       {customer.storeConfig?.is_open === false && <div className="store-closed" role="status">{customer.storeConfig.closed_message || 'The store is closed right now. You can still build your basket for later.'}</div>}

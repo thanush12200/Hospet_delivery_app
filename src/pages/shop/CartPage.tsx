@@ -13,6 +13,7 @@ import { FreeDeliveryBar } from '@/components/shop/FreeDeliveryBar'
 import { ProductImage } from '@/components/shop/ProductImage'
 import { usePricing } from '@/hooks/usePricing'
 import { paiseToRupees } from '@/lib/money'
+import { unitPrice } from '@/lib/price'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
 import { BRAND } from '@/theme/brand'
@@ -67,10 +68,10 @@ export default function CartPage() {
           const over = available !== undefined && available < qty
           return <article className="basket-item" key={product.id}>
             <div className="basket-photo"><ProductImage src={product.image_url} name={product.name} /></div>
-            <div className="basket-item-name"><h3>{product.name}</h3><span>{product.unit_label} - {paiseToRupees(product.mrp_paise)}</span>
+            <div className="basket-item-name"><h3>{product.name}</h3><span>{product.unit_label} - {paiseToRupees(unitPrice(product))}</span>
               {over && <small className="basket-short">{available === 0 ? 'Sold out' : `Only ${available} left`}</small>}</div>
             <div className="basket-quantity"><QtyStepper qty={qty} max={available} onAdd={() => cart.add(product)} onRemove={() => cart.remove(product.id)} /></div>
-            <strong className="basket-line-price">{paiseToRupees(product.mrp_paise * qty)}</strong>
+            <strong className="basket-line-price">{paiseToRupees(unitPrice(product) * qty)}</strong>
             <IconButton className="basket-remove" size="small" aria-label={`Remove ${product.name}`} title="Remove item" onClick={() => cart.removeLine(product.id)}><DeleteOutlineIcon fontSize="small" /></IconButton>
           </article>
         })}</div>

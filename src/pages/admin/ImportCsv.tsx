@@ -22,6 +22,7 @@ interface Parsed {
   category_kn: string
   description: string
   image_url: string
+  sale_price_paise: number | null
   error: string | null
 }
 
@@ -64,6 +65,9 @@ export default function ImportCsv() {
       else if (rawMrp === '') err = 'Add a price'
       else if (mrp === null) err = `"${rawMrp}" is not a valid price`
       const image = (r.image_url ?? r.image ?? '').trim()
+      const rawDeal = (r.sale_price ?? r.deal_price ?? r.deal ?? '').trim()
+      const deal = rawDeal === '' ? null : rupeesToPaise(rawDeal)
+      if (!err && rawDeal !== '' && (deal === null || (mrp !== null && deal >= mrp))) err = 'Deal price must be a number below the MRP'
       if (!err && image && !/^https?:\/\//.test(image)) err = 'image_url must be a full http(s) link'
       return {
         row: i + 1,
@@ -77,6 +81,7 @@ export default function ImportCsv() {
         category_kn: r.category_kn ?? '',
         description: (r.description ?? '').trim(),
         image_url: image,
+        sale_price_paise: deal,
         error: err,
       }
     })
@@ -110,6 +115,7 @@ export default function ImportCsv() {
           name: p.name, name_kn: p.name_kn, brand: p.brand, unit: p.unit,
           mrp_paise: p.mrp_paise, stock: p.stock, category: p.category,
           category_kn: p.category_kn, description: p.description, image_url: p.image_url,
+          sale_price_paise: p.sale_price_paise,
         })),
       })
       if (error) throw error

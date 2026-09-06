@@ -11,6 +11,7 @@ import { LABELS, addressLine } from '@/lib/address'
 import { attemptKeyFor, clearAttempt } from '@/lib/attempt'
 import { describePlaceOrderError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
+import { unitPrice } from '@/lib/price'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
 import { CARD_SHADOW } from '@/theme/brand'
@@ -132,7 +133,7 @@ export default function Checkout() {
                   {l.product.name} × {l.qty}
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
-                  {paiseToRupees(l.product.mrp_paise * l.qty)}
+                  {paiseToRupees(unitPrice(l.product) * l.qty)}
                 </Typography>
               </Stack>
             ))}

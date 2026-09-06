@@ -4,7 +4,7 @@ import type { OrderItem, Product } from '@/types/db'
 
 const product = (id: string, mrp: number, active = true): Product => ({
   id, category_id: 'c', name: `P${id}`, name_kn: null, brand: null, unit_label: '1 kg',
-  mrp_paise: mrp, image_url: null, sort_order: 0, is_active: active, description: null,
+  mrp_paise: mrp, image_url: null, sort_order: 0, is_active: active, description: null, sale_price_paise: null,
 })
 const item = (product_id: string, qty: number, unit: number, fulfilled: number | null = null): OrderItem => ({
   id: `i-${product_id}`, order_id: 'o', product_id, qty, fulfilled_qty: fulfilled,

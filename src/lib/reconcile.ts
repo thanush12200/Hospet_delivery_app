@@ -1,4 +1,5 @@
 import type { CartLine } from '@/store/cartContext'
+import { unitPrice } from './price'
 import type { Product } from '@/types/db'
 
 export interface Reconciliation {
@@ -24,7 +25,7 @@ export function reconcileCart(lines: CartLine[], products: Product[]): Reconcili
   for (const l of lines) {
     const live = byId.get(l.product.id)
     if (!live || !live.is_active) { removed.push(l.product.name); continue }
-    if (live.mrp_paise !== l.product.mrp_paise) repriced.push(live.name)
+    if (unitPrice(live) !== unitPrice(l.product)) repriced.push(live.name)
     out.push({ product: live, qty: l.qty })
   }
   return { lines: out, repriced, removed }
@@ -35,7 +36,7 @@ export function isFresh(lines: CartLine[], products: Product[]): boolean {
   const byId = new Map(products.map((p) => [p.id, p]))
   return lines.every((l) => {
     const live = byId.get(l.product.id)
-    return !!live && live.is_active && live.mrp_paise === l.product.mrp_paise
+    return !!live && live.is_active && unitPrice(live) === unitPrice(l.product)
       && live.name === l.product.name && live.image_url === l.product.image_url
   })
 }

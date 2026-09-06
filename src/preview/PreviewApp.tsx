@@ -21,7 +21,9 @@ const zones: Zone[] = ['Chittawadgi', 'Station Road', 'Amaravathi'].map((name, i
   delivery_fee_paise: 2000, min_order_paise: 15000, free_delivery_above_paise: 49900,
   sla_minutes: i === 2 ? 60 : 45, lat: null, lng: null, radius_m: null,
 }))
-const sampleProducts: Product[] = products.map((p) => ({ ...p, name_kn: p.name === 'Sona Masoori Rice' ? '\u0cb8\u0ccb\u0ca8\u0cbe \u0cae\u0cb8\u0cc2\u0cb0\u0cbf \u0c85\u0c95\u0ccd\u0c95\u0cbf' : null }))
+const sampleProducts: Product[] = products.map((p, i) => ({ ...p, name_kn: p.name === 'Sona Masoori Rice' ? '\u0cb8\u0ccb\u0ca8\u0cbe \u0cae\u0cb8\u0cc2\u0cb0\u0cbf \u0c85\u0c95\u0ccd\u0c95\u0cbf' : null,
+  // a few sample deals so the deals board renders in the preview
+  sale_price_paise: i % 4 === 0 ? Math.round(p.mrp_paise * 0.8) : null }))
 const state: CatalogueState = {
   catalogue: { version: 1, fetchedAt: Date.now(), products: sampleProducts,
     categories: [...new Set(products.map((p) => p.category_id))].map((name, i) => ({ id: name, name, name_kn: null, sort_order: i, is_active: true })) },
@@ -41,7 +43,8 @@ export default function PreviewApp() {
     status: 'anon', customerId: null, profile: null, addresses: [], defaultAddress: null,
     zones, activeZone: zones.find((z) => z.id === zoneId) ?? null,
     selectedZoneId: zoneId, setSelectedZoneId: setZoneId,
-    storeConfig: { is_open: true, closed_message: null, phone: null, whatsapp: null, cancel_window_minutes: 5 },
+    storeConfig: { is_open: true, closed_message: null, phone: null, whatsapp: null, cancel_window_minutes: 5,
+      promo_title: 'Launch week deals', promo_subtitle: 'Only till Sunday', promo_until: null },
     refresh: async () => {}, updateName: async () => {},
   }), [zoneId])
   return <ThemeProvider theme={theme}><CssBaseline />
