@@ -52,7 +52,6 @@ export default function ShopHome() {
       <section id="products" className="product-section">
         <div className="section-heading product-heading">
           <div><span className="eyebrow">GOOD THINGS, EVERY DAY</span><h2>{activeCategory?.name ?? 'Stock up on the everyday'}</h2>
-            {activeCategory?.name_kn && <p>{activeCategory.name_kn}</p>}
           </div>
           <label className="sort-control">Sort by <select aria-label="Sort products" value={sort} onChange={(e) => setSort(e.target.value)}>
             <option value="featured">Featured</option><option value="price-low">Price: low to high</option>

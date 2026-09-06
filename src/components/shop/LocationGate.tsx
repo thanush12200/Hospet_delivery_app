@@ -115,7 +115,7 @@ export default function LocationGate() {
               }}
             >
               <Typography variant="body2" fontWeight={600}>
-                {z.name}{z.name_kn ? ` · ${z.name_kn}` : ''}
+                {z.name}
                 <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>{BRAND.city}</Typography>
               </Typography>
               <CheckCircleIcon sx={{ color: 'divider' }} fontSize="small" />

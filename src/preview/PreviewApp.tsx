@@ -33,7 +33,7 @@ const state: CatalogueState = {
 
 function PreviewCheckout() {
   return <Box className="empty-state"><h2>This is a sample basket</h2><p>Preview prices and stock are illustrative. Ordering is disabled here.</p>
-    <Button component={Link} to="/cart" variant="contained" color="success">Back to basket</Button></Box>
+    <Button component={Link} to="/cart" variant="contained">Back to basket</Button></Box>
 }
 
 /** Uses the real storefront with isolated state, no auth provider or API reads. */

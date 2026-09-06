@@ -31,7 +31,7 @@ export function CategoryTiles({ categories, products, onSelect, limit }: {
               {photo ? <ProductImage src={photo} name={c.name} /> : <span className="category-glyph" aria-hidden="true">{categoryIcon(c.name)}</span>}
             </div>
             <strong>{c.name}</strong>
-            <small>{c.name_kn ?? `${items.length} ${items.length === 1 ? 'item' : 'items'}`}</small>
+            <small>{items.length} {items.length === 1 ? 'item' : 'items'}</small>
           </button>
         })}
       </div>

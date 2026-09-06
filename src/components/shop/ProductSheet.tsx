@@ -78,10 +78,6 @@ export function ProductSheet() {
             {low && <Chip size="small" color="warning" label={`Only ${available} left`} />}
             {outOfStock && <Chip size="small" color="error" label="Out of stock" />}
           </Stack>
-
-          {product.name_kn && (
-            <Typography variant="body2" color="text.secondary">{product.name_kn}</Typography>
-          )}
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{product.unit_label}</Typography>
 
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
