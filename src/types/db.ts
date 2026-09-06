@@ -27,6 +27,7 @@ export interface Product {
   image_url: string | null
   sort_order: number
   is_active: boolean
+  description: string | null
 }
 
 export interface Zone {
@@ -43,6 +44,8 @@ export interface Zone {
   radius_m: number | null
   /** Subtotal at or above which delivery is free; null = never free. */
   free_delivery_above_paise: number | null
+  /** The delivery promise for this area; ETA = placed_at + sla. */
+  sla_minutes: number
 }
 
 export type AddressLabel = 'HOME' | 'WORK' | 'OTHER'

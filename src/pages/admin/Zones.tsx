@@ -19,11 +19,13 @@ interface Draft {
   lat: number | null
   lng: number | null
   radius: string   // metres
+  freeAbove: string // rupees; '' = never free
+  sla: string      // minutes
 }
 
 const EMPTY: Draft = {
   id: null, name: '', name_kn: '', fee: '20', min: '150',
-  is_active: true, lat: null, lng: null, radius: '1200',
+  is_active: true, lat: null, lng: null, radius: '1200', freeAbove: '', sla: '45',
 }
 
 /**
@@ -73,6 +75,8 @@ export default function Zones() {
         p_lat: draft.lat,
         p_lng: draft.lng,
         p_radius_m: draft.radius === '' ? null : Number(draft.radius),
+        p_free_delivery_above_paise: draft.freeAbove === '' ? null : Math.round(Number(draft.freeAbove) * 100),
+        p_sla_minutes: draft.sla === '' ? null : Number(draft.sla),
       })
       if (error) throw error
       const r = data as { ok: boolean; error?: string }
@@ -125,6 +129,8 @@ export default function Zones() {
                   is_active: z.is_active,
                   lat: z.lat, lng: z.lng,
                   radius: z.radius_m == null ? '1200' : z.radius_m.toString(),
+                  freeAbove: z.free_delivery_above_paise == null ? '' : (z.free_delivery_above_paise / 100).toString(),
+                  sla: z.sla_minutes.toString(),
                 })}>Edit</Button>
               </Stack>
             )
@@ -187,6 +193,16 @@ export default function Zones() {
               <TextField size="small" type="number" label="Match radius (m)" value={draft.radius}
                 onChange={(e) => setDraft({ ...draft, radius: e.target.value })}
                 helperText="Beyond this, we warn the customer we may not deliver" />
+
+              <Stack direction="row" spacing={2}>
+                <TextField size="small" type="number" label="Free delivery above (₹)" value={draft.freeAbove} sx={{ flex: 1 }}
+                  onChange={(e) => setDraft({ ...draft, freeAbove: e.target.value })}
+                  helperText="Blank = never free" />
+                <TextField size="small" type="number" label="Promise (minutes)" value={draft.sla} sx={{ flex: 1 }}
+                  onChange={(e) => setDraft({ ...draft, sla: e.target.value })}
+                  inputProps={{ min: 10, max: 240 }}
+                  helperText="Shown as the ETA" />
+              </Stack>
 
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Switch checked={draft.is_active}

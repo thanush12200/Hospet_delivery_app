@@ -24,11 +24,12 @@ interface Draft {
   image_url: string | null
   is_active: boolean
   on_hand: string
+  description: string
 }
 
 const EMPTY: Draft = {
   id: null, category_id: '', name: '', name_kn: '', brand: '',
-  unit_label: '', rupees: '', image_url: null, is_active: true, on_hand: '',
+  unit_label: '', rupees: '', image_url: null, is_active: true, on_hand: '', description: '',
 }
 
 export default function Catalogue() {
@@ -74,6 +75,7 @@ export default function Catalogue() {
         p_image_url: draft.image_url,
         p_is_active: draft.is_active,
         p_on_hand: draft.on_hand === '' ? null : Number(draft.on_hand),
+        p_description: draft.description.trim() || null,
       })
       if (error) throw error
       const r = data as { ok: boolean; error?: string }
@@ -102,6 +104,7 @@ export default function Catalogue() {
           p_name_kn: draft.name_kn.trim() || null, p_brand: draft.brand.trim() || null,
           p_image_url: null, p_is_active: draft.is_active,
           p_on_hand: draft.on_hand === '' ? null : Number(draft.on_hand),
+          p_description: draft.description.trim() || null,
         })
         if (error) throw error
         id = (data as { id: string }).id
@@ -163,7 +166,7 @@ export default function Catalogue() {
                   id: p.id, category_id: p.category_id, name: p.name,
                   name_kn: p.name_kn ?? '', brand: p.brand ?? '', unit_label: p.unit_label,
                   rupees: (p.mrp_paise / 100).toString(), image_url: p.image_url,
-                  is_active: p.is_active, on_hand: '',
+                  is_active: p.is_active, on_hand: '', description: p.description ?? '',
                 })}>Edit</Button>
               </Stack>
             )
@@ -230,6 +233,10 @@ export default function Catalogue() {
                   onChange={(e) => setDraft({ ...draft, on_hand: e.target.value })}
                   helperText={draft.id ? 'Leave blank to keep' : ''} />
               </Stack>
+              <TextField size="small" label="Description" value={draft.description} multiline minRows={2}
+                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                inputProps={{ maxLength: 400 }}
+                helperText="Shown on the product sheet. A sentence or two: origin, use, what's in the pack." />
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Switch checked={draft.is_active}
                   onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })} />
