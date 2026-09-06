@@ -1,0 +1,26 @@
+# Cloudflare Pages caching. vercel.json covers the same ground on Vercel; this
+# is the equivalent here.
+
+# Vite fingerprints these filenames, so a change always produces a new URL.
+# They can be cached permanently -- without this, Pages serves them
+# must-revalidate and every visit spends round-trips confirming files that
+# cannot have changed.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/icon-*.png
+  Cache-Control: public, max-age=2592000
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=2592000
+
+# These three decide when a client notices a new release, so they must never
+# be cached.
+/index.html
+  Cache-Control: no-cache
+
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
