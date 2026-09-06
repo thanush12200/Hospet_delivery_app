@@ -13,3 +13,6 @@ artifacts/ui/
 # Local DB connection string — contains the database password. Never commit.
 .pgurl
 .pgpass_raw
+
+# Original downloads behind public/catalogue (large; the resized copies are what ships)
+catalogue/images/raw/
