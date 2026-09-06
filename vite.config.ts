@@ -47,7 +47,18 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Catalogue photos ship with the site but must not bloat the precache;
+        // they are cached on first view like the uploaded product images.
+        globIgnores: ['**/catalogue/**'],
         runtimeCaching: [
+          {
+            urlPattern: /\/catalogue\/.*\.(?:jpg|png|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'catalogue-images',
+              expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
           {
             urlPattern: /\/storage\/v1\/object\/public\//,
             handler: 'CacheFirst',
