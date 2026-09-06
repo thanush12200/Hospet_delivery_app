@@ -21,8 +21,14 @@ insert into inventory (product_id, on_hand, reserved) values
 insert into zones (id, name, delivery_fee_paise, min_order_paise) values
   ('33333333-0000-0000-0000-000000000001', 'Chittawadgi', 2000, 10000);
 
-insert into customers (id, phone, name) values
-  ('44444444-0000-0000-0000-000000000001', '+919900000001', 'Test Customer');
+-- auth_uid values mirror what Supabase Auth would assign. Tests impersonate a
+-- user by setting request.jwt.claim.sub to one of these and switching to the
+-- authenticated role (see rls_test.sql for the idiom).
+insert into customers (id, phone, name, auth_uid) values
+  ('44444444-0000-0000-0000-000000000001', '+919900000001', 'Test Customer',
+   '77777777-0000-0000-0000-000000000001'),
+  ('44444444-0000-0000-0000-000000000002', '+919900000003', 'Other Customer',
+   '77777777-0000-0000-0000-000000000002');
 
 insert into addresses (id, customer_id, zone_id, line1, landmark, is_default) values
   ('55555555-0000-0000-0000-000000000001',
@@ -30,5 +36,16 @@ insert into addresses (id, customer_id, zone_id, line1, landmark, is_default) va
    '33333333-0000-0000-0000-000000000001',
    '2nd Cross, Chittawadgi', 'Near Anjaneya Temple', true);
 
-insert into riders (id, name, phone) values
-  ('66666666-0000-0000-0000-000000000001', 'Test Rider', '+919900000002');
+insert into addresses (id, customer_id, zone_id, line1, landmark, is_default) values
+  ('55555555-0000-0000-0000-000000000002',
+   '44444444-0000-0000-0000-000000000002',
+   '33333333-0000-0000-0000-000000000001',
+   'Station Road', 'Opp. bus stand', true);
+
+insert into riders (id, name, phone, auth_uid) values
+  ('66666666-0000-0000-0000-000000000001', 'Test Rider', '+919900000002',
+   '77777777-0000-0000-0000-000000000011');
+
+insert into admin_users (id, name, phone, auth_uid, role) values
+  ('88888888-0000-0000-0000-000000000001', 'Test Owner', '+919900000009',
+   '77777777-0000-0000-0000-000000000021', 'OWNER');
