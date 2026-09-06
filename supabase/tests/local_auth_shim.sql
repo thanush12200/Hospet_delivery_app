@@ -11,6 +11,13 @@ language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
 $$;
 
+-- Supabase's auth.jwt() returns the whole claims object; phone-auth users
+-- carry their verified number in the `phone` claim (digits, no +).
+create or replace function auth.jwt() returns jsonb
+language sql stable as $$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
+$$;
+
 do $$ begin
   create role anon;
 exception when duplicate_object then null; end $$;

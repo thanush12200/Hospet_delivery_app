@@ -254,10 +254,12 @@ end $$;
 --   rider       auth 7777…11   owner       auth 7777…21
 -- ================================================================
 
-create or replace function as_user(p_uid text) returns void
+create or replace function as_user(p_uid text, p_phone text default null) returns void
 language plpgsql as $$
 begin
   perform set_config('request.jwt.claim.sub', p_uid, true);
+  perform set_config('request.jwt.claims',
+    (jsonb_build_object('sub', p_uid) || coalesce(jsonb_build_object('phone', p_phone), '{}'))::text, true);
   execute 'set local role authenticated';
 end $$;
 
@@ -269,6 +271,7 @@ language plpgsql as $$
 begin
   execute 'reset role';
   perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claims', '', true);
 end $$;
 
 -- ============================================================ TEST 6
@@ -543,5 +546,97 @@ begin
   perform assert_eq('T11 staff settles', r->>'ok', 'true');
 end $$;
 
-drop function as_user(text);
+-- ============================================================ TEST 12
+-- Address book and profile (0012): exactly one live default, soft delete
+-- promotes, direct row writes closed, linking uses the JWT phone.
+do $$
+declare r jsonb; v_a uuid; v_b uuid; n int; v_new uuid;
+begin
+  perform as_user('77777777-0000-0000-0000-000000000002');           -- customer B (has 1 address)
+  r := upsert_my_address(null, '33333333-0000-0000-0000-000000000001',
+                         'Flat 3, Gandhi Nagar', 'Behind the school', 'WORK', false, 15.27, 76.39);
+  v_a := (r->>'id')::uuid;
+  perform assert_eq('T12 second address added', r->>'ok', 'true');
+  perform assert_eq('T12 existing default untouched',
+    (select id from addresses where customer_id = '44444444-0000-0000-0000-000000000002'
+       and is_default and deleted_at is null), '55555555-0000-0000-0000-000000000002'::uuid);
+
+  r := upsert_my_address(null, '33333333-0000-0000-0000-000000000001',
+                         'Room 12, PG hostel', null, 'OTHER', true, null, null);
+  v_b := (r->>'id')::uuid;
+  perform assert_eq('T12 third address becomes default', 
+    (select is_default from addresses where id = v_b), true);
+  select count(*) into n from addresses
+   where customer_id = '44444444-0000-0000-0000-000000000002' and is_default and deleted_at is null;
+  perform assert_eq('T12 exactly one live default', n, 1);
+
+  r := upsert_my_address(v_a, '33333333-0000-0000-0000-000000000001',
+                         'Flat 3, Gandhi Nagar (edited)', null, 'HOME', false, null, null);
+  perform assert_eq('T12 edit keeps ownership', r->>'ok', 'true');
+  perform assert_eq('T12 edit applied',
+    (select label from addresses where id = v_a), 'HOME');
+
+  r := set_default_address(v_a);
+  perform assert_eq('T12 set_default ok', r->>'ok', 'true');
+  perform assert_eq('T12 previous default cleared',
+    (select is_default from addresses where id = v_b), false);
+
+  r := delete_my_address(v_a);                                         -- delete the default
+  perform assert_eq('T12 soft delete ok', r->>'ok', 'true');
+  perform assert_eq('T12 row kept for order history',
+    (select deleted_at is not null from addresses where id = v_a), true);
+  select count(*) into n from addresses
+   where customer_id = '44444444-0000-0000-0000-000000000002' and is_default and deleted_at is null;
+  perform assert_eq('T12 a default was promoted', n, 1);
+
+  r := upsert_my_address(v_a, '33333333-0000-0000-0000-000000000001', 'zombie', null, 'HOME', false, null, null);
+  perform assert_eq('T12 deleted address cannot be edited', r->>'error', 'NO_SUCH_ADDRESS');
+
+  r := upsert_my_address(null, '00000000-0000-0000-0000-000000000000', 'nowhere', null, 'HOME', false, null, null);
+  perform assert_eq('T12 unknown zone refused', r->>'error', 'INVALID_ZONE');
+
+  -- Direct writes are closed; the unique index is the backstop anyway.
+  update addresses set is_default = true where id = v_b;
+  get diagnostics n = row_count;
+  perform assert_eq('T12 direct address update blocked by RLS', n, 0);
+
+  r := update_my_profile('  Bhavana  ');
+  perform assert_eq('T12 profile name saved', r->>'name', 'Bhavana');
+  perform assert_eq('T12 profile name persisted',
+    (select name from customers where id = '44444444-0000-0000-0000-000000000002'), 'Bhavana');
+  r := update_my_profile('   ');
+  perform assert_eq('T12 blank name refused', r->>'error', 'INVALID_NAME');
+  perform as_service();
+
+  -- Another customer cannot touch B's addresses.
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := set_default_address(v_b);
+  perform assert_eq('T12 other customer cannot set default', r->>'error', 'NO_SUCH_ADDRESS');
+  r := delete_my_address(v_b);
+  perform assert_eq('T12 other customer cannot delete', r->>'error', 'NO_SUCH_ADDRESS');
+  perform as_service();
+
+  -- Linking: a brand-new phone user gets a customer row from the JWT phone,
+  -- whatever number the client sends.
+  perform as_user('77777777-0000-0000-0000-000000000099', '919900000099');
+  v_new := link_current_user_to_customer('+919900000001', 'Newcomer');   -- claims A's number
+  perform as_service();
+  perform assert_eq('T12 link uses the JWT phone',
+    (select phone from customers where id = v_new), '+919900000099');
+  perform assert_eq('T12 A still owns their own row',
+    (select auth_uid from customers where id = '44444444-0000-0000-0000-000000000001'),
+    '77777777-0000-0000-0000-000000000001'::uuid);
+
+  -- A phone session with no phone claim and no admin rights cannot link.
+  perform as_user('77777777-0000-0000-0000-000000000098');
+  begin
+    perform link_current_user_to_customer('+919900000003');
+    raise warning 'FAIL  T12 link without a verified phone was allowed';
+  exception when insufficient_privilege then
+    raise notice 'PASS  T12 link without a verified phone refused';
+  end;
+  perform as_service();
+end $$;
+
+drop function as_user(text, text);
 drop function as_service();
