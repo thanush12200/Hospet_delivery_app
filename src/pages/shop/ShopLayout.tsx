@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { BottomNav } from '@/components/BottomNav'
 import { StickyCartBar } from '@/components/StickyCartBar'
@@ -8,6 +9,9 @@ import { CatalogueContext, useCatalogueLoader, type CatalogueState } from '@/hoo
 import { ShopHeader } from '@/components/shop/ShopHeader'
 import { Link } from 'react-router-dom'
 import { useCart } from '@/store/cartContext'
+import { useCustomer } from '@/store/customerContext'
+
+const LocationGate = lazy(() => import('@/components/shop/LocationGate'))
 
 /** Routes that browse products get the sticky cart bar; the rest have their own CTA. */
 const BROWSE = [/^\/$/, /^\/category\//, /^\/categories$/, /^\/search$/]
@@ -26,6 +30,8 @@ export function ShopFrame({ state }: { state: CatalogueState }) {
   const { pathname } = useLocation()
   const browsing = BROWSE.some((r) => r.test(pathname))
   const { count } = useCart()
+  const customer = useCustomer()
+  const needsLocation = customer.status !== 'loading' && !customer.defaultAddress && !customer.selectedZoneId
 
   return (
     <CatalogueContext.Provider value={state}>
@@ -35,10 +41,11 @@ export function ShopFrame({ state }: { state: CatalogueState }) {
           <Outlet />
         </main>
         <footer className="shop-footer"><div><strong>FAA.</strong><span>Your neighbourhood. Your everyday.</span></div>
-          <span>Hospet, Karnataka</span><a href="/storefront/PHOTO_CREDITS.md">Photo credits</a><Link to="/help">Need a hand?</Link>
+          <span>Hospet, Karnataka</span><Link to="/help">Need a hand?</Link>
         </footer>
         {browsing && <StickyCartBar />}
         <BottomNav />
+        {needsLocation && <Suspense fallback={null}><LocationGate /></Suspense>}
         <Welcome />
         <ProductSheet />
       </ToastProvider>

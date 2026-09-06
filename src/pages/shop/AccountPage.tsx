@@ -13,7 +13,6 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined'
 import PhoneIphoneOutlinedIcon from '@mui/icons-material/PhoneIphoneOutlined'
 import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import PhotoLibraryOutlinedIcon from '@mui/icons-material/PhotoLibraryOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/authContext'
@@ -143,9 +142,6 @@ export default function AccountPage() {
           <Row icon={<SupportAgentOutlinedIcon />} title="Help & support"
             subtitle={customer.storeConfig?.phone ? `Call or WhatsApp ${customer.storeConfig.phone}` : 'Talk to the store'}
             onClick={() => navigate('/help')} />
-          <Divider />
-          <Row icon={<PhotoLibraryOutlinedIcon />} title="Photo credits" subtitle="Product photos are reused under open licences"
-            onClick={() => { window.location.assign('/catalogue/credits.html') }} />
         </Box>
 
         <Button fullWidth variant="outlined" color="inherit" startIcon={<LogoutIcon />}

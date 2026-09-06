@@ -26,7 +26,7 @@ export function ProductCard({ product, qty, available, categoryName, onAdd, onRe
         </div>
       </button>
       <div className="product-purchase"><div><strong>{paiseToRupees(unitPrice(product))}</strong>
-          {onDeal(product) ? <small className="was-price">MRP <s>{paiseToRupees(product.mrp_paise)}</s></small> : <small>MRP incl. taxes</small>}</div>
+          {onDeal(product) ? <small className="was-price">MRP <s>{paiseToRupees(product.mrp_paise)}</s></small> : <small>incl. all taxes</small>}</div>
         <QtyStepper qty={qty} onAdd={onAdd} onRemove={onRemove} disabled={outOfStock} max={available} />
       </div>
     </article>

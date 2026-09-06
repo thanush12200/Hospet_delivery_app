@@ -71,10 +71,13 @@ async function fetchCatalogue(version: number): Promise<Catalogue> {
   ])
   if (cats.error) throw cats.error
   if (prods.error) throw prods.error
+  const categories = cats.data as Category[]
+  const shown = new Set(categories.map((c) => c.id))
   return {
     version,
-    categories: cats.data as Category[],
-    products: prods.data as Product[],
+    categories,
+    // A hidden category takes its products with it (RLS only filters by product).
+    products: (prods.data as Product[]).filter((p) => shown.has(p.category_id)),
     fetchedAt: Date.now(),
   }
 }

@@ -18,7 +18,7 @@ An end-to-end flow audit with the decisions taken on it lives in [docs/APP_FLOW_
 |---|---|---|
 | Delivery promise | 10 minutes | **15 minutes** (per-area `zones.sla_minutes`) |
 | Catalogue | 2,000+ SKUs | **300–500 fast movers** |
-| Pricing | Discounted below MRP | **At MRP** — the retail margin is the business |
+| Pricing | Discounted below MRP | **MRP by default, deals when the store chooses** — the retail margin is the business |
 | Break-even | 1,000+ orders/day | **30–50 orders/day** |
 
 In a town where the alternative is walking to the shop, a 15-minute promise from a single store a few minutes away is achievable without the cost structure of the metro players, and it is profitable at a volume this market can actually produce.
@@ -270,7 +270,7 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 
 ### The three surfaces
 
-**Customer** (`/`) — tap the logo for the brand sheet; home and category grids (`/category/:id`), a product sheet over any page (`?product=<id>`), search with recent searches (`/search`), a cart that shows the same zone fee as checkout, phone-OTP sign-in (`/login?returnTo=`), an account tab with name edit and sign-out, an address book with labels, a default, soft delete and a Leaflet/OpenStreetMap pin (`/account/addresses`), checkout from the address book, live tracking with ETA, timeline, rider card, cancel-within-window and WhatsApp/call to the store (`/order/:id`), order history with paging and a reorder that rebuilds the cart, and Help (`/help`).
+**Customer** (`/`) — a delivery-area prompt on first landing (GPS to the nearest area, or pick one); tap the logo for the brand sheet; home and category grids (`/category/:id`), a product sheet over any page (`?product=<id>`), search with recent searches (`/search`), a cart that shows the same zone fee as checkout, phone-OTP sign-in (`/login?returnTo=`), an account tab with name edit and sign-out, an address book with labels, a default, soft delete and a Leaflet/OpenStreetMap pin (`/account/addresses`), checkout from the address book, live tracking with ETA, timeline, rider card, cancel-within-window and WhatsApp/call to the store (`/order/:id`), order history with paging and a reorder that rebuilds the cart, and Help (`/help`).
 
 **Admin** (`/admin`)
 
@@ -280,6 +280,7 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 | **Order detail** | Full items and customer, short-pick entry, rider assignment at any live status (the rider then sees the order and taps "Picked up"), every legal transition. |
 | **New order** | Manual entry — the screen the WhatsApp pilot runs on. Goes through the same `place_order()` path as a customer checkout, so stock and pricing behave identically. |
 | **Catalogue** | Add and edit products (with a description for the product sheet), including photos taken on a phone. Images are downscaled to 480px and re-encoded before upload. |
+| **Categories** | The shelves, in the order a customer walks them: reorder, rename (English and Kannada), hide. A category with nothing on sale is hidden from the shop automatically; hiding one hides its products too. |
 | **Stock** | Set on-hand per SKU via `admin_adjust_stock()`, which records a `stock_movements` row every time. Reserved units belong to live orders and cannot be adjusted away. |
 | **Riders** | Add riders, activate/deactivate, and settle each day's cash against what the system expects. |
 

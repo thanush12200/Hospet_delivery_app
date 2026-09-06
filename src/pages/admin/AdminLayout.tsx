@@ -3,6 +3,7 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
@@ -19,6 +20,7 @@ const TABS = [
   { to: '/admin/history', label: 'History', icon: HistoryOutlinedIcon },
   { to: '/admin/new', label: 'New order', icon: AddCircleOutlineIcon },
   { to: '/admin/catalogue', label: 'Catalogue', icon: StorefrontOutlinedIcon },
+  { to: '/admin/categories', label: 'Categories', icon: CategoryOutlinedIcon },
   { to: '/admin/inventory', label: 'Inventory', icon: Inventory2OutlinedIcon },
   { to: '/admin/import', label: 'Import catalogue', icon: FileUploadOutlinedIcon },
   { to: '/admin/riders', label: 'Delivery partners', icon: LocalShippingOutlinedIcon },
