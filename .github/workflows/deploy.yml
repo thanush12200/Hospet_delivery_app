@@ -38,6 +38,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
 
+      - name: Unit tests
+        run: npm test
+
       - run: npm run build
         env:
           # The anon/publishable key is public by design -- it ships inside the

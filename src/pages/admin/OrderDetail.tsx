@@ -5,8 +5,9 @@ import {
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  getAdminOrder, listRiders, transitionOrder, type AdminOrder, type Rider,
+  assignRider, getAdminOrder, listRiders, transitionOrder, type AdminOrder, type Rider,
 } from '@/api/admin'
+import { describeTransitionError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { OrderStatus } from '@/types/db'
 
@@ -52,13 +53,25 @@ export default function OrderDetail() {
             fulfilled_qty: picked[i.product_id] ?? i.qty,
           }))
         : null
+      // The rider lives on the order (assign below); the server also accepts
+      // one here, which is what the pre-assignment "Send out" path relied on.
       const r = await transitionOrder({
         orderId: order.id,
         to,
         fulfilment,
         riderId: to === 'OUT_FOR_DELIVERY' ? (riderId || null) : null,
       })
-      if (!r.ok) setError(r.error ?? 'Transition refused')
+      if (!r.ok) setError(describeTransitionError(r.error))
+      await load()
+    } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
+  }
+
+  async function assign() {
+    if (!order || !riderId) return
+    setBusy(true); setError(null)
+    try {
+      const r = await assignRider(order.id, riderId)
+      if (!r.ok) setError(describeTransitionError(r.error))
       await load()
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
@@ -69,6 +82,8 @@ export default function OrderDetail() {
 
   const actions = NEXT[order.status] ?? []
   const isShort = order.order_items.some((i) => (picked[i.product_id] ?? i.qty) < i.qty)
+  const live = actions.length > 0
+  const riderChanged = riderId !== (order.rider_id ?? '')
 
   return (
     <Box sx={{ maxWidth: 780 }}>
@@ -157,14 +172,26 @@ export default function OrderDetail() {
           <Typography variant="body1" fontWeight={700}>{paiseToRupees(order.total_paise)}</Typography>
         </Stack>
 
-        {order.status === 'PACKED' && (
-          <TextField
-            select fullWidth size="small" label="Assign rider" sx={{ mt: 2 }}
-            value={riderId} onChange={(e) => setRiderId(e.target.value)}
-          >
-            {riders.length === 0 && <MenuItem value="" disabled>No active riders</MenuItem>}
-            {riders.map((r) => <MenuItem key={r.id} value={r.id}>{r.name} · {r.phone}</MenuItem>)}
-          </TextField>
+        {live && (
+          <Stack direction="row" spacing={1} sx={{ mt: 2 }} alignItems="center">
+            <TextField
+              select fullWidth size="small" label="Rider" sx={{ flex: 1 }}
+              value={riderId} onChange={(e) => setRiderId(e.target.value)}
+              helperText={order.riders
+                ? `Assigned to ${order.riders.name}. They see this order in their app now.`
+                : 'Assign early: the rider sees the order while it is being packed.'}
+            >
+              {riders.length === 0 && <MenuItem value="" disabled>No active riders</MenuItem>}
+              {riders.map((r) => <MenuItem key={r.id} value={r.id}>{r.name} · {r.phone}</MenuItem>)}
+            </TextField>
+            <Button
+              variant="outlined" sx={{ mb: 2.75 }}
+              disabled={busy || !riderId || !riderChanged}
+              onClick={() => void assign()}
+            >
+              {order.rider_id ? 'Reassign' : 'Assign'}
+            </Button>
+          </Stack>
         )}
 
         {error && <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>{error}</Alert>}
@@ -176,6 +203,7 @@ export default function OrderDetail() {
               variant={a.to === 'CANCELLED' || a.to === 'FAILED' ? 'outlined' : 'contained'}
               color={a.to === 'CANCELLED' || a.to === 'FAILED' ? 'inherit' : 'primary'}
               disabled={busy || (a.to === 'OUT_FOR_DELIVERY' && !riderId)}
+              title={a.to === 'OUT_FOR_DELIVERY' && !riderId ? 'Assign a rider first' : undefined}
               onClick={() => void act(a.to)}
             >
               {a.label}
