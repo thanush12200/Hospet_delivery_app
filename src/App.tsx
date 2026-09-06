@@ -21,6 +21,7 @@ const NewOrder     = lazy(() => import('@/pages/admin/NewOrder'))
 const Inventory    = lazy(() => import('@/pages/admin/Inventory'))
 const Catalogue    = lazy(() => import('@/pages/admin/Catalogue'))
 const Riders       = lazy(() => import('@/pages/admin/Riders'))
+const ImportCsv    = lazy(() => import('@/pages/admin/ImportCsv'))
 
 const MyDeliveries = lazy(() => import('@/pages/rider/MyDeliveries'))
 
@@ -45,6 +46,7 @@ export default function App() {
                   <Route path="orders/:id" element={<OrderDetail />} />
                   <Route path="new" element={<NewOrder />} />
                   <Route path="catalogue" element={<Catalogue />} />
+                  <Route path="import" element={<ImportCsv />} />
                   <Route path="inventory" element={<Inventory />} />
                   <Route path="riders" element={<Riders />} />
                 </Route>
