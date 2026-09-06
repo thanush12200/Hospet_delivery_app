@@ -27,7 +27,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'brand/*', 'storefront/groceries-cutout.webp'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'brand/*'],
       manifest: {
         name: 'FAA — Fast at any Accuracy',
         short_name: 'FAA',

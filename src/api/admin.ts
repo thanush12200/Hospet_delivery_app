@@ -223,3 +223,43 @@ export async function settleRiderCash(riderId: string, depositedPaise: number, n
     expected_paise?: number; deposited_paise?: number; difference_paise?: number
   }
 }
+
+// ---------------------------------------------------------------- order alerts (0022)
+
+export interface NotifyTarget {
+  id: string
+  kind: 'ntfy' | 'telegram'
+  label: string | null
+  target: string
+  secret: string | null
+  is_active: boolean
+  last_sent_at: string | null
+}
+
+export async function listNotifyTargets(): Promise<NotifyTarget[]> {
+  const { data, error } = await supabase.from('notify_targets').select('*').order('created_at')
+  if (error) throw error
+  return data as NotifyTarget[]
+}
+
+export async function addNotifyTarget(t: { kind: 'ntfy' | 'telegram'; label: string | null; target: string; secret: string | null }): Promise<void> {
+  const { error } = await supabase.from('notify_targets').insert(t)
+  if (error) throw error
+}
+
+export async function setNotifyTargetActive(id: string, is_active: boolean): Promise<void> {
+  const { error } = await supabase.from('notify_targets').update({ is_active }).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteNotifyTarget(id: string): Promise<void> {
+  const { error } = await supabase.from('notify_targets').delete().eq('id', id)
+  if (error) throw error
+}
+
+/** Sends "FAA test alert" to every active target; reports how many were queued. */
+export async function sendTestAlert(): Promise<{ sent: number; targets: number; pg_net: boolean }> {
+  const { data, error } = await supabase.rpc('admin_notify_test')
+  if (error) throw error
+  return data as { sent: number; targets: number; pg_net: boolean }
+}

@@ -283,6 +283,8 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 | **Categories** | The shelves, in the order a customer walks them: reorder, rename (English and Kannada), hide. A category with nothing on sale is hidden from the shop automatically; hiding one hides its products too. |
 | **Stock** | Set on-hand per SKU via `admin_adjust_stock()`, which records a `stock_movements` row every time. Reserved units belong to live orders and cannot be adjusted away. |
 | **Riders** | Add riders, activate/deactivate, and settle each day's cash against what the system expects. |
+| **Big-screen display** (`/admin/display`) | Every live order in large type for a TV or tablet by the packing table. A new order chimes, flashes the tab title, raises a browser notification and pulses until tapped; one-tap Accept. The Orders board carries the same alarm. |
+| **Order alerts** (Store settings) | The database pushes every new order to the owner's phone via the ntfy app or a Telegram bot the moment it is placed (`pg_net`, migration 0022), with no server to run and no tab to keep open. |
 
 **Rider** (`/rider`) — orders assigned to them, live (a new assignment appears without a reload), with the customer's name, phone, landmark and map link; "Picked up" at the store, then Delivered (with a cash confirmation on COD) or Couldn't deliver. Built for one thumb in sunlight.
 
