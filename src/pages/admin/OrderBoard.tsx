@@ -7,6 +7,7 @@ import AddIcon from '@mui/icons-material/Add'
 import SearchIcon from '@mui/icons-material/Search'
 import { useNavigate } from 'react-router-dom'
 import { listActiveOrders, subscribeToOrders, transitionOrder, type AdminOrder } from '@/api/admin'
+import { useNewOrderAlerts } from '@/hooks/useNewOrderAlerts'
 import { describeTransitionError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { OrderStatus } from '@/types/db'
@@ -45,6 +46,8 @@ export default function OrderBoard() {
       setLoading(false)
     }
   }, [])
+
+  const alerts = useNewOrderAlerts(() => { void refresh() })
 
   useEffect(() => {
     void refresh()
@@ -88,7 +91,12 @@ export default function OrderBoard() {
         <div><span>On the road</span><strong>{orders.filter((o) => o.status === 'OUT_FOR_DELIVERY').length}</strong></div>
         <div><span>Active order value</span><strong>{paiseToRupees(orders.reduce((sum, o) => sum + o.total_paise, 0))}</strong></div></div>
       <div className="board-toolbar"><label><SearchIcon /><input aria-label="Find an order" placeholder="Search order, customer or phone" value={query} onChange={(e) => setQuery(e.target.value)} /></label>
+        {!alerts.armed && <Button size="small" variant="contained" onClick={() => void alerts.arm()}>Enable sound & alerts</Button>}
+        <Button size="small" variant="outlined" color="inherit" onClick={() => navigate('/admin/display')}>Big screen</Button>
         <IconButton title="Refresh orders" aria-label="Refresh orders" onClick={() => void refresh()}><RefreshIcon fontSize="small" /></IconButton></div>
+      {alerts.unseen.length > 0 && <Alert severity="error" icon={false} sx={{ mb: 2, fontWeight: 800, cursor: 'pointer' }} onClick={() => alerts.acknowledge()}>
+        🛒 {alerts.unseen.length === 1 ? `New order ${alerts.unseen[0]?.order_no ?? ''}` : `${alerts.unseen.length} new orders`} just came in. Tap to dismiss.
+      </Alert>}
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 

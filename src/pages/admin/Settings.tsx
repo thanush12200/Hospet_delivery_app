@@ -4,6 +4,7 @@ import {
 } from '@mui/material'
 import { getStoreConfigForAdmin, updateStoreConfig } from '@/api/admin'
 import { toE164 } from '@/lib/phone'
+import { OrderAlerts } from './OrderAlerts'
 
 /**
  * The single store_config row: contact channels shown to customers, the
@@ -107,9 +108,11 @@ export default function Settings() {
         </Stack>
       </Paper>
 
-      <Button variant="contained" disabled={!loaded || busy} onClick={() => void save()}>
+      <Button variant="contained" disabled={!loaded || busy} onClick={() => void save()} sx={{ mb: 3 }}>
         {busy ? 'Saving…' : 'Save settings'}
       </Button>
+
+      <OrderAlerts />
     </Box>
   )
 }

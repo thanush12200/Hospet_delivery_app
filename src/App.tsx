@@ -32,6 +32,7 @@ const NewOrder     = lazy(() => import('@/pages/admin/NewOrder'))
 const Inventory    = lazy(() => import('@/pages/admin/Inventory'))
 const Catalogue    = lazy(() => import('@/pages/admin/Catalogue'))
 const Categories   = lazy(() => import('@/pages/admin/Categories'))
+const Display      = lazy(() => import('@/pages/admin/Display'))
 const Riders       = lazy(() => import('@/pages/admin/Riders'))
 const ImportCsv    = lazy(() => import('@/pages/admin/ImportCsv'))
 const Zones        = lazy(() => import('@/pages/admin/Zones'))
@@ -89,6 +90,7 @@ export default function App() {
                     </Route>
                     </Route>
 
+                    <Route path="/admin/display" element={<Display />} />
                     <Route path="/admin" element={<AdminLayout />}>
                       <Route index element={<OrderBoard />} />
                       <Route path="orders/:id" element={<OrderDetail />} />

@@ -1007,5 +1007,41 @@ end $$;
 
 drop function as_google(text, text, text);
 
+-- ============================================================ TEST 20
+-- Order alerts (0022): the message reads well, the trigger runs at commit
+-- without pg_net, and targets are admin-only.
+do $$
+declare r jsonb; v_order uuid; v_text text;
+begin
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  perform admin_adjust_stock('22222222-0000-0000-0000-000000000001', 10, 'RESTOCK');
+  insert into notify_targets (kind, label, target) values ('ntfy', 'Owner phone', 'faa-orders-test');
+  perform as_service();
+
+  r := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":2}]'::jsonb, 'COD', 72000,
+                   'Ring the bell twice');
+  perform assert_eq('T20 order placed with the alert trigger armed', r->>'ok', 'true');
+  v_order := (r->>'order_id')::uuid;
+  v_text := order_alert_text(v_order);
+  perform assert_eq('T20 alert names the order', position((select order_no from orders where id = v_order) in v_text) > 0, true);
+  perform assert_eq('T20 alert lists the item', position('2× Sona Masoori Rice' in v_text) > 0, true);
+  perform assert_eq('T20 alert carries the note', position('Note: Ring the bell twice' in v_text) > 0, true);
+  perform assert_eq('T20 alert shows rupees', position('₹720' in v_text) > 0, true);
+  perform assert_eq('T20 rupees with paise', rupees(20550), '₹205.50');
+  perform transition_order(v_order, 'CANCELLED', 'ADMIN');
+
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  r := admin_notify_test();
+  perform assert_eq('T20 test send reports the target count', (r->>'targets')::int, 1);
+  perform assert_eq('T20 nothing sent without pg_net', (r->>'sent')::int, case when (r->>'pg_net')::boolean then 1 else 0 end);
+  perform as_service();
+
+  perform as_user('77777777-0000-0000-0000-000000000001', '+919900000001');
+  perform assert_eq('T20 customers cannot see alert targets', (select count(*) from notify_targets), 0::bigint);
+  perform as_service();
+  delete from notify_targets where target = 'faa-orders-test';
+end $$;
+
 drop function as_user(text, text);
 drop function as_service();

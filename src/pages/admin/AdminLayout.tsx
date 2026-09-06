@@ -3,6 +3,7 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
+import TvOutlinedIcon from '@mui/icons-material/TvOutlined'
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
@@ -41,7 +42,8 @@ export default function AdminLayout() {
   return <div className="admin-shell">
     <aside className="admin-sidebar"><div className="admin-brand"><BrandLockup height={23} /><span>STORE OPERATIONS</span></div>
       <nav aria-label="Store operations">{TABS.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end={to === '/admin'}><Icon /><span>{label}</span></NavLink>)}</nav>
-      <div className="admin-sidebar-bottom"><Button component={Link} to="/" startIcon={<StorefrontOutlinedIcon />} color="inherit">Open storefront</Button>
+      <div className="admin-sidebar-bottom"><Button component={Link} to="/admin/display" startIcon={<TvOutlinedIcon />} color="inherit">Big-screen display</Button>
+        <Button component={Link} to="/" startIcon={<StorefrontOutlinedIcon />} color="inherit">Open storefront</Button>
         <Button startIcon={<LogoutIcon />} color="inherit" onClick={() => void signOut()}>Sign out</Button></div>
     </aside>
     <div className="admin-workspace"><header className="admin-topbar"><span>Hospet store <span>/</span> <strong>{current}</strong></span><span className="staff-role">{adminRole === 'OWNER' ? 'Store owner' : 'Staff'}</span></header>
