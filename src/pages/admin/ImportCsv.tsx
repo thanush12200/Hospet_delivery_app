@@ -52,10 +52,14 @@ export default function ImportCsv() {
     const { rows } = parseCsv(text)
     return rows.map((r, i) => {
       const name = r.name ?? ''
-      const mrp = rupeesToPaise(r.mrp ?? '')
+      const rawMrp = (r.mrp ?? '').trim()
+      const mrp = rupeesToPaise(rawMrp)
       let err: string | null = null
       if (!name.trim()) err = 'Name is required'
-      else if (mrp === null) err = 'MRP must be a number greater than zero'
+      // A blank price is the expected state of the starter file, not a
+      // mistake. Say so, rather than flagging 84 rows as broken.
+      else if (rawMrp === '') err = 'Add a price'
+      else if (mrp === null) err = `"${rawMrp}" is not a valid price`
       return {
         row: i + 1,
         name,
@@ -72,6 +76,7 @@ export default function ImportCsv() {
 
   const valid = parsed.filter((p) => !p.error)
   const invalid = parsed.filter((p) => p.error)
+  const allMissingPrices = parsed.length > 0 && parsed.every((p) => p.error === 'Add a price')
 
   function onFile(f: File | undefined) {
     if (!f) return
@@ -136,6 +141,13 @@ export default function ImportCsv() {
           <Button startIcon={<DownloadIcon />} size="small" onClick={downloadTemplate}>
             Download template
           </Button>
+          <Button
+            startIcon={<DownloadIcon />} size="small"
+            href="https://raw.githubusercontent.com/thanush12200/Hospet_delivery_app/main/catalogue/wink-starter-catalogue.csv"
+            target="_blank" rel="noreferrer"
+          >
+            Download 84-product starter list
+          </Button>
         </Stack>
 
         <TextField
@@ -161,12 +173,25 @@ export default function ImportCsv() {
         </Alert>
       )}
 
+      {allMissingPrices && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          This looks like the starter file — every row still needs a price. Fill the{' '}
+          <code>mrp</code> column in your spreadsheet, then paste it back. Nothing is wrong.
+        </Alert>
+      )}
+
       {parsed.length > 0 && (
         <Paper sx={{ border: '1px solid', borderColor: 'divider' }}>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ p: 1.5 }}>
             <Typography variant="subtitle2">Preview</Typography>
             <Chip size="small" color="success" label={`${valid.length} ready`} />
-            {invalid.length > 0 && <Chip size="small" color="error" label={`${invalid.length} with problems`} />}
+            {invalid.length > 0 && (
+              <Chip
+                size="small"
+                color={allMissingPrices ? 'default' : 'error'}
+                label={allMissingPrices ? `${invalid.length} need prices` : `${invalid.length} with problems`}
+              />
+            )}
             <Box sx={{ flex: 1 }} />
             <Button variant="contained" size="small" disabled={busy || valid.length === 0}
               onClick={() => void run()}>
@@ -189,12 +214,21 @@ export default function ImportCsv() {
               </TableHead>
               <TableBody>
                 {parsed.map((p) => (
-                  <TableRow key={p.row} sx={p.error ? { bgcolor: '#FDEDEA' } : undefined}>
+                  <TableRow key={p.row} sx={
+                    p.error === 'Add a price' ? { bgcolor: '#FFF8E1' }
+                    : p.error ? { bgcolor: '#FDEDEA' } : undefined
+                  }>
                     <TableCell>{p.row}</TableCell>
                     <TableCell>
                       {p.name || <em>(blank)</em>}
                       {p.error && (
-                        <Typography variant="caption" color="error" display="block">{p.error}</Typography>
+                        <Typography
+                          variant="caption"
+                          color={p.error === 'Add a price' ? 'text.secondary' : 'error'}
+                          display="block"
+                        >
+                          {p.error}
+                        </Typography>
                       )}
                     </TableCell>
                     <TableCell>{p.name_kn}</TableCell>
