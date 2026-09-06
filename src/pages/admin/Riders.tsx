@@ -93,8 +93,10 @@ export default function Riders() {
             onClick={() => void addRider()}>Add</Button>
         </Stack>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          To let a rider sign in, create an auth user for them and set
-          <code> riders.auth_uid</code> to that user&apos;s id.
+          Riders sign in at <code>/rider</code> with an email and password. Create that user in
+          Supabase (Authentication → Users → Add user, auto-confirm), then set <code>riders.auth_uid</code>
+          to the user&apos;s id. Assign orders to them from an order&apos;s detail page; they see the
+          order while it is being packed and tap &quot;Picked up&quot; themselves.
         </Typography>
       </Paper>
 
