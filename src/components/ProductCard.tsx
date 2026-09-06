@@ -5,7 +5,7 @@ import { categoryIcon } from '@/constants/categoryIcons'
 import type { Product } from '@/types/db'
 
 export function ProductCard({
-  product, qty, available, categoryName, onAdd, onRemove,
+  product, qty, available, categoryName, onAdd, onRemove, onOpen,
 }: {
   product: Product
   qty: number
@@ -13,6 +13,8 @@ export function ProductCard({
   categoryName?: string
   onAdd: () => void
   onRemove: () => void
+  /** Tap on the image or name opens the product sheet. */
+  onOpen?: () => void
 }) {
   // Unknown availability is treated as in-stock. The server is the real gate
   // and will reject with OUT_OF_STOCK if we guess wrong.
@@ -37,10 +39,15 @@ export function ProductCard({
       )}
 
       <Box
+        role={onOpen ? 'button' : undefined}
+        tabIndex={onOpen ? 0 : undefined}
+        aria-label={onOpen ? `View ${product.name}` : undefined}
+        onClick={onOpen}
+        onKeyDown={(e) => { if (onOpen && e.key === 'Enter') onOpen() }}
         sx={{
           aspectRatio: '1', bgcolor: '#F7F8FA', borderRadius: 2, mb: 1,
           display: 'grid', placeItems: 'center', overflow: 'hidden',
-          opacity: outOfStock ? 0.4 : 1,
+          opacity: outOfStock ? 0.4 : 1, cursor: onOpen ? 'pointer' : undefined,
         }}
       >
         {product.image_url ? (
@@ -58,10 +65,11 @@ export function ProductCard({
 
       <Typography
         variant="body2"
+        onClick={onOpen}
         sx={{
           fontWeight: 600, fontSize: 12.5, lineHeight: 1.25,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-          overflow: 'hidden', minHeight: 32,
+          overflow: 'hidden', minHeight: 32, cursor: onOpen ? 'pointer' : undefined,
         }}
       >
         {product.name}
@@ -79,7 +87,7 @@ export function ProductCard({
         <Typography sx={{ fontWeight: 800, fontSize: 13.5 }}>
           {paiseToRupees(product.mrp_paise)}
         </Typography>
-        <QtyStepper qty={qty} onAdd={onAdd} onRemove={onRemove} disabled={outOfStock} />
+        <QtyStepper qty={qty} onAdd={onAdd} onRemove={onRemove} disabled={outOfStock} max={available} />
       </Box>
     </Card>
   )

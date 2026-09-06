@@ -1,10 +1,12 @@
 import { Box, Button, Slide, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
+import { usePricing } from '@/hooks/usePricing'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
 
 export function StickyCartBar() {
-  const { count, subtotalPaise } = useCart()
+  const { count } = useCart()
+  const pricing = usePricing()
   const navigate = useNavigate()
 
   return (
@@ -23,8 +25,10 @@ export function StickyCartBar() {
         <Box>
           <Typography variant="caption" sx={{ opacity: 0.85 }}>
             {count} {count === 1 ? 'item' : 'items'}
+            {pricing.toFreeDeliveryPaise != null && ` · ${paiseToRupees(pricing.toFreeDeliveryPaise)} to free delivery`}
+            {pricing.knownZone && pricing.feePaise === 0 && pricing.freeAbovePaise != null && ' · free delivery'}
           </Typography>
-          <Typography variant="body1" fontWeight={700}>{paiseToRupees(subtotalPaise)}</Typography>
+          <Typography variant="body1" fontWeight={700}>{paiseToRupees(pricing.subtotalPaise)}</Typography>
         </Box>
         <Button
           variant="contained"

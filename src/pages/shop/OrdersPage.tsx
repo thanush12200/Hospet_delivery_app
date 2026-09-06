@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Box, Button, Chip, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { BottomNav } from '@/components/BottomNav'
 import { listMyOrders, type OrderWithItems } from '@/api/customer'
 import { useAuth } from '@/auth/authContext'
-import { useCart } from '@/store/cartContext'
+import { useToast } from '@/components/toastContext'
+import { useCatalogue } from '@/hooks/useCatalogue'
 import { paiseToRupees } from '@/lib/money'
+import { buildReorderLines } from '@/lib/reorder'
+import { useCart } from '@/store/cartContext'
 import type { OrderStatus } from '@/types/db'
 
 const TONE: Record<OrderStatus, 'default' | 'primary' | 'success' | 'error'> = {
@@ -17,13 +19,31 @@ const TONE: Record<OrderStatus, 'default' | 'primary' | 'success' | 'error'> = {
 export default function OrdersPage() {
   const { session, loading: authLoading } = useAuth()
   const [orders, setOrders] = useState<OrderWithItems[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
   const cart = useCart()
+  const toast = useToast()
+  const { catalogue } = useCatalogue()
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!session) { setOrders([]); return }
-    void listMyOrders().then(setOrders).catch(() => setOrders([]))
+    try { setOrders(await listMyOrders()); setError(null) }
+    catch (e) { setError((e as Error).message); setOrders([]) }
   }, [session])
+
+  useEffect(() => { void load() }, [load])
+
+  function reorder(o: OrderWithItems) {
+    if (!catalogue) { toast.show('Catalogue is still loading, try again in a moment.'); return }
+    const plan = buildReorderLines(o.order_items, catalogue.products)
+    if (plan.lines.length === 0) { toast.show('None of those items are available right now.'); return }
+    cart.replace(plan.lines)
+    const notes: string[] = []
+    if (plan.skipped.length) notes.push(`Not available: ${plan.skipped.join(', ')}`)
+    if (plan.repriced.length) notes.push('Some prices have changed')
+    toast.show(notes.length ? `${plan.lines.length} items added. ${notes.join('. ')}.` : `${plan.lines.length} items added to your cart`)
+    navigate('/cart')
+  }
 
   const shell = (children: React.ReactNode) => (
     <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh', bgcolor: '#fff' }}>
@@ -34,7 +54,6 @@ export default function OrdersPage() {
         <Typography sx={{ fontWeight: 800, fontSize: 22 }}>Your orders</Typography>
       </Box>
       {children}
-      <BottomNav />
     </Box>
   )
 
@@ -48,6 +67,17 @@ export default function OrdersPage() {
         <Typography sx={{ fontSize: 40, mb: 1 }}>🧾</Typography>
         <Typography variant="h6" gutterBottom>Sign in to see your orders</Typography>
         <Button variant="contained" onClick={() => navigate('/login?returnTo=/orders')}>Sign in</Button>
+      </Box>,
+    )
+  }
+
+  if (error) {
+    return shell(
+      <Box sx={{ py: 8, px: 3, textAlign: 'center' }}>
+        <Typography sx={{ fontSize: 40, mb: 1 }}>📡</Typography>
+        <Typography variant="h6" gutterBottom>Couldn&apos;t load your orders</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{error}</Typography>
+        <Button variant="contained" onClick={() => { setOrders(null); void load() }}>Try again</Button>
       </Box>,
     )
   }
@@ -80,14 +110,12 @@ export default function OrdersPage() {
             </Typography>
             <Typography variant="body2" fontWeight={700}>{paiseToRupees(o.total_paise)}</Typography>
           </Stack>
-          {o.status === 'DELIVERED' && (
-            <Button size="small" sx={{ mt: 0.5 }} onClick={(e) => {
-              e.stopPropagation()
-              // Reorder is the single biggest driver of repeat purchases in
-              // grocery, so it gets a one-tap path rather than a buried menu.
-              navigate('/')
-              cart.clear()
-            }}>Order again</Button>
+          {(o.status === 'DELIVERED' || o.status === 'CANCELLED') && (
+            // Reorder is the single biggest driver of repeat purchases in
+            // grocery, so it gets a one-tap path rather than a buried menu.
+            <Button size="small" sx={{ mt: 0.5, ml: -0.75 }} onClick={(e) => { e.stopPropagation(); reorder(o) }}>
+              Order again
+            </Button>
           )}
         </Paper>
       ))}

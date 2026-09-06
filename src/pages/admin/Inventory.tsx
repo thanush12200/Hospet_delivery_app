@@ -4,7 +4,7 @@ import {
 } from '@mui/material'
 import { adjustStock } from '@/api/admin'
 import { getAvailability } from '@/api/inventory'
-import { useCatalogue } from '@/hooks/useCatalogue'
+import { useCatalogueLoader } from '@/hooks/useCatalogue'
 import { paiseToRupees } from '@/lib/money'
 
 /**
@@ -13,7 +13,7 @@ import { paiseToRupees } from '@/lib/money'
  * Reserved units belong to live orders and cannot be adjusted away.
  */
 export default function Inventory() {
-  const { catalogue } = useCatalogue()
+  const { catalogue } = useCatalogueLoader()
   const [avail, setAvail] = useState<Map<string, number>>(new Map())
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [msg, setMsg] = useState<string | null>(null)

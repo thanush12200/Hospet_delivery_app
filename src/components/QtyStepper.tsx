@@ -8,14 +8,17 @@ import RemoveIcon from '@mui/icons-material/Remove'
  * always feels instant regardless of connection.
  */
 export function QtyStepper({
-  qty, onAdd, onRemove, disabled, fullWidth,
+  qty, onAdd, onRemove, disabled, fullWidth, max,
 }: {
   qty: number
   onAdd: () => void
   onRemove: () => void
   disabled?: boolean
   fullWidth?: boolean
+  /** Units available right now; "+" stops here instead of failing at checkout. */
+  max?: number
 }) {
+  const capped = max !== undefined && qty >= max
   if (qty === 0) {
     return (
       <Button
@@ -45,7 +48,8 @@ export function QtyStepper({
         <RemoveIcon fontSize="small" />
       </IconButton>
       <Typography variant="body2" fontWeight={700}>{qty}</Typography>
-      <IconButton size="small" onClick={onAdd} disabled={disabled} sx={{ color: '#fff', p: 0.5 }} aria-label="Add one">
+      <IconButton size="small" onClick={onAdd} disabled={disabled || capped} sx={{ color: '#fff', p: 0.5, '&.Mui-disabled': { color: 'rgba(255,255,255,0.45)' } }}
+        aria-label={capped ? 'No more in stock' : 'Add one'}>
         <AddIcon fontSize="small" />
       </IconButton>
     </Box>

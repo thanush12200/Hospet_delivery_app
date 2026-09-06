@@ -9,7 +9,7 @@ import {
   addAddress, findOrCreateCustomer, listAddresses, listZones,
   placeOrderForCustomer,
 } from '@/api/admin'
-import { useCatalogue } from '@/hooks/useCatalogue'
+import { useCatalogueLoader } from '@/hooks/useCatalogue'
 import { describePlaceOrderError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { Address, PaymentMethod, Product, Zone } from '@/types/db'
@@ -21,7 +21,7 @@ import type { Address, PaymentMethod, Product, Zone } from '@/types/db'
  * and pricing behave identically.
  */
 export default function NewOrder() {
-  const { catalogue, availability } = useCatalogue()
+  const { catalogue, availability } = useCatalogueLoader()
   const navigate = useNavigate()
 
   const [phone, setPhone] = useState('')

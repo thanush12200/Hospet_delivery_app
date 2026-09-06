@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { CssBaseline, LinearProgress, ThemeProvider } from '@mui/material'
 import { theme } from '@/theme'
 import { CartProvider } from '@/store/cart'
@@ -10,7 +10,9 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 // Route-level splitting: a customer must never download the admin or rider
 // bundle. This is what keeps the shop inside its budget.
+const ShopLayout      = lazy(() => import('@/pages/shop/ShopLayout'))
 const ShopHome        = lazy(() => import('@/pages/shop/ShopHome'))
+const SearchPage      = lazy(() => import('@/pages/shop/SearchPage'))
 const CartPage        = lazy(() => import('@/pages/shop/CartPage'))
 const CategoriesPage  = lazy(() => import('@/pages/shop/CategoriesPage'))
 const OrdersPage      = lazy(() => import('@/pages/shop/OrdersPage'))
@@ -34,6 +36,12 @@ const Zones        = lazy(() => import('@/pages/admin/Zones'))
 
 const MyDeliveries = lazy(() => import('@/pages/rider/MyDeliveries'))
 
+/** Shareable product links open the sheet over the home page. */
+function ProductRedirect() {
+  const { id = '' } = useParams()
+  return <Navigate to={`/?product=${encodeURIComponent(id)}`} replace />
+}
+
 export default function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -45,17 +53,26 @@ export default function App() {
               <BrowserRouter>
                 <Suspense fallback={<LinearProgress />}>
                   <Routes>
-                    <Route path="/" element={<ShopHome />} />
-                    <Route path="/cart" element={<CartPage />} />
-                    <Route path="/categories" element={<CategoriesPage />} />
-                    <Route path="/orders" element={<OrdersPage />} />
+                    {/* Tabbed shell: shared catalogue, tab bar, cart bar, product sheet. */}
+                    <Route element={<ShopLayout />}>
+                      <Route path="/" element={<ShopHome />} />
+                      <Route path="/category/:categoryId" element={<ShopHome />} />
+                      <Route path="/categories" element={<CategoriesPage />} />
+                      <Route path="/search" element={<SearchPage />} />
+                      <Route path="/cart" element={<CartPage />} />
+                      <Route path="/orders" element={<OrdersPage />} />
+                      <Route path="/help" element={<HelpPage />} />
+                      <Route element={<RequireAuth />}>
+                        <Route path="/account" element={<AccountPage />} />
+                      </Route>
+                    </Route>
+                    <Route path="/product/:id" element={<ProductRedirect />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/help" element={<HelpPage />} />
 
+                    {/* Full-screen flows without the tab bar. */}
                     <Route element={<RequireAuth />}>
                       <Route path="/checkout" element={<Checkout />} />
                       <Route path="/order/:id" element={<OrderTracking />} />
-                      <Route path="/account" element={<AccountPage />} />
                       <Route path="/account/addresses" element={<AddressesPage />} />
                       <Route path="/account/addresses/new" element={<AddressEditPage />} />
                       <Route path="/account/addresses/:id" element={<AddressEditPage />} />

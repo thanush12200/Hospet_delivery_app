@@ -17,7 +17,9 @@ export const theme = createTheme({
   },
   shape: { borderRadius: 12 },
   typography: {
-    fontFamily: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    // System fonts on purpose: a webfont request on patchy 4G delays first
+    // paint for a face the customer will not notice.
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Kannada", sans-serif',
     h6:   { fontWeight: 700, fontSize: '1rem' },
     body2:{ fontSize: '0.8125rem' },
     button: { textTransform: 'none', fontWeight: 700 },
