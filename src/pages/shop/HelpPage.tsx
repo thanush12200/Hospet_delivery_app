@@ -50,7 +50,7 @@ export default function HelpPage() {
         <Divider sx={{ my: 3 }} />
 
         <Typography variant="h6" gutterBottom>Common questions</Typography>
-        <Faq q="How fast is delivery?" a="Around 45 minutes across Hospet. You see a live status the moment we accept, pack and send out your order." />
+        <Faq q="How fast is delivery?" a={`Around ${BRAND.promiseMinutes} minutes across Hospet. You see a live status the moment we accept, pack and send out your order.`} />
         <Faq q="Can I cancel?" a={`Yes, within ${storeConfig?.cancel_window_minutes ?? 5} minutes of placing the order, from the order screen. After that, message us and we will sort it out.`} />
         <Faq q="How do I pay?" a="Cash or UPI to the rider at your door. Online payment is coming." />
         <Faq q="What if something is missing or damaged?" a="Tell the rider, or message us with the order number. We fix it the same day." />
@@ -64,6 +64,9 @@ export default function HelpPage() {
           <Typography variant="body2" color="text.secondary">
             {BRAND.name} stands for {BRAND.expansion}. {BRAND.tagline}: everyday essentials at MRP, delivered in
             minutes across {BRAND.city} from our own store. No national app serves this town, so we built one.
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
+            Product photos are reused under open licences. <a href="/catalogue/credits.html" style={{ color: 'inherit' }}>Photo credits</a>.
           </Typography>
         </Box>
       </Box>

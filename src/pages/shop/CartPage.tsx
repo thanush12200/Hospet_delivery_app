@@ -12,6 +12,7 @@ import { usePricing } from '@/hooks/usePricing'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
+import { BRAND } from '@/theme/brand'
 
 export default function CartPage() {
   const cart = useCart()
@@ -35,7 +36,7 @@ export default function CartPage() {
     {short.length > 0 && <Alert severity="warning" sx={{ mb: 2 }}>Stock has changed for {short.map((l) => l.product.name).join(', ')}. Reduce the quantity to continue.</Alert>}
     <div className="basket-layout">
       <section aria-label="Basket items">
-        <div className="basket-delivery"><LocalShippingOutlinedIcon /><div><strong>At your door in about {customer.activeZone?.sla_minutes ?? 45} minutes</strong>
+        <div className="basket-delivery"><LocalShippingOutlinedIcon /><div><strong>At your door in about {customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} minutes</strong>
           <span>{customer.activeZone ? `Delivering to ${customer.activeZone.name}` : 'Choose your delivery address at checkout'}</span></div></div>
         <div className="basket-items">{cart.lines.map(({ product, qty }) => {
           const available = stock.get(product.id)

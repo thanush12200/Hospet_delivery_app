@@ -8,6 +8,8 @@ export const BRAND = {
   tagline: 'FAA it, get it, love it',
   subline: 'Everyday essentials · delivered in minutes',
   city: 'Hospet',
+  /** The delivery promise shown before a zone is known; zones.sla_minutes overrides per area. */
+  promiseMinutes: 15,
   /** Assets cut from the master logo (public/brand). */
   logo: '/brand/faa-logo.jpg',
   mark: '/brand/faa-mark.png',

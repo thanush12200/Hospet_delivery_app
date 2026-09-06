@@ -13,6 +13,7 @@ import { useCustomer } from '@/store/customerContext'
 import { useCart } from '@/store/cartContext'
 import { addressLabel, addressLine } from '@/lib/address'
 import { paiseToRupees } from '@/lib/money'
+import { BRAND } from '@/theme/brand'
 
 export function ShopHeader() {
   const customer = useCustomer()
@@ -35,7 +36,7 @@ export function ShopHeader() {
         <div className="header-inner">
           <div className="header-brand"><BrandLockup height={25} onClick={() => setBrand(true)} /></div>
           <button className="delivery-location" onClick={() => setChooser(true)} aria-label="Change delivery address">
-            <strong>{customer.storeConfig?.is_open === false ? 'Store is closed' : `Delivery in ${customer.activeZone?.sla_minutes ?? 45} minutes`}</strong>
+            <strong>{customer.storeConfig?.is_open === false ? 'Store is closed' : `Delivery in ${customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} minutes`}</strong>
             <span>{destination}<KeyboardArrowDownIcon /></span>
           </button>
           <Box component="form" className="header-search" onSubmit={(e) => {

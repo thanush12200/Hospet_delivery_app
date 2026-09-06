@@ -4,8 +4,9 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import { paiseToRupees } from '@/lib/money'
+import { BRAND } from '@/theme/brand'
 
-export function PromoBanner({ freeAbovePaise, zoneName, minutes = 45 }: {
+export function PromoBanner({ freeAbovePaise, zoneName, minutes = BRAND.promiseMinutes }: {
   freeAbovePaise: number | null; zoneName?: string; minutes?: number
 }) {
   return (

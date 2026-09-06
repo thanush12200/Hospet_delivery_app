@@ -17,7 +17,7 @@ import { cancelSecondsLeft, etaHeadline, formatClock, isTerminal, promisedAt } f
 import { paiseToRupees } from '@/lib/money'
 import { formatIndianMobile } from '@/lib/phone'
 import { useCustomer } from '@/store/customerContext'
-import { BRAND_GRADIENT, BRAND_TINT, CARD_SHADOW, MUTED_GRADIENT } from '@/theme/brand'
+import { BRAND, BRAND_GRADIENT, BRAND_TINT, CARD_SHADOW, MUTED_GRADIENT } from '@/theme/brand'
 import type { OrderEvent, OrderStatus } from '@/types/db'
 
 const STEPS: { status: OrderStatus; label: string; hint: string }[] = [
@@ -115,7 +115,7 @@ export default function OrderTracking() {
   if (!order) return <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}><CircularProgress /></Box>
 
   const cancelled = order.status === 'CANCELLED' || order.status === 'FAILED'
-  const sla = order.zones?.sla_minutes ?? 45
+  const sla = order.zones?.sla_minutes ?? BRAND.promiseMinutes
   const due = promisedAt(order.placed_at, sla)
   const windowMin = storeConfig?.cancel_window_minutes ?? 5
   const cancelLeft = cancelSecondsLeft(order.placed_at, windowMin, now)
