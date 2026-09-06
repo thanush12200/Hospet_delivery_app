@@ -93,7 +93,7 @@ export function ProductSheet() {
                     {paiseToRupees(product.mrp_paise)}
                   </Typography>
                 )}
-                {onDeal(product) && <Chip size="small" color="success" label={`${discountPct(product)}% off`} sx={{ ml: 1, height: 20 }} />}
+                {onDeal(product) && <Chip size="small" color="primary" label={`${discountPct(product)}% off`} sx={{ ml: 1, height: 20 }} />}
               </Typography>
               <Typography variant="caption" color="text.secondary">MRP, inclusive of all taxes</Typography>
             </Box>

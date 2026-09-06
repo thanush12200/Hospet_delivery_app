@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { Alert, Button, IconButton } from '@mui/material'
+import { Alert, Button } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined'
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler'
+import AddIcon from '@mui/icons-material/Add'
+import SavingsOutlinedIcon from '@mui/icons-material/SavingsOutlined'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useToast } from '@/components/toastContext'
 import { useCatalogue } from '@/hooks/useCatalogue'
@@ -11,9 +12,10 @@ import { isFresh, reconcileCart } from '@/lib/reconcile'
 import { QtyStepper } from '@/components/QtyStepper'
 import { FreeDeliveryBar } from '@/components/shop/FreeDeliveryBar'
 import { ProductImage } from '@/components/shop/ProductImage'
+import { SubPageBar } from '@/components/shop/SubPageBar'
 import { usePricing } from '@/hooks/usePricing'
 import { paiseToRupees } from '@/lib/money'
-import { unitPrice } from '@/lib/price'
+import { onDeal, unitPrice } from '@/lib/price'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
 import { BRAND } from '@/theme/brand'
@@ -51,43 +53,93 @@ export default function CartPage() {
     const available = stock.get(l.product.id)
     return available !== undefined && available < l.qty
   })
-  if (cart.lines.length === 0) return <div className="empty-state empty-basket"><ShoppingBagOutlinedIcon />
-    <h1>A little empty. A lot of possibilities.</h1><p>Your everyday essentials are a few taps away.</p>
-    <Button variant="contained" color="success" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/')}>Start shopping</Button></div>
+  const mrpTotal = cart.lines.reduce((sum, l) => sum + l.product.mrp_paise * l.qty, 0)
+  const savings = mrpTotal - pricing.subtotalPaise
+  const feeWaived = pricing.knownZone && pricing.feePaise === 0 && (pricing.zone?.delivery_fee_paise ?? 0) > 0
+  const minutes = customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes
+  const cancelMinutes = customer.storeConfig?.cancel_window_minutes ?? 5
+  const blocked = short.length > 0 ? 'Fix the quantities above to continue'
+    : pricing.belowMin ? `Add ${paiseToRupees(pricing.minOrderPaise - pricing.subtotalPaise)} more to reach the minimum order`
+    : null
 
-  return <div className="basket-page">
-    <div className="section-heading"><div><span className="eyebrow">YOUR DAILY HAUL</span><h1>Your basket <small>{cart.count} {cart.count === 1 ? 'item' : 'items'}</small></h1></div>
-      <Button color="success" onClick={() => navigate('/')}>Keep shopping</Button></div>
-    {short.length > 0 && <Alert severity="warning" sx={{ mb: 2 }}>Stock has changed for {short.map((l) => l.product.name).join(', ')}. Reduce the quantity to continue.</Alert>}
-    <div className="basket-layout">
-      <section aria-label="Basket items">
-        <div className="basket-delivery"><LocalShippingOutlinedIcon /><div><strong>At your door in about {customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} minutes</strong>
-          <span>{customer.activeZone ? `Delivering to ${customer.activeZone.name}` : 'Choose your delivery address at checkout'}</span></div></div>
-        <div className="basket-items">{cart.lines.map(({ product, qty }) => {
+  if (cart.lines.length === 0) return <div className="empty-state empty-basket"><ShoppingBagOutlinedIcon />
+    <h1>Your cart is empty</h1><p>Everyday essentials, at your door in {minutes} minutes.</p>
+    <Button variant="contained" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/')}>Start shopping</Button></div>
+
+  return <div className="cart-page">
+    <SubPageBar title="My cart" backTo="/" />
+    <div className="cart-body">
+      <section className="cart-card cart-delivery" aria-label="Delivery time">
+        <span className="cart-delivery-icon"><TwoWheelerIcon /></span>
+        <div>
+          <strong>Delivery in {minutes} minutes</strong>
+          <span>Shipment of {cart.count} {cart.count === 1 ? 'item' : 'items'}{customer.activeZone ? ` · ${customer.activeZone.name}` : ''}</span>
+        </div>
+      </section>
+
+      {short.length > 0 && <Alert severity="warning" sx={{ mb: 1.5, borderRadius: 3 }}>Stock has changed for {short.map((l) => l.product.name).join(', ')}. Reduce the quantity to continue.</Alert>}
+
+      <section className="cart-card" aria-label="Items in your cart">
+        {cart.lines.map(({ product, qty }) => {
           const available = stock.get(product.id)
           const over = available !== undefined && available < qty
-          return <article className="basket-item" key={product.id}>
-            <div className="basket-photo"><ProductImage src={product.image_url} name={product.name} /></div>
-            <div className="basket-item-name"><h3>{product.name}</h3><span>{product.unit_label} - {paiseToRupees(unitPrice(product))}</span>
-              {over && <small className="basket-short">{available === 0 ? 'Sold out' : `Only ${available} left`}</small>}</div>
-            <div className="basket-quantity"><QtyStepper qty={qty} max={available} onAdd={() => cart.add(product)} onRemove={() => cart.remove(product.id)} /></div>
-            <strong className="basket-line-price">{paiseToRupees(unitPrice(product) * qty)}</strong>
-            <IconButton className="basket-remove" size="small" aria-label={`Remove ${product.name}`} title="Remove item" onClick={() => cart.removeLine(product.id)}><DeleteOutlineIcon fontSize="small" /></IconButton>
+          const price = unitPrice(product)
+          return <article className="cart-item" key={product.id}>
+            <div className="cart-photo"><ProductImage src={product.image_url} name={product.name} /></div>
+            <div className="cart-item-info">
+              <h3>{product.name}</h3>
+              <span>{product.unit_label}</span>
+              <div className="cart-item-price">
+                <strong>{paiseToRupees(price * qty)}</strong>
+                {onDeal(product) && <s>{paiseToRupees(product.mrp_paise * qty)}</s>}
+              </div>
+              {over && <small className="cart-short">{available === 0 ? 'Sold out' : `Only ${available} left`}</small>}
+            </div>
+            <div className="cart-item-qty">
+              <QtyStepper qty={qty} max={available} onAdd={() => cart.add(product)} onRemove={() => cart.remove(product.id)} />
+              <button type="button" className="cart-remove" onClick={() => cart.removeLine(product.id)} aria-label={`Remove ${product.name}`}>Remove</button>
+            </div>
           </article>
-        })}</div>
-        <div className="basket-assurance">No handling or platform fees. What you see is what you pay.</div>
+        })}
+        <button type="button" className="cart-add-more" onClick={() => navigate('/')}>
+          <span>Missed something?</span><strong><AddIcon fontSize="small" /> Add more items</strong>
+        </button>
       </section>
-      <aside className="basket-summary" aria-label="Bill summary">
-        <h2>Bill details</h2><div className="bill-row"><span>Items total</span><span>{paiseToRupees(pricing.subtotalPaise)}</span></div>
-        <div className="bill-row"><span>Delivery fee</span><span>{!pricing.knownZone ? 'At checkout' : pricing.feePaise === 0 ? 'FREE' : paiseToRupees(pricing.feePaise)}</span></div>
-        <div className="bill-total"><strong>To pay</strong><strong>{paiseToRupees(pricing.totalPaise)}</strong></div>
-        <div style={{ margin: '14px 0' }}><FreeDeliveryBar pricing={pricing} /></div>
-        {pricing.belowMin && <Alert severity="warning" sx={{ my: 2 }}>Minimum order is {paiseToRupees(pricing.minOrderPaise)}. Add {paiseToRupees(pricing.minOrderPaise - pricing.subtotalPaise)} more.</Alert>}
-        {!pricing.knownZone && <p className="bill-note">Delivery charges will be confirmed after you choose an address.</p>}
-        <div className="basket-checkout"><Button fullWidth size="large" color="success" variant="contained" endIcon={<ArrowForwardIcon />}
-          disabled={short.length > 0 || pricing.belowMin} onClick={() => navigate('/checkout')}>Continue to checkout</Button></div>
-        <p className="bill-note">Pay with cash or UPI at your door.</p>
-      </aside>
+
+      <div className="cart-nudge"><FreeDeliveryBar pricing={pricing} /></div>
+
+      <section className="cart-card cart-bill" aria-label="Bill details">
+        <h2>Bill details</h2>
+        <div className="bill-row"><span>Items total</span>
+          <span>{savings > 0 && <s>{paiseToRupees(mrpTotal)}</s>}{paiseToRupees(pricing.subtotalPaise)}</span></div>
+        <div className="bill-row"><span>Delivery charge</span>
+          <span>{!pricing.knownZone ? 'At checkout'
+            : feeWaived ? <><s>{paiseToRupees(pricing.zone?.delivery_fee_paise ?? 0)}</s><em>FREE</em></>
+            : pricing.feePaise === 0 ? <em>FREE</em> : paiseToRupees(pricing.feePaise)}</span></div>
+        <div className="bill-row"><span>Handling charge</span><span><em>₹0</em></span></div>
+        <div className="bill-total"><span>To pay</span><span>{paiseToRupees(pricing.totalPaise)}</span></div>
+        {(savings > 0 || feeWaived) && <div className="cart-savings">
+          <SavingsOutlinedIcon fontSize="small" /> You save {paiseToRupees(savings + (feeWaived ? (pricing.zone?.delivery_fee_paise ?? 0) : 0))} on this order
+        </div>}
+      </section>
+
+      {pricing.belowMin && <Alert severity="warning" sx={{ mb: 1.5, borderRadius: 3 }}>
+        Minimum order is {paiseToRupees(pricing.minOrderPaise)}. Add {paiseToRupees(pricing.minOrderPaise - pricing.subtotalPaise)} more to check out.
+      </Alert>}
+
+      <section className="cart-card cart-policy" aria-label="Payment and cancellation">
+        <p><strong>Pay at your door.</strong> Cash or UPI to the delivery partner. No advance payment.</p>
+        <p><strong>Change your mind?</strong> Cancel free within {cancelMinutes} minutes of placing the order, before packing starts.</p>
+      </section>
+    </div>
+
+    <div className="cart-footer">
+      <div className="cart-footer-total">
+        <strong>{paiseToRupees(pricing.totalPaise)}</strong>
+        <span>{blocked ?? `${cart.count} ${cart.count === 1 ? 'item' : 'items'} · pay at your door`}</span>
+      </div>
+      <Button variant="contained" size="large" endIcon={<ArrowForwardIcon />}
+        disabled={!!blocked} onClick={() => navigate('/checkout')}>Proceed to checkout</Button>
     </div>
   </div>
 }

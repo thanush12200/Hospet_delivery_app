@@ -53,7 +53,7 @@ export function ShopHeader() {
           </Box>
           <IconButton className="header-account" aria-label="Account" title="Your account"
             onClick={() => navigate('/account')}><PersonOutlineIcon /></IconButton>
-          <Button className="header-cart" color="success" variant="contained" startIcon={<ShoppingBagOutlinedIcon />}
+          <Button className="header-cart" color="primary" variant="contained" startIcon={<ShoppingBagOutlinedIcon />}
             onClick={() => navigate('/cart')}>
             {cart.count > 0 ? `${cart.count} items - ${paiseToRupees(cart.subtotalPaise)}` : 'My basket'}
           </Button>

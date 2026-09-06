@@ -48,7 +48,7 @@ export function BottomNav() {
               sx={{
                 flex: 1, display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', gap: 0.25,
-                border: 0, background: 'none', cursor: 'pointer', color: active ? 'success.main' : 'text.secondary',
+                border: 0, background: 'none', cursor: 'pointer', color: active ? 'primary.main' : 'text.secondary',
               }}
             >
               {t.to === '/cart' && count > 0 ? (

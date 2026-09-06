@@ -25,7 +25,7 @@ export function StickyCartBar() {
         <Box
           sx={{
             p: 1.25, px: 2, borderRadius: '8px', gap: 1,
-            bgcolor: 'success.main', color: '#fff',
+            bgcolor: 'primary.main', color: '#fff',
             boxShadow: `0 6px 20px ${BRAND_SHADOW}`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}
@@ -40,7 +40,7 @@ export function StickyCartBar() {
           <Button
             variant="contained"
             onClick={() => navigate('/cart')}
-            sx={{ bgcolor: '#fff', color: 'success.main', flexShrink: 0, '&:hover': { bgcolor: '#F1F1F1' } }}
+            sx={{ bgcolor: '#fff', color: 'primary.main', flexShrink: 0, '&:hover': { bgcolor: '#F1F1F1' } }}
           >
             View cart
           </Button>

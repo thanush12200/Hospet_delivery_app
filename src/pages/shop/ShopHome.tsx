@@ -44,7 +44,7 @@ export default function ShopHome() {
     <div className="shop-home">
       {!categoryId && <HeroCarousel products={catalogue?.products ?? []} categories={catalogue?.categories ?? []} config={customer.storeConfig}
         freeAbovePaise={customer.activeZone?.free_delivery_above_paise ?? null}
-        zoneName={customer.activeZone?.name} minutes={customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} />}
+        minutes={customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} />}
       {!categoryId && catalogue && <DealsBoard products={catalogue.products} categories={catalogue.categories} config={customer.storeConfig} />}
       {!categoryId && catalogue && <CategoryTiles categories={shelf} products={catalogue.products}
         onSelect={(id) => navigate(`/category/${id}`)} limit={8} />}
@@ -61,7 +61,7 @@ export default function ShopHome() {
         </div>
         <CategoryIconRail categories={shelf} selected={categoryId} onSelect={(id) => navigate(id ? `/category/${id}` : '/')} />
         <div className="product-meta"><span>{loading ? 'Loading your essentials...' : `${visible.length} products`}</span>
-          <Chip size="small" label="In stock only" color={inStock ? 'success' : 'default'} variant={inStock ? 'filled' : 'outlined'}
+          <Chip size="small" label="In stock only" color={inStock ? 'primary' : 'default'} variant={inStock ? 'filled' : 'outlined'}
             onClick={() => setInStock((v) => !v)} aria-pressed={inStock} />
         </div>
         {error ? <div className="empty-state"><WifiOffOutlinedIcon /><h3>We couldn&apos;t reach the shop</h3><p>Check your connection and try again.</p>
@@ -75,7 +75,7 @@ export default function ShopHome() {
             onOpen={() => { const next = new URLSearchParams(params); next.set(PRODUCT_PARAM, p.id); setParams(next) }} />)}</div>}
       </section>
       {!categoryId && <section className="local-note"><span>FROM HOSPET, WITH CARE.</span><h2>A familiar store.<br />A fresher way to shop.</h2>
-        <p>The everyday things you need, from a store in your own neighbourhood.</p><Button color="success" onClick={() => navigate('/help')}>Meet FAA &rarr;</Button></section>}
+        <p>The everyday things you need, from a store in your own neighbourhood.</p><Button onClick={() => navigate('/help')}>Meet FAA &rarr;</Button></section>}
     </div>
   )
 }
