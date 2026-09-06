@@ -9,6 +9,7 @@ import { useToast } from '@/components/toastContext'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { isFresh, reconcileCart } from '@/lib/reconcile'
 import { QtyStepper } from '@/components/QtyStepper'
+import { FreeDeliveryBar } from '@/components/shop/FreeDeliveryBar'
 import { ProductImage } from '@/components/shop/ProductImage'
 import { usePricing } from '@/hooks/usePricing'
 import { paiseToRupees } from '@/lib/money'
@@ -79,7 +80,7 @@ export default function CartPage() {
         <h2>Bill details</h2><div className="bill-row"><span>Items total</span><span>{paiseToRupees(pricing.subtotalPaise)}</span></div>
         <div className="bill-row"><span>Delivery fee</span><span>{!pricing.knownZone ? 'At checkout' : pricing.feePaise === 0 ? 'FREE' : paiseToRupees(pricing.feePaise)}</span></div>
         <div className="bill-total"><strong>To pay</strong><strong>{paiseToRupees(pricing.totalPaise)}</strong></div>
-        {pricing.toFreeDeliveryPaise != null && <div className="free-delivery-note"><LocalShippingOutlinedIcon /><span>Add {paiseToRupees(pricing.toFreeDeliveryPaise)} for free delivery</span></div>}
+        <div style={{ margin: '14px 0' }}><FreeDeliveryBar pricing={pricing} /></div>
         {pricing.belowMin && <Alert severity="warning" sx={{ my: 2 }}>Minimum order is {paiseToRupees(pricing.minOrderPaise)}. Add {paiseToRupees(pricing.minOrderPaise - pricing.subtotalPaise)} more.</Alert>}
         {!pricing.knownZone && <p className="bill-note">Delivery charges will be confirmed after you choose an address.</p>}
         <div className="basket-checkout"><Button fullWidth size="large" color="success" variant="contained" endIcon={<ArrowForwardIcon />}

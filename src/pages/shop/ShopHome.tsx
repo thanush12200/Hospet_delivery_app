@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Skeleton, Switch, FormControlLabel } from '@mui/material'
+import { Button, Chip, Skeleton } from '@mui/material'
 import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ProductCard } from '@/components/ProductCard'
@@ -55,7 +55,8 @@ export default function ShopHome() {
         </div>
         <CategoryIconRail categories={catalogue?.categories ?? []} selected={categoryId} onSelect={(id) => navigate(id ? `/category/${id}` : '/')} />
         <div className="product-meta"><span>{loading ? 'Loading your essentials...' : `${visible.length} products`}</span>
-          <FormControlLabel control={<Switch size="small" color="success" checked={inStock} onChange={(e) => setInStock(e.target.checked)} />} label="In stock only" />
+          <Chip size="small" label="In stock only" color={inStock ? 'success' : 'default'} variant={inStock ? 'filled' : 'outlined'}
+            onClick={() => setInStock((v) => !v)} aria-pressed={inStock} />
         </div>
         {error ? <div className="empty-state"><WifiOffOutlinedIcon /><h3>We couldn&apos;t reach the shop</h3><p>Check your connection and try again.</p>
           <Button variant="outlined" onClick={() => window.location.reload()}>Try again</Button></div>

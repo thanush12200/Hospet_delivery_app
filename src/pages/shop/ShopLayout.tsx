@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { BottomNav } from '@/components/BottomNav'
 import { StickyCartBar } from '@/components/StickyCartBar'
+import { Welcome } from '@/components/shop/Welcome'
 import { ToastProvider } from '@/components/Toast'
 import { ProductSheet } from '@/components/shop/ProductSheet'
 import { CatalogueContext, useCatalogueLoader, type CatalogueState } from '@/hooks/useCatalogue'
@@ -38,6 +39,7 @@ export function ShopFrame({ state }: { state: CatalogueState }) {
         </footer>
         {browsing && <StickyCartBar />}
         <BottomNav />
+        <Welcome />
         <ProductSheet />
       </ToastProvider>
     </CatalogueContext.Provider>
