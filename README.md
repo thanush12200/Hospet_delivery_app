@@ -51,6 +51,17 @@ PLACED ──> CONFIRMED ──> PICKING ──> PACKED ──> OUT_FOR_DELIVERY
 
 A database trigger rejects any direct `UPDATE orders SET status`. `order_events` is append-only and cannot be edited or deleted.
 
+### Security Advisor
+
+`0005` resolves everything Supabase's Security Advisor raised, and the reasoning is worth keeping:
+
+- **Security Definer View (critical)** — a Postgres view runs with its *owner's* privileges by default, bypassing RLS on the tables beneath it. `inventory_available` is now `security_invoker = true` so it respects the caller's own policies. Nothing leaked today, because `inventory` has a permissive read policy — but the view would have kept returning rows if that policy were ever tightened, which is a trap for whoever changes it next.
+- **Function Search Path Mutable** — a `SECURITY DEFINER` function without a pinned `search_path` can be hijacked by someone able to create a shadowing object in an earlier schema. All functions now pin it.
+- **Auth RLS Initialization Plan** — a bare `auth.uid()` in a policy is re-evaluated for *every row scanned*. Written as `(select auth.uid())` the planner treats it as a one-time initplan. On a large `orders` table that is one call instead of hundreds of thousands.
+- **Multiple Permissive Policies** — catalogue tables had both a `FOR SELECT` read policy and a `FOR ALL` write policy, so every read evaluated two and OR'd them. Write policies are now explicit `INSERT`/`UPDATE`/`DELETE`, leaving exactly one policy per read.
+
+A test helper (`assert_eq`) had also reached the live database by running the lifecycle suite against Supabase. Dropped.
+
 ### Row Level Security
 
 The anon key ships inside the frontend and is readable by anyone, so it is not a secret. `0003_rls.sql` makes it harmless:
@@ -187,6 +198,7 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 
 - [x] **Phase 1** — schema, atomic order functions, RLS policies, test suite, app scaffold
 - [x] **Phase 1b** — admin console: order board, order detail, manual entry, stock
+- [x] **Phase 1c** — Supabase Security Advisor findings resolved (`0005`)
 - [ ] **Phase 2** — customer PWA: checkout, phone OTP, order tracking
 - [ ] **Phase 3** — rider app: assigned orders, offline-tolerant delivery marking, cash collection
 - [ ] **Phase 4** — Razorpay UPI with webhook verification, FCM push, daily rider settlement
