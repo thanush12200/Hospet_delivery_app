@@ -12,7 +12,7 @@ export default function CategoriesPage() {
   const shelf = useMemo(() => catalogue ? shelvedCategories(catalogue.categories, catalogue.products) : [], [catalogue])
 
   return (
-    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh' }}>
+    <Box sx={{ pb: 'calc(var(--nav-clearance) + 8px)', minHeight: '100dvh' }}>
       <Box sx={{
         background: BRAND_GRADIENT, color: '#fff',
         px: 2, pt: 'calc(16px + env(safe-area-inset-top))', pb: 2.5,

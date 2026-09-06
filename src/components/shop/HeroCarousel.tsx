@@ -160,6 +160,7 @@ export function HeroCarousel({ products, categories, config, freeAbovePaise, min
         <span><VerifiedOutlinedIcon />No hidden charges</span>
         <span><PaymentsOutlinedIcon />Cash or UPI at your door</span>
       </div>
+      <p className="shop-tagline"><span>FAA it,</span> get it, <em>love it</em></p>
     </>
   )
 }

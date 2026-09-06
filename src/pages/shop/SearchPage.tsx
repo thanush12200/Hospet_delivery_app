@@ -3,6 +3,8 @@ import { Box, Chip, IconButton, InputBase, Stack, Typography } from '@mui/materi
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
+import MicIcon from '@mui/icons-material/Mic'
+import { useVoiceSearch } from '@/hooks/useVoiceSearch'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { searchProducts } from '@/lib/search'
 import { ProductCard } from '@/components/ProductCard'
@@ -30,6 +32,8 @@ export default function SearchPage() {
   const results = useMemo(() => (catalogue ? searchProducts(catalogue.products, q) : []), [catalogue, q])
   const active = q.trim().length > 0
 
+  const voice = useVoiceSearch((text) => setQuery(text))
+
   function setQuery(v: string) {
     const next = new URLSearchParams(params)
     if (v) next.set('q', v); else next.delete('q')
@@ -50,7 +54,7 @@ export default function SearchPage() {
   }
 
   return (
-    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh' }}>
+    <Box sx={{ pb: 'calc(var(--nav-clearance) + 8px)', minHeight: '100dvh' }}>
       <Box sx={{
         position: 'sticky', top: 0, zIndex: 10, bgcolor: '#fff', px: 1, py: 1,
         pt: 'calc(8px + env(safe-area-inset-top))',
@@ -63,13 +67,20 @@ export default function SearchPage() {
             inputRef={input}
             value={q}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search for rice, dal, tea… / ಅಕ್ಕಿ, ಬೇಳೆ"
+            placeholder={voice.listening ? 'Listening…' : 'Search for rice, dal, tea…'}
             inputProps={{ 'aria-label': 'Search products', enterKeyHint: 'search', autoCorrect: 'off' }}
             sx={{ flex: 1, fontSize: 15 }}
           />
           {q && (
             <IconButton size="small" aria-label="Clear" onClick={() => { setQuery(''); input.current?.focus() }}>
               <CloseIcon fontSize="small" />
+            </IconButton>
+          )}
+          {voice.supported && (
+            <IconButton size="small" className={`mic-button${voice.listening ? ' is-listening' : ''}`}
+              aria-label={voice.listening ? 'Stop listening' : 'Search by voice'}
+              onClick={() => (voice.listening ? voice.stop() : voice.start())}>
+              <MicIcon fontSize="small" />
             </IconButton>
           )}
         </Box>

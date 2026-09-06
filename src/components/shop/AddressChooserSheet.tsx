@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 import AddLocationAltOutlinedIcon from '@mui/icons-material/AddLocationAltOutlined'
+import MyLocationIcon from '@mui/icons-material/MyLocation'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { useNavigate } from 'react-router-dom'
 import { BottomSheet } from '@/components/BottomSheet'
 import { setDefaultAddress } from '@/api/customer'
 import { useCustomer } from '@/store/customerContext'
 import { addressLabel, addressLine } from '@/lib/address'
+import { GEO_MESSAGE, getCurrentCoords, pickZone, type GeoError } from '@/lib/geo'
 import { BRAND_TINT } from '@/theme/brand'
 
 /**
@@ -28,6 +30,23 @@ export function AddressChooserSheet({
   const navigate = useNavigate()
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [locating, setLocating] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const [showList, setShowList] = useState(false)
+
+  async function locate() {
+    setLocating(true); setNote(null)
+    try {
+      const at = await getCurrentCoords()
+      const zone = pickZone(at, customer.zones)
+      if (zone) { customer.setSelectedZoneId(zone.id); onClose(); return }
+      setNote("We don't deliver at your location yet. You can still browse."); setShowList(true)
+    } catch (e) {
+      const fallback = pickZone(null, customer.zones)
+      if (fallback) { customer.setSelectedZoneId(fallback.id); onClose(); return }
+      setNote(GEO_MESSAGE[e as GeoError] ?? GEO_MESSAGE.UNAVAILABLE); setShowList(true)
+    } finally { setLocating(false) }
+  }
 
   const signedIn = customer.status === 'ready' && !!customer.customerId
   const addTarget = `/account/addresses/new${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`
@@ -94,39 +113,43 @@ export function AddressChooserSheet({
         ) : (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Pick your area so prices and delivery charges are right. Sign in to save your full address.
+              {customer.activeZone ? `Showing prices and delivery time for ${customer.activeZone.name}.` : 'Allow location so prices and delivery time are right for where you are.'}
             </Typography>
-            <Stack spacing={0.75} sx={{ mb: 1.5 }}>
-              {customer.zones.map((z) => {
-                const active = z.id === customer.selectedZoneId
-                return (
-                  <Box
-                    key={z.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => { customer.setSelectedZoneId(z.id); onClose() }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { customer.setSelectedZoneId(z.id); onClose() } }}
-                    sx={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      p: 1.25, px: 1.5, border: '1.5px solid',
-                      borderColor: active ? 'primary.main' : 'divider',
-                      borderRadius: 2, cursor: 'pointer', bgcolor: active ? BRAND_TINT : '#fff',
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={active ? 700 : 500}>
-                      {z.name}
-                    </Typography>
-                    {active && <CheckCircleIcon color="primary" fontSize="small" />}
-                  </Box>
-                )
-              })}
-              {customer.zones.length === 0 && (
-                <Typography variant="caption" color="text.secondary">Loading areas…</Typography>
-              )}
-            </Stack>
+            <Button
+              fullWidth variant="contained" startIcon={locating ? <CircularProgress size={18} color="inherit" /> : <MyLocationIcon />}
+              disabled={locating} onClick={() => void locate()} sx={{ mb: 1 }}
+            >
+              {locating ? 'Finding you…' : 'Use my current location'}
+            </Button>
+            {note && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>{note}</Typography>}
+            {showList && customer.zones.length > 1 && (
+              <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+                {customer.zones.map((z) => {
+                  const active = z.id === customer.selectedZoneId
+                  return (
+                    <Box
+                      key={z.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { customer.setSelectedZoneId(z.id); onClose() }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { customer.setSelectedZoneId(z.id); onClose() } }}
+                      sx={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        p: 1.25, px: 1.5, border: '1.5px solid',
+                        borderColor: active ? 'primary.main' : 'divider',
+                        borderRadius: 2, cursor: 'pointer', bgcolor: active ? BRAND_TINT : '#fff',
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight={active ? 700 : 500}>{z.name}</Typography>
+                      {active && <CheckCircleIcon color="primary" fontSize="small" />}
+                    </Box>
+                  )
+                })}
+              </Stack>
+            )}
             {customer.status !== 'loading' && (
               <Button
-                fullWidth variant="contained"
+                fullWidth variant="outlined"
                 onClick={() => { onClose(); navigate(`/login?returnTo=${encodeURIComponent(addTarget)}`) }}
               >
                 Sign in to add your address

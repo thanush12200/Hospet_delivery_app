@@ -93,3 +93,38 @@ export function mapsLink(args: {
   const q = `${args.landmark ?? ''} ${args.line1 ?? ''} Hospet`.trim()
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
 }
+
+/** What the zone resolver needs to know about each active zone. */
+export interface ZoneLike { id: string; name: string; lat: number | null; lng: number | null; radius_m: number | null; is_active: boolean }
+
+/**
+ * The delivery area for a point, mirroring resolve_zone() in the database:
+ *
+ *   1. the nearest active zone with a centre, if the point is inside its
+ *      radius (no radius = unlimited);
+ *   2. else, when no zone has a centre and exactly one is active, that one —
+ *      a one-store town works before anyone draws a map;
+ *   3. else null: outside every area, or ambiguous.
+ *
+ * With no point at all (permission denied, skipped) only rule 2 applies.
+ */
+export function pickZone(at: LatLng | null, zones: ZoneLike[]): ZoneLike | null {
+  const active = zones.filter((z) => z.is_active)
+  const placed = active.filter((z) => z.lat != null && z.lng != null)
+  if (at && placed.length > 0) {
+    const near = nearestZone(at, placed.map((z) => ({ id: z.id, name: z.name, lat: z.lat as number, lng: z.lng as number, radius_m: z.radius_m })))
+    if (near?.withinRadius) return active.find((z) => z.id === near.id) ?? null
+    return null
+  }
+  if (placed.length === 0 && active.length === 1) return active[0] ?? null
+  return null
+}
+
+/** Whether the browser will hand over a position without prompting. */
+export async function geoPermission(): Promise<'granted' | 'denied' | 'prompt' | 'unknown'> {
+  try {
+    if (!('permissions' in navigator)) return 'unknown'
+    const s = await navigator.permissions.query({ name: 'geolocation' })
+    return s.state
+  } catch { return 'unknown' }
+}

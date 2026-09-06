@@ -77,7 +77,8 @@ export async function listMyAddresses(customerId?: string): Promise<Address[]> {
 
 export interface AddressInput {
   id?: string | null
-  zoneId: string
+  /** Optional since 0023: the server resolves the area from the pin. */
+  zoneId?: string | null
   line1: string
   landmark?: string | null
   label: AddressLabel
@@ -87,6 +88,7 @@ export interface AddressInput {
 }
 
 const ADDRESS_ERRORS: Record<string, string> = {
+  OUTSIDE_DELIVERY_AREA: "We don't deliver at that spot yet. Move the pin closer to the store, or use a landmark nearby.",
   INVALID_ADDRESS: 'Please enter the house or street.',
   INVALID_ZONE: 'Please pick a delivery area.',
   INVALID_LABEL: 'Please pick a label.',
@@ -97,7 +99,7 @@ const ADDRESS_ERRORS: Record<string, string> = {
 export async function upsertMyAddress(a: AddressInput): Promise<string> {
   const { data, error } = await supabase.rpc('upsert_my_address', {
     p_id: a.id ?? null,
-    p_zone_id: a.zoneId,
+    p_zone_id: a.zoneId ?? null,
     p_line1: a.line1,
     p_landmark: a.landmark ?? null,
     p_label: a.label,

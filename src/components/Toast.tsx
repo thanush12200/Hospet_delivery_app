@@ -16,7 +16,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         onClose={() => setMessage(null)}
         message={message}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ bottom: 'calc(58px + env(safe-area-inset-bottom) + 72px) !important' }}
+        sx={{ bottom: 'calc(var(--nav-clearance) + 72px) !important' }}
       />
     </ToastContext.Provider>
   )

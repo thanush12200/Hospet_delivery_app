@@ -1043,5 +1043,40 @@ begin
   delete from notify_targets where target = 'faa-orders-test';
 end $$;
 
+-- ============================================================ TEST 21
+-- Auto zone (0023): with one zone and no centres, anywhere resolves to it;
+-- with a centre and radius, only pins inside; two active zones without
+-- centres are ambiguous; the address form may omit the zone.
+do $$
+declare r jsonb; v_zone uuid := '33333333-0000-0000-0000-000000000001'; v_other uuid; v_addr uuid;
+begin
+  perform assert_eq('T21 single zone, no centre: anything resolves', resolve_zone(12.97, 77.59), v_zone);
+  perform assert_eq('T21 single zone, no coords: still resolves', resolve_zone(null, null), v_zone);
+
+  perform as_user('77777777-0000-0000-0000-000000000001', '+919900000001');
+  r := upsert_my_address(null, null, '5th Cross, Chittawadgi', 'Opp. school', 'WORK', false, 15.28, 76.375);
+  perform assert_eq('T21 address saved without a zone', r->>'ok', 'true');
+  v_addr := (r->>'id')::uuid;
+  perform assert_eq('T21 zone filled in from the pin', (select zone_id from addresses where id = v_addr), v_zone);
+  perform as_service();
+
+  update zones set lat = 15.28, lng = 76.375, radius_m = 1500 where id = v_zone;
+  perform assert_eq('T21 inside the radius', resolve_zone(15.281, 76.376), v_zone);
+  perform assert_eq('T21 outside the radius: null', resolve_zone(12.97, 77.59), null::uuid);
+
+  perform as_user('77777777-0000-0000-0000-000000000001', '+919900000001');
+  r := upsert_my_address(null, null, 'MG Road, Bengaluru', null, 'OTHER', false, 12.97, 77.59);
+  perform assert_eq('T21 pin outside every area is refused', r->>'error', 'OUTSIDE_DELIVERY_AREA');
+  perform as_service();
+
+  update zones set lat = null, lng = null, radius_m = null where id = v_zone;
+  insert into zones (name, delivery_fee_paise, min_order_paise) values ('T21 Other', 2000, 10000) returning id into v_other;
+  perform assert_eq('T21 two zones, no centres: ambiguous', resolve_zone(15.28, 76.375), null::uuid);
+  delete from zones where id = v_other;
+  perform delete_my_address(v_addr);
+  update addresses set deleted_at = null where id = v_addr; -- keep fixture state tidy either way
+  delete from addresses where id = v_addr;
+end $$;
+
 drop function as_user(text, text);
 drop function as_service();

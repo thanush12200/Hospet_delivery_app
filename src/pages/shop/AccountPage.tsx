@@ -67,7 +67,7 @@ export default function AccountPage() {
   }
 
   return (
-    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 16px)', minHeight: '100dvh', bgcolor: '#F4F5F7' }}>
+    <Box sx={{ pb: 'calc(var(--nav-clearance) + 16px)', minHeight: '100dvh', bgcolor: '#F4F5F7' }}>
       {/* soft brand header */}
       <Box sx={{
         background: 'linear-gradient(180deg, #FFE1DE 0%, #FFF3F1 55%, #F4F5F7 100%)',

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Button, Chip, Skeleton } from '@mui/material'
 import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -7,6 +7,8 @@ import { CategoryIconRail } from '@/components/shop/CategoryIconRail'
 import { HeroCarousel } from '@/components/shop/HeroCarousel'
 import { CategoryTiles } from '@/components/shop/CategoryTiles'
 import { DealsBoard } from '@/components/shop/DealsBoard'
+
+const BuyAgain = lazy(() => import('@/components/shop/BuyAgain'))
 import { PRODUCT_PARAM } from '@/components/shop/ProductSheet'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { useCart } from '@/store/cartContext'
@@ -46,6 +48,9 @@ export default function ShopHome() {
         freeAbovePaise={customer.activeZone?.free_delivery_above_paise ?? null}
         minutes={customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} />}
       {!categoryId && catalogue && <DealsBoard products={catalogue.products} categories={catalogue.categories} config={customer.storeConfig} />}
+      {!categoryId && catalogue && customer.status === 'ready' && customer.customerId && (
+        <Suspense fallback={null}><BuyAgain products={catalogue.products} availability={availability} /></Suspense>
+      )}
       {!categoryId && catalogue && <CategoryTiles categories={shelf} products={catalogue.products}
         onSelect={(id) => navigate(`/category/${id}`)} limit={8} />}
       {customer.storeConfig?.is_open === false && <div className="store-closed" role="status">{customer.storeConfig.closed_message || 'The store is closed right now. You can still build your basket for later.'}</div>}
