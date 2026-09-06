@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { sanitiseLines } from './sanitise'
 
 const product = { id: 'a', category_id: 'c', name: 'Rice', name_kn: null, brand: null, unit_label: '1 kg',
-  mrp_paise: 100, image_url: null, sort_order: 0, is_active: true, description: null }
+  mrp_paise: 100, image_url: null, sort_order: 0, is_active: true, description: null, sale_price_paise: null }
 
 describe('sanitiseLines', () => {
   it('keeps well-formed lines', () => {

@@ -874,5 +874,39 @@ begin
   perform transition_order(v_order, 'CANCELLED', 'ADMIN');
 end $$;
 
+-- ============================================================ TEST 17
+-- Deal prices (0019): charged by place_order, recorded on the line,
+-- refused when not below the MRP.
+do $$
+declare r jsonb; v_order uuid;
+begin
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  perform admin_adjust_stock('22222222-0000-0000-0000-000000000001', 10, 'RESTOCK');
+  r := admin_upsert_product('22222222-0000-0000-0000-000000000001', '11111111-0000-0000-0000-000000000001',
+                            'Sona Masoori Rice', '5 kg', 35000, null, null, null, true, null, null, 40000);
+  perform assert_eq('T17 deal above MRP refused', r->>'error', 'INVALID_DEAL_PRICE');
+  r := admin_upsert_product('22222222-0000-0000-0000-000000000001', '11111111-0000-0000-0000-000000000001',
+                            'Sona Masoori Rice', '5 kg', 35000, null, null, null, true, null, null, 29900);
+  perform assert_eq('T17 deal set', r->>'ok', 'true');
+  perform as_service();
+
+  r := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":2}]'::jsonb, 'COD', 61800);
+  perform assert_eq('T17 deal price charged (2 x 299 + 20 fee)', r->>'ok', 'true');
+  v_order := (r->>'order_id')::uuid;
+  perform assert_eq('T17 line records the price paid',
+    (select unit_mrp_paise from order_items where order_id = v_order), 29900);
+  perform assert_eq('T17 subtotal at deal price',
+    (select subtotal_paise from orders where id = v_order), 59800);
+  perform transition_order(v_order, 'CANCELLED', 'ADMIN');
+
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  r := admin_upsert_product('22222222-0000-0000-0000-000000000001', '11111111-0000-0000-0000-000000000001',
+                            'Sona Masoori Rice', '5 kg', 35000, null, null, null, true, null, null, null);
+  perform as_service();
+  perform assert_eq('T17 deal cleared',
+    (select sale_price_paise from products where id = '22222222-0000-0000-0000-000000000001'), null::int);
+end $$;
+
 drop function as_user(text, text);
 drop function as_service();

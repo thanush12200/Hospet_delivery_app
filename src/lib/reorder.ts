@@ -1,4 +1,5 @@
 import type { CartLine } from '@/store/cartContext'
+import { unitPrice } from './price'
 import type { OrderItem, Product } from '@/types/db'
 
 export interface ReorderPlan {
@@ -24,7 +25,7 @@ export function buildReorderLines(items: OrderItem[], products: Product[]): Reor
   for (const it of items) {
     const p = byId.get(it.product_id)
     if (!p) { skipped.push(it.product_name); continue }
-    if (p.mrp_paise !== it.unit_mrp_paise) repriced.push(p.name)
+    if (unitPrice(p) !== it.unit_mrp_paise) repriced.push(p.name)
     lines.push({ product: p, qty: it.qty })
   }
   return { lines, skipped, repriced }

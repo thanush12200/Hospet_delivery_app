@@ -8,6 +8,9 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import { NavLink, useNavigate } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
 import { BrandSheet } from './BrandSheet'
+import { useTypedPlaceholder } from '@/hooks/useTypedPlaceholder'
+
+const SEARCH_HINTS = ['rice', 'atta', 'toor dal', 'milk', 'tea', 'biscuits', 'soap', 'onion']
 import { AddressChooserSheet } from './AddressChooserSheet'
 import { useCustomer } from '@/store/customerContext'
 import { useCart } from '@/store/cartContext'
@@ -22,6 +25,7 @@ export function ShopHeader() {
   const [chooser, setChooser] = useState(false)
   const [brand, setBrand] = useState(false)
   const [query, setQuery] = useState('')
+  const placeholder = useTypedPlaceholder(SEARCH_HINTS, !query)
   const address = customer.defaultAddress
   const destination = address ? `${addressLabel(address)} - ${addressLine(address)}`
     : customer.activeZone ? `${customer.activeZone.name}, Hospet` : 'Select delivery area'
@@ -44,7 +48,7 @@ export function ShopHeader() {
           }}>
             <SearchIcon />
             <InputBase value={query} onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search for rice, milk, snacks..." inputProps={{ 'aria-label': 'Search products' }} />
+              placeholder={placeholder} inputProps={{ 'aria-label': 'Search products' }} />
             <IconButton type="submit" size="small" aria-label="Search" title="Search products"><SearchIcon fontSize="small" /></IconButton>
           </Box>
           <IconButton className="header-account" aria-label="Account" title="Your account"

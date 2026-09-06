@@ -39,6 +39,8 @@ export interface Product {
   sort_order: number
   is_active: boolean
   description: string | null
+  /** Deal price charged instead of MRP while set; always below mrp_paise. */
+  sale_price_paise: number | null
 }
 
 export interface Zone {
@@ -147,6 +149,10 @@ export interface StoreConfig {
   cancel_window_minutes: number
   is_open: boolean
   closed_message: string | null
+  /** Home-page deals banner, e.g. "Launch week" / "31 Aug – 6 Sept". */
+  promo_title: string | null
+  promo_subtitle: string | null
+  promo_until: string | null
 }
 
 export type PlaceOrderError =

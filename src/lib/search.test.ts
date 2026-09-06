@@ -4,7 +4,7 @@ import type { Product } from '@/types/db'
 
 const p = (name: string, name_kn: string | null, brand: string | null): Product => ({
   id: name, category_id: 'c', name, name_kn, brand, unit_label: '1 kg', mrp_paise: 100,
-  image_url: null, sort_order: 0, is_active: true, description: null,
+  image_url: null, sort_order: 0, is_active: true, description: null, sale_price_paise: null,
 })
 const products = [
   p('Sona Masoori Rice', 'ಸೋನಾ ಮಸೂರಿ ಅಕ್ಕಿ', 'Local'),

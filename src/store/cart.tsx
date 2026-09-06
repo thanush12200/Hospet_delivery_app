@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CartContext, CART_STORAGE_KEY, type CartApi, type CartLine } from './cartContext'
 import { sanitiseLines } from './sanitise'
+import { unitPrice } from '@/lib/price'
 
 export function CartProvider({ children, storageKey = CART_STORAGE_KEY }: { children: ReactNode; storageKey?: string }) {
   // The cart lives in localStorage so a refresh or a dropped connection never
@@ -19,7 +20,7 @@ export function CartProvider({ children, storageKey = CART_STORAGE_KEY }: { chil
   const api = useMemo<CartApi>(() => ({
     lines,
     count: lines.reduce((n, l) => n + l.qty, 0),
-    subtotalPaise: lines.reduce((n, l) => n + l.product.mrp_paise * l.qty, 0),
+    subtotalPaise: lines.reduce((n, l) => n + unitPrice(l.product) * l.qty, 0),
     qtyOf: (id) => lines.find((l) => l.product.id === id)?.qty ?? 0,
     add: (product) => setLines((prev) => {
       const found = prev.find((l) => l.product.id === product.id)

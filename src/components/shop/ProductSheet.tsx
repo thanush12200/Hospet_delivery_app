@@ -7,6 +7,7 @@ import { QtyStepper } from '@/components/QtyStepper'
 import { categoryIcon } from '@/constants/categoryIcons'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { paiseToRupees } from '@/lib/money'
+import { discountPct, onDeal, unitPrice } from '@/lib/price'
 import { useCart } from '@/store/cartContext'
 import type { Product } from '@/types/db'
 import { BRAND } from '@/theme/brand'
@@ -85,7 +86,15 @@ export function ProductSheet() {
 
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
             <Box>
-              <Typography sx={{ fontWeight: 800, fontSize: 22 }}>{paiseToRupees(product.mrp_paise)}</Typography>
+              <Typography sx={{ fontWeight: 800, fontSize: 22 }}>
+                {paiseToRupees(unitPrice(product))}
+                {onDeal(product) && (
+                  <Typography component="span" sx={{ ml: 1, fontSize: 14, color: 'text.secondary', textDecoration: 'line-through' }}>
+                    {paiseToRupees(product.mrp_paise)}
+                  </Typography>
+                )}
+                {onDeal(product) && <Chip size="small" color="success" label={`${discountPct(product)}% off`} sx={{ ml: 1, height: 20 }} />}
+              </Typography>
               <Typography variant="caption" color="text.secondary">MRP, inclusive of all taxes</Typography>
             </Box>
             <Box sx={{ width: 120 }}>
@@ -134,7 +143,7 @@ export function ProductSheet() {
                         {p.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" display="block">
-                        {p.unit_label} · {paiseToRupees(p.mrp_paise)}
+                        {p.unit_label} · {paiseToRupees(unitPrice(p))}
                       </Typography>
                     </Box>
                   )

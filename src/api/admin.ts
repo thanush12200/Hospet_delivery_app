@@ -58,7 +58,7 @@ export async function receiveReturn(orderId: string, items?: { product_id: strin
 
 export async function getStoreConfigForAdmin(): Promise<StoreConfig | null> {
   const { data, error } = await supabase
-    .from('store_config').select('phone, whatsapp, cancel_window_minutes, is_open, closed_message').maybeSingle()
+    .from('store_config').select('phone, whatsapp, cancel_window_minutes, is_open, closed_message, promo_title, promo_subtitle, promo_until').maybeSingle()
   if (error) throw error
   return (data as StoreConfig | null) ?? null
 }

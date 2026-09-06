@@ -16,6 +16,9 @@ export default function Settings() {
   const [open, setOpen] = useState(true)
   const [closedMessage, setClosedMessage] = useState('')
   const [cancelWindow, setCancelWindow] = useState('5')
+  const [promoTitle, setPromoTitle] = useState('')
+  const [promoSubtitle, setPromoSubtitle] = useState('')
+  const [promoUntil, setPromoUntil] = useState('')
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -26,6 +29,8 @@ export default function Settings() {
       if (c) {
         setPhone(c.phone ?? ''); setWhatsapp(c.whatsapp ?? ''); setOpen(c.is_open)
         setClosedMessage(c.closed_message ?? ''); setCancelWindow(String(c.cancel_window_minutes))
+        setPromoTitle(c.promo_title ?? ''); setPromoSubtitle(c.promo_subtitle ?? '')
+        setPromoUntil(c.promo_until ? c.promo_until.slice(0, 10) : '')
       }
       setLoaded(true)
     }).catch((e: Error) => { setError(e.message); setLoaded(true) })
@@ -43,6 +48,8 @@ export default function Settings() {
       await updateStoreConfig({
         phone: p, whatsapp: w, is_open: open,
         closed_message: closedMessage.trim() || null, cancel_window_minutes: win,
+        promo_title: promoTitle.trim() || null, promo_subtitle: promoSubtitle.trim() || null,
+        promo_until: promoUntil ? new Date(`${promoUntil}T23:59:59+05:30`).toISOString() : null,
       })
       setPhone(p ?? ''); setWhatsapp(w ?? '')
       setMsg('Saved. Customers see this on the next screen they open.')
@@ -81,6 +88,23 @@ export default function Settings() {
         <TextField size="small" type="number" label="Customer can cancel within (minutes)" value={cancelWindow} sx={{ mt: 1.5, width: 280 }}
           onChange={(e) => setCancelWindow(e.target.value)} inputProps={{ min: 0, max: 120 }} disabled={!loaded}
           helperText="After this, cancelling needs a call to the store." />
+      </Paper>
+
+      <Paper sx={{ p: 2, mb: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="subtitle2" gutterBottom>Deals banner</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+          Heads the deals board on the home page. The board itself appears only while at least one product has a
+          deal price (Catalogue → Edit → Deal price). Leave blank for a plain &quot;Today&apos;s deals&quot;.
+        </Typography>
+        <Stack spacing={1.5}>
+          <TextField size="small" label="Title" value={promoTitle} onChange={(e) => setPromoTitle(e.target.value)}
+            placeholder="Launch week sale" inputProps={{ maxLength: 40 }} disabled={!loaded} />
+          <TextField size="small" label="Subtitle" value={promoSubtitle} onChange={(e) => setPromoSubtitle(e.target.value)}
+            placeholder="31 Aug – 6 Sept" inputProps={{ maxLength: 60 }} disabled={!loaded} />
+          <TextField size="small" type="date" label="Runs until" value={promoUntil} onChange={(e) => setPromoUntil(e.target.value)}
+            InputLabelProps={{ shrink: true }} disabled={!loaded} sx={{ width: 220 }}
+            helperText="After this date the banner reverts to Today's deals; deal prices stay until you clear them." />
+        </Stack>
       </Paper>
 
       <Button variant="contained" disabled={!loaded || busy} onClick={() => void save()}>
