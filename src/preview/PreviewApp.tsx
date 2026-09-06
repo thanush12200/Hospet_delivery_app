@@ -45,7 +45,7 @@ export default function PreviewApp() {
     selectedZoneId: zoneId, setSelectedZoneId: setZoneId,
     storeConfig: { is_open: true, closed_message: null, phone: null, whatsapp: null, cancel_window_minutes: 5,
       promo_title: 'Launch week deals', promo_subtitle: 'Only till Sunday', promo_until: null },
-    refresh: async () => {}, updateName: async () => {},
+    refresh: async () => {}, updateName: async () => {}, updateContactPhone: async () => {},
   }), [zoneId])
   return <ThemeProvider theme={theme}><CssBaseline />
     <AuthContext.Provider value={{ session: null, adminRole: null, loading: false, signIn: async () => ({ error: 'Sign-in is disabled in the preview.' }), signOut: async () => {} }}>

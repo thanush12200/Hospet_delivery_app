@@ -230,3 +230,7 @@ button:disabled { cursor: default; }
 .category-glyph { font-size: 40px; line-height: 1; }
 .rail-glyph { font-size: 14px; line-height: 1; }
 @media (max-width: 600px) { .category-glyph { font-size: 30px; } }
+
+/* sign-in page */
+.login-or { display: flex; align-items: center; gap: 12px; color: #72796f; font-size: 12px; }
+.login-or::before, .login-or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }

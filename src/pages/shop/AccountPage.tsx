@@ -18,7 +18,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/authContext'
 import { BrandSheet } from '@/components/shop/BrandSheet'
 import { addressLine } from '@/lib/address'
-import { formatIndianMobile } from '@/lib/phone'
+import { callablePhone, formatIndianMobile, toE164 } from '@/lib/phone'
+import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import { useCustomer } from '@/store/customerContext'
 import { BRAND } from '@/theme/brand'
 
@@ -38,6 +39,8 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [about, setAbout] = useState(false)
+  const [phoneEditing, setPhoneEditing] = useState(false)
+  const [phoneDraft, setPhoneDraft] = useState('')
 
   const p = customer.profile
   const initial = p?.name?.trim()[0]?.toUpperCase() ?? null
@@ -45,6 +48,14 @@ export default function AccountPage() {
   async function saveName() {
     setBusy(true); setError(null)
     try { await customer.updateName(name); setEditing(false) }
+    catch (e) { setError((e as Error).message) }
+    finally { setBusy(false) }
+  }
+
+  async function savePhone() {
+    if (!toE164(phoneDraft)) { setError('Enter a 10-digit Indian mobile number.'); return }
+    setBusy(true); setError(null)
+    try { await customer.updateContactPhone(phoneDraft); setPhoneEditing(false) }
     catch (e) { setError((e as Error).message) }
     finally { setBusy(false) }
   }
@@ -96,7 +107,7 @@ export default function AccountPage() {
           </Stack>
         )}
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-          {p ? `${formatIndianMobile(p.phone)} · ${BRAND.city}` : 'Not a customer account'}
+          {p ? `${callablePhone(p) ? formatIndianMobile(callablePhone(p) as string) : p.email ?? ''} · ${BRAND.city}` : 'Not a customer account'}
         </Typography>
         {error && <Alert severity="error" sx={{ mt: 1.5, textAlign: 'left' }} onClose={() => setError(null)}>{error}</Alert>}
       </Box>
@@ -130,8 +141,26 @@ export default function AccountPage() {
             subtitle={customer.addresses.length ? `${customer.addresses.length} saved` : 'Add where we should deliver'}
             onClick={() => navigate('/account/addresses')} />
           <Divider />
-          <Row icon={<PhoneIphoneOutlinedIcon />} title="Mobile number"
-            subtitle={p ? `+91 ${formatIndianMobile(p.phone)} · used to sign in and for the rider to call` : '—'} />
+          {phoneEditing ? (
+            <Stack direction="row" spacing={1} sx={{ p: 1.5 }} alignItems="center">
+              <TextField size="small" fullWidth label="Mobile number" value={phoneDraft} placeholder="98765 43210" autoFocus
+                inputMode="tel" inputProps={{ autoComplete: 'tel-national' }} onChange={(e) => setPhoneDraft(e.target.value)} />
+              <Button variant="contained" disabled={busy || !toE164(phoneDraft)} onClick={() => void savePhone()}>Save</Button>
+              <Button disabled={busy} onClick={() => setPhoneEditing(false)}>Cancel</Button>
+            </Stack>
+          ) : (
+            <Row icon={<PhoneIphoneOutlinedIcon />} title="Mobile number"
+              subtitle={!p ? '—'
+                : p.contact_phone ? `+91 ${formatIndianMobile(p.contact_phone)} · the delivery partner calls this${p.phone ? ' · also your sign-in number' : ''}`
+                : 'Add a number for the delivery partner to call'}
+              onClick={p ? () => { setPhoneDraft(p.contact_phone ? formatIndianMobile(p.contact_phone) : ''); setPhoneEditing(true) } : undefined} />
+          )}
+          {p?.email && (
+            <>
+              <Divider />
+              <Row icon={<MailOutlineIcon />} title="Google account" subtitle={p.email} />
+            </>
+          )}
         </Box>
 
         <Typography sx={{ fontWeight: 800, fontSize: 15, mt: 3, mb: 1 }}>About</Typography>

@@ -931,5 +931,81 @@ begin
     (select count(*) from categories where name = 'T18 Fresh Fruit'), 1::bigint);
 end $$;
 
+-- ============================================================ TEST 19
+-- Google identity (0021): a session with an email and no phone claim gets
+-- its own customer row; checkout needs a contact number; staff lookup finds
+-- the customer by that number; phone customers keep contact = sign-in.
+create or replace function as_google(p_uid text, p_email text, p_name text) returns void
+language plpgsql as $$
+begin
+  perform set_config('request.jwt.claim.sub', p_uid, true);
+  perform set_config('request.jwt.claims',
+    jsonb_build_object('sub', p_uid, 'email', p_email, 'phone', '',
+                       'user_metadata', jsonb_build_object('full_name', p_name))::text, true);
+  execute 'set local role authenticated';
+end $$;
+
+do $$
+declare r jsonb; v_cust uuid; v_addr uuid; v_order uuid; v_found uuid; v_err text;
+begin
+  perform assert_eq('T19 phone customers got contact_phone backfilled',
+    (select contact_phone from customers where id = '44444444-0000-0000-0000-000000000001'),
+    (select phone from customers where id = '44444444-0000-0000-0000-000000000001'));
+
+  -- link by email identity
+  perform as_google('77777777-0000-0000-0000-000000000031', 'Asha@Gmail.com', 'Asha Kulkarni');
+  v_cust := link_current_user_to_customer(null, null);
+  perform assert_eq('T19 second link is idempotent', link_current_user_to_customer(null, null), v_cust);
+  perform assert_eq('T19 email lowercased', (select email from customers where id = v_cust), 'asha@gmail.com');
+  perform assert_eq('T19 name from Google profile', (select name from customers where id = v_cust), 'Asha Kulkarni');
+  perform assert_eq('T19 no phone yet', (select phone from customers where id = v_cust), null::text);
+  perform assert_eq('T19 no contact yet', (select contact_phone from customers where id = v_cust), null::text);
+
+  r := upsert_my_address(null, '33333333-0000-0000-0000-000000000001', '3rd Cross, Chittawadgi', 'Near the tank');
+  perform assert_eq('T19 google customer can add an address', r->>'ok', 'true');
+  v_addr := (r->>'id')::uuid;
+  perform as_service();
+
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  perform admin_adjust_stock('22222222-0000-0000-0000-000000000001', 10, 'RESTOCK');
+  perform as_service();
+  r := place_order(v_cust, v_addr,
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb, 'COD', 37000);
+  perform assert_eq('T19 checkout refused without a number', r->>'error', 'NO_CONTACT_PHONE');
+
+  perform as_google('77777777-0000-0000-0000-000000000031', 'asha@gmail.com', 'Asha Kulkarni');
+  r := set_my_contact_phone('12345');
+  perform assert_eq('T19 short number refused', r->>'error', 'INVALID_PHONE');
+  r := set_my_contact_phone('098765 43210');
+  perform assert_eq('T19 contact number saved', r->>'phone', '+919876543210');
+  perform as_service();
+
+  r := place_order(v_cust, v_addr,
+                   '[{"product_id":"22222222-0000-0000-0000-000000000001","qty":1}]'::jsonb, 'COD', 37000);
+  perform assert_eq('T19 checkout ok with a contact number', r->>'ok', 'true');
+  v_order := (r->>'order_id')::uuid;
+  perform assert_eq('T19 snapshot carries the callable number',
+    (select delivery_snapshot->>'phone' from orders where id = v_order), '+919876543210');
+  perform transition_order(v_order, 'CANCELLED', 'ADMIN');
+
+  -- staff lookup by the contact number finds her, not a duplicate
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  v_found := find_or_create_customer('+919876543210', null);
+  perform as_service();
+  perform assert_eq('T19 staff lookup matches the contact number', v_found, v_cust);
+
+  -- a session with neither phone nor email still cannot link
+  perform as_user('77777777-0000-0000-0000-000000000032');
+  begin
+    perform link_current_user_to_customer(null, null);
+    v_err := 'no error';
+  exception when insufficient_privilege then v_err := 'refused';
+  end;
+  perform as_service();
+  perform assert_eq('T19 no phone, no email: refused', v_err, 'refused');
+end $$;
+
+drop function as_google(text, text, text);
+
 drop function as_user(text, text);
 drop function as_service();

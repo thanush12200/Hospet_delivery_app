@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type { Order, OrderItem } from '@/types/db'
 
 export interface RiderOrder extends Order {
-  customers: { name: string | null; phone: string } | null
+  customers: { name: string | null; phone: string | null; contact_phone: string | null } | null
   addresses: { line1: string; landmark: string | null; lat: number | null; lng: number | null } | null
   order_items: OrderItem[]
 }
@@ -16,7 +16,7 @@ export interface RiderOrder extends Order {
 export async function listMyDeliveries(riderId: string): Promise<RiderOrder[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, customers(name, phone), addresses(line1, landmark, lat, lng), order_items(*)')
+    .select('*, customers(name, phone, contact_phone), addresses(line1, landmark, lat, lng), order_items(*)')
     .eq('rider_id', riderId)
     .in('status', ['PACKED', 'OUT_FOR_DELIVERY'])
     .order('placed_at')

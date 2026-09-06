@@ -10,6 +10,7 @@ import { listActiveOrders, subscribeToOrders, transitionOrder, type AdminOrder }
 import { describeTransitionError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { OrderStatus } from '@/types/db'
+import { callablePhone } from '@/lib/phone'
 
 const COLUMNS: { status: OrderStatus; label: string; next?: OrderStatus; nextLabel?: string }[] = [
   { status: 'PLACED',           label: 'New',          next: 'CONFIRMED',        nextLabel: 'Accept' },
@@ -94,7 +95,7 @@ export default function OrderBoard() {
       <Stack direction="row" spacing={1.5} sx={{ overflowX: 'auto', pb: 2, alignItems: 'flex-start' }}>
         {COLUMNS.map((col) => {
           const needle = query.trim().toLowerCase()
-          const items = orders.filter((o) => o.status === col.status && `${o.order_no} ${o.customers?.name ?? ''} ${o.customers?.phone ?? ''}`.toLowerCase().includes(needle))
+          const items = orders.filter((o) => o.status === col.status && `${o.order_no} ${o.customers?.name ?? ''} ${callablePhone(o.customers) ?? ''}`.toLowerCase().includes(needle))
           return (
             <Box key={col.status} className={`order-lane lane-${col.status.toLowerCase()}`} sx={{ minWidth: 220, flex: 1, width: 220, p: 1, bgcolor: '#F2F5EF' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
@@ -121,7 +122,7 @@ export default function OrderBoard() {
                       <Typography variant="caption" color="text.secondary">{minutesAgo(o.placed_at)}</Typography>
                     </Stack>
                     <Typography variant="caption" color="text.secondary" display="block" noWrap>
-                      {o.customers?.name ?? 'Unnamed'} · {o.customers?.phone}
+                      {o.customers?.name ?? 'Unnamed'} · {callablePhone(o.customers)}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" display="block" noWrap>
                       {o.addresses?.landmark ?? o.addresses?.line1}

@@ -11,7 +11,7 @@ import type {
  * phone from the verified JWT claim; the argument is only a fallback for
  * staff accounts that sign in by email.
  */
-export async function linkMyCustomer(phone: string, name?: string): Promise<string> {
+export async function linkMyCustomer(phone: string | null, name?: string): Promise<string> {
   const { data, error } = await supabase.rpc('link_current_user_to_customer', {
     p_phone: phone, p_name: name ?? null,
   })
@@ -24,7 +24,7 @@ export async function getMyProfile(): Promise<Customer | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const { data, error } = await supabase
-    .from('customers').select('id, phone, name').eq('auth_uid', user.id).maybeSingle()
+    .from('customers').select('id, phone, contact_phone, email, name').eq('auth_uid', user.id).maybeSingle()
   if (error) throw error
   return (data as Customer | null) ?? null
 }
@@ -34,6 +34,15 @@ export async function updateMyProfile(name: string): Promise<void> {
   if (error) throw error
   const r = data as { ok: boolean; error?: string }
   if (!r.ok) throw new Error(r.error === 'INVALID_NAME' ? 'Please enter a name.' : 'Could not save your name.')
+}
+
+/** The number the rider calls. Validated server-side as an Indian mobile. */
+export async function setMyContactPhone(phone: string): Promise<string> {
+  const { data, error } = await supabase.rpc('set_my_contact_phone', { p_phone: phone })
+  if (error) throw error
+  const r = data as { ok: boolean; error?: string; phone?: string }
+  if (!r.ok) throw new Error(r.error === 'INVALID_PHONE' ? 'Enter a 10-digit Indian mobile number.' : 'Could not save the number.')
+  return r.phone ?? phone
 }
 
 // ---------------------------------------------------------------- addresses
