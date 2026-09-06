@@ -5,6 +5,7 @@ import {
   TextField, Typography,
 } from '@mui/material'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { uploadProductImage } from '@/api/storage'
 import { getAvailability } from '@/api/inventory'
@@ -122,6 +123,9 @@ export default function Catalogue() {
           onClick={() => setDraft({ ...EMPTY, category_id: categories[0]?.id ?? '' })}
         >
           Add product
+        </Button>
+        <Button size="small" variant="outlined" component={Link} to="/admin/import">
+          Import CSV
         </Button>
       </Stack>
 
