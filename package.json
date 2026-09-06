@@ -10,8 +10,9 @@
     "preview": "vite preview",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "typecheck": "tsc -b --noEmit",
-    "db:reset": "dropdb --if-exists hospet_test && createdb hospet_test && psql -q -v ON_ERROR_STOP=1 -d hospet_test -f supabase/tests/local_auth_shim.sql && psql -q -v ON_ERROR_STOP=1 -d hospet_test -f supabase/migrations/0001_schema.sql && psql -q -v ON_ERROR_STOP=1 -d hospet_test -f supabase/migrations/0002_functions.sql && psql -q -v ON_ERROR_STOP=1 -d hospet_test -f supabase/seed.sql && psql -q -v ON_ERROR_STOP=1 -d hospet_test -f supabase/migrations/0003_rls.sql && psql -q -d hospet_test -c \"grant all on all tables in schema public to anon, authenticated;\"",
-    "db:test": "npm run db:reset && psql -q -d hospet_test -f supabase/tests/lifecycle_test.sql && ./supabase/tests/oversell_test.sh hospet_test 10"
+    "db:reset": "./scripts/db-reset.sh",
+    "db:test": "./scripts/db-test.sh",
+    "test": "vitest run"
   },
   "dependencies": {
     "@emotion/react": "^11.13.0",
