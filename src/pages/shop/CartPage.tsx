@@ -4,6 +4,7 @@ import {
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { useNavigate } from 'react-router-dom'
+import { BottomNav } from '@/components/BottomNav'
 import { QtyStepper } from '@/components/QtyStepper'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
@@ -28,7 +29,7 @@ export default function CartPage() {
   }
 
   return (
-    <Box sx={{ pb: 14 }}>
+    <Box sx={{ pb: 'calc(150px + env(safe-area-inset-bottom))' }}>
       <AppBar position="sticky" color="inherit" sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
         <Toolbar>
           <IconButton edge="start" onClick={() => navigate(-1)} aria-label="Back">
@@ -75,14 +76,15 @@ export default function CartPage() {
       </Container>
 
       <Box sx={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, p: 2,
-        pb: 'calc(16px + env(safe-area-inset-bottom))',
+        position: 'fixed', left: 0, right: 0, p: 2,
+        bottom: 'calc(58px + env(safe-area-inset-bottom))',
         bgcolor: '#fff', borderTop: '1px solid', borderColor: 'divider',
       }}>
         <Button fullWidth size="large" variant="contained" onClick={() => navigate('/checkout')}>
           Proceed · {paiseToRupees(total)}
         </Button>
       </Box>
+      <BottomNav />
     </Box>
   )
 }

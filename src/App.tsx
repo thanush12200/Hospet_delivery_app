@@ -9,6 +9,8 @@ import { AuthProvider } from '@/auth/AuthProvider'
 // bundle. This is what keeps the shop inside its budget.
 const ShopHome     = lazy(() => import('@/pages/shop/ShopHome'))
 const CartPage     = lazy(() => import('@/pages/shop/CartPage'))
+const CategoriesPage = lazy(() => import('@/pages/shop/CategoriesPage'))
+const OrdersPage   = lazy(() => import('@/pages/shop/OrdersPage'))
 const AdminLayout  = lazy(() => import('@/pages/admin/AdminLayout'))
 const OrderBoard   = lazy(() => import('@/pages/admin/OrderBoard'))
 const OrderDetail  = lazy(() => import('@/pages/admin/OrderDetail'))
@@ -27,6 +29,8 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<ShopHome />} />
                 <Route path="/cart" element={<CartPage />} />
+                <Route path="/categories" element={<CategoriesPage />} />
+                <Route path="/orders" element={<OrdersPage />} />
 
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<OrderBoard />} />

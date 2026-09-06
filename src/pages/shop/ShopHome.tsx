@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import {
-  AppBar, Box, Chip, Container, InputAdornment,
-  Skeleton, Stack, TextField, Toolbar, Typography,
-} from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
-import AccessTimeIcon from '@mui/icons-material/AccessTime'
+import { Box, Skeleton, Typography } from '@mui/material'
 import { ProductCard } from '@/components/ProductCard'
 import { StickyCartBar } from '@/components/StickyCartBar'
+import { BottomNav } from '@/components/BottomNav'
+import { ShopHeader } from '@/components/shop/ShopHeader'
+import { CategoryIconRail } from '@/components/shop/CategoryIconRail'
+import { PromoBanner } from '@/components/shop/PromoBanner'
+import { CategoryTiles } from '@/components/shop/CategoryTiles'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { searchProducts } from '@/api/catalogue'
 import { useCart } from '@/store/cartContext'
@@ -17,98 +17,77 @@ export default function ShopHome() {
   const [query, setQuery] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
 
-  // All filtering is local against the cached catalogue — no network, no delay.
+  // All filtering runs against the IndexedDB-cached catalogue. No network,
+  // no debounce, no spinner -- results update as the user types.
   const visible = useMemo(() => {
     if (!catalogue) return []
-    const byCategory = categoryId
+    const inCategory = categoryId
       ? catalogue.products.filter((p) => p.category_id === categoryId)
       : catalogue.products
-    return searchProducts(byCategory, query)
+    return searchProducts(inCategory, query)
   }, [catalogue, categoryId, query])
+
+  const browsing = !query && !categoryId
+  const activeCategory = catalogue?.categories.find((c) => c.id === categoryId)
 
   if (error) {
     return (
-      <Container sx={{ py: 6, textAlign: 'center' }}>
-        <Typography variant="h6" gutterBottom>Could not load the catalogue</Typography>
+      <Box sx={{ py: 8, px: 3, textAlign: 'center' }}>
+        <Typography sx={{ fontSize: 40, mb: 1 }}>📡</Typography>
+        <Typography variant="h6" gutterBottom>Can&apos;t reach the shop</Typography>
         <Typography variant="body2" color="text.secondary">
-          Check your connection and pull to refresh.
+          Check your connection and pull down to refresh.
         </Typography>
-      </Container>
+      </Box>
     )
   }
 
   return (
-    <Box sx={{ pb: 12 }}>
-      <AppBar position="sticky" color="inherit" sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Toolbar sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1, py: 1.5 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Box>
-              <Typography
-                variant="h5"
-                lineHeight={1}
-                sx={{ fontWeight: 800, color: 'primary.main', letterSpacing: '-0.02em' }}
-              >
-                Wink
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Everything you need, in a wink
-              </Typography>
-            </Box>
-            <Stack direction="row" alignItems="center" spacing={0.5}>
-              <AccessTimeIcon fontSize="small" color="primary" />
-              <Box sx={{ textAlign: 'right' }}>
-                <Typography variant="body2" fontWeight={700} lineHeight={1.1}>45 min</Typography>
-                <Typography variant="caption" color="text.secondary">Hospet · 583201</Typography>
-              </Box>
-            </Stack>
-          </Stack>
-          <TextField
-            size="small" fullWidth placeholder="Search for rice, dal, tea…"
-            value={query} onChange={(e) => setQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
-              ),
-            }}
-          />
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', bgcolor: '#fff', minHeight: '100dvh' }}>
+      <ShopHeader
+        query={query}
+        onQueryChange={setQuery}
+        address="Chittawadgi, Hospet · 583201"
+      />
 
-      <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1, overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
-        <Chip
-          label="All" color={categoryId === null ? 'primary' : 'default'}
-          onClick={() => setCategoryId(null)}
-          variant={categoryId === null ? 'filled' : 'outlined'}
+      <CategoryIconRail
+        categories={catalogue?.categories ?? []}
+        selected={categoryId}
+        onSelect={(id) => { setCategoryId(id); setQuery('') }}
+      />
+
+      {browsing && <PromoBanner />}
+      {browsing && catalogue && (
+        <CategoryTiles
+          categories={catalogue.categories}
+          products={catalogue.products}
+          onSelect={setCategoryId}
         />
-        {catalogue?.categories.map((c) => (
-          <Chip
-            key={c.id} label={c.name}
-            color={categoryId === c.id ? 'primary' : 'default'}
-            variant={categoryId === c.id ? 'filled' : 'outlined'}
-            onClick={() => setCategoryId(c.id)}
-          />
-        ))}
-      </Box>
+      )}
 
-      <Container sx={{ px: 2 }}>
+      <Box sx={{ px: 2, pt: 2.5 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: 16, mb: 1.25 }}>
+          {query ? `Results for “${query}”` : activeCategory ? activeCategory.name : 'All products'}
+        </Typography>
+
         {loading ? (
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 1.5 }}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} variant="rounded" height={230} />
-            ))}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 1.25 }}>
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} variant="rounded" height={228} />)}
           </Box>
         ) : visible.length === 0 ? (
-          <Box sx={{ py: 8, textAlign: 'center' }}>
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: 34, mb: 0.5 }}>🔍</Typography>
             <Typography variant="body2" color="text.secondary">
-              Nothing matches “{query}”.
+              Nothing matches {query ? `“${query}”` : 'this category'} yet.
             </Typography>
           </Box>
         ) : (
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 1.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 1.25 }}>
             {visible.map((p) => (
               <ProductCard
                 key={p.id}
                 product={p}
+                categoryName={catalogue?.categories.find((c) => c.id === p.category_id)?.name}
                 qty={cart.qtyOf(p.id)}
                 available={availability.get(p.id)}
                 onAdd={() => cart.add(p)}
@@ -117,9 +96,10 @@ export default function ShopHome() {
             ))}
           </Box>
         )}
-      </Container>
+      </Box>
 
       <StickyCartBar />
+      <BottomNav />
     </Box>
   )
 }
