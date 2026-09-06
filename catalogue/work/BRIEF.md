@@ -2,10 +2,12 @@
 
 You are filling in product content for FAA, a grocery delivery app in Hospet, Karnataka
 (single store, sells at MRP, customers are Kannada/English speakers). Work through EVERY row
-of your group CSV (`catalogue/work/group-<X>.csv`, columns: slug,name,name_kn,unit,category,brand)
-and append one JSON object per row to `catalogue/work/group-<X>.jsonl`. Do not modify any other
-file in the repo. Do not skip rows: if something cannot be found, still write the row with
-`null` fields and a `notes` string saying what you tried.
+of your list (`catalogue/work/remaining-<X>.csv`, columns: slug,name,name_kn,unit,category,brand)
+and APPEND one JSON object per row to `catalogue/work/group-<X>.jsonl` (that file already has
+finished rows from an earlier run: never rewrite or truncate it, only append). Do not create,
+delete or modify any other file in the repo except new downloads under catalogue/images/raw/.
+Do not skip rows: if something cannot be found, still write the row with `null` fields and a
+`notes` string saying what you tried. Work in the repo root; do not make your own helper folders.
 
 Each row is a PRODUCT TYPE at a pack size, not a specific SKU (only the Nandini dairy rows are
 branded). For each row produce:
@@ -35,7 +37,8 @@ JioMart, Flipkart, brand websites or Google Images.
 1. **Open Food Facts** (packaged FOOD; CC BY-SA 3.0, credit "Open Food Facts contributors"):
    `https://world.openfoodfacts.org/cgi/search.pl?search_terms=<q>&search_simple=1&action=process&json=1&page_size=10&fields=code,product_name,brands,image_front_url,image_url,countries_tags`
    Prefer results with `en:india` in countries_tags and a clean front pack shot. page_url =
-   `https://world.openfoodfacts.org/product/<code>`. Always send a User-Agent (fetch.sh does).
+   `https://world.openfoodfacts.org/product/<code>`. Always send a User-Agent (fetch.sh does;
+   for curl on the API add -A "FAA-Hospet-catalogue/1.0").
 2. **Wikimedia Commons** (produce, loose staples, generic household items):
    `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=<q>&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=800&format=json`
    Use `thumburl` (800px) as source_url, `descriptionurl` as page_url, and read the licence
@@ -64,5 +67,6 @@ knowledge when a search is not possible, and say which in mrp_source. The store 
 every price before going live, so an honest estimate beats a blank.
 
 ## Working method
-Do the rows in order. Append to the JSONL as you finish each row (one line per row) so partial
-progress is never lost. At the end, print how many rows have an image and how many do not.
+Do the rows in order. Append to the JSONL as you finish each row (one line per row, `>>`) so
+partial progress is never lost. Keep tool calls lean: one API search per candidate source, then
+download. At the end, print how many rows have an image and how many do not.

@@ -14,12 +14,12 @@ This project serves that market from an existing FMCG distributorship — the st
 
 | | Quick-commerce majors | This |
 |---|---|---|
-| Delivery promise | 10 minutes | **45–60 minutes** |
+| Delivery promise | 10 minutes | **15 minutes** (per-area `zones.sla_minutes`) |
 | Catalogue | 2,000+ SKUs | **300–500 fast movers** |
 | Pricing | Discounted below MRP | **At MRP** — the retail margin is the business |
 | Break-even | 1,000+ orders/day | **30–50 orders/day** |
 
-Ten-minute delivery is what makes those cost structures impossible. In a town where the alternative is walking to the shop, 45 minutes is an excellent service — and it is profitable at a volume this market can actually produce.
+In a town where the alternative is walking to the shop, a 15-minute promise from a single store a few minutes away is achievable without the cost structure of the metro players, and it is profitable at a volume this market can actually produce.
 
 ---
 

@@ -4,9 +4,9 @@ import { cancelSecondsLeft, etaHeadline, promisedAt } from './eta'
 const placed = '2026-09-06T10:00:00.000Z'
 
 describe('promisedAt', () => {
-  it('adds the zone SLA, defaulting to 45', () => {
+  it('adds the zone SLA, defaulting to the brand promise (15)', () => {
     expect(promisedAt(placed, 30).toISOString()).toBe('2026-09-06T10:30:00.000Z')
-    expect(promisedAt(placed, null).toISOString()).toBe('2026-09-06T10:45:00.000Z')
+    expect(promisedAt(placed, null).toISOString()).toBe('2026-09-06T10:15:00.000Z')
   })
 })
 

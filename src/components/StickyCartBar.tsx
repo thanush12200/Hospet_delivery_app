@@ -14,11 +14,11 @@ export function StickyCartBar() {
     <Slide direction="up" in={count > 0} mountOnEnter unmountOnExit>
       <Box
         sx={{
-          position: 'fixed', left: 8, right: 8, zIndex: 1200,
+          position: 'fixed', left: 12, right: 12, zIndex: 1200, maxWidth: 560, mx: 'auto',
           // Sits directly above the tab bar, not underneath it.
-          bottom: 'calc(58px + env(safe-area-inset-bottom) + 8px)',
-          p: 1.25, px: 2, borderRadius: 3,
-          bgcolor: 'primary.main', color: '#fff',
+          bottom: { xs: 'calc(58px + env(safe-area-inset-bottom) + 8px)', md: 16 },
+          p: 1.25, px: 2, borderRadius: '8px', gap: 1,
+          bgcolor: 'success.main', color: '#fff',
           boxShadow: `0 6px 20px ${BRAND_SHADOW}`,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
@@ -34,7 +34,7 @@ export function StickyCartBar() {
         <Button
           variant="contained"
           onClick={() => navigate('/cart')}
-          sx={{ bgcolor: '#fff', color: 'primary.main', '&:hover': { bgcolor: '#F1F1F1' } }}
+          sx={{ bgcolor: '#fff', color: 'success.main', flexShrink: 0, '&:hover': { bgcolor: '#F1F1F1' } }}
         >
           View cart
         </Button>
