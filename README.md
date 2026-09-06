@@ -95,22 +95,78 @@ Live stock is the deliberate exception — it is never cached. Showing a stale "
 
 ---
 
-## Getting started
+## Getting started on a new machine
 
 ```bash
+git clone https://github.com/thanush12200/Hospet_delivery_app.git wink
+cd wink
 npm install
-cp .env.example .env      # point at your Supabase project (ap-south-1)
+```
+
+### 1. Environment (required)
+
+Three files are deliberately **not** in git because they hold secrets. Recreate them:
+
+**`.env`** — the app will not boot without it:
+
+```
+VITE_SUPABASE_URL=https://troouqapzkufohftxvne.supabase.co
+VITE_SUPABASE_ANON_KEY=<Supabase -> Settings -> API Keys -> anon / publishable>
+```
+
+**`.pgpass_raw`** — only needed to run migrations or tests against the live
+database from the terminal:
+
+```bash
+printf '%s' '<your Supabase database password>' > .pgpass_raw
+chmod 600 .pgpass_raw
+```
+
+If you have lost the password: Supabase → Settings → Database → Reset database
+password. Nothing else depends on it.
+
+### 2. Run it
+
+```bash
 npm run dev               # http://localhost:3020
 ```
 
-### Database
+### 3. Deploying from this machine (optional)
+
+Pushing to `main` deploys automatically via GitHub Actions, so this is only
+needed for an out-of-band deploy:
+
+```bash
+npx wrangler@3 login      # opens a browser
+npm run build
+npx wrangler@3 pages deploy dist --project-name=wink
+```
+
+Wrangler v3 is pinned because v4 requires Node 22.
+
+### 4. Local database (optional)
+
+Only needed to run the SQL test suites offline:
 
 ```bash
 npm run db:reset          # create hospet_test, apply migrations, seed
 npm run db:test           # reset, then run the full test suite
 ```
 
-Or apply to Supabase by running the files in `supabase/migrations/` in order.
+### Applying migrations to Supabase
+
+`scripts/remote-psql.sh` connects to the live database, or paste the files in
+`supabase/migrations/` into the SQL editor in numeric order.
+
+Supabase's direct host `db.<ref>.supabase.co` publishes only an IPv6 address.
+On an IPv4-only network it will not resolve at all, which is why the script
+goes through the Supavisor pooler (`aws-0-ap-south-1`, session mode 5432)
+instead. Session mode is required — transaction mode (6543) does not support
+everything migrations need.
+
+**Never run `supabase/tests/local_auth_shim.sql` against Supabase.** It stubs
+`auth.uid()` and the `anon` / `authenticated` roles for plain Postgres;
+Supabase has real versions and the shim would overwrite them.
 
 ### Creating the first admin
 
