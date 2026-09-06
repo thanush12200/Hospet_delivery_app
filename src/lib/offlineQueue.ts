@@ -14,7 +14,7 @@ const KEY = 'rider.queue.v1'
 
 export interface QueuedAction {
   id: string
-  kind: 'DELIVERED' | 'FAILED'
+  kind: 'PICKED_UP' | 'DELIVERED' | 'FAILED'
   orderId: string
   riderId: string
   note?: string
