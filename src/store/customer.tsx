@@ -47,7 +47,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       }
       setProfile(p)
       // The profile stands even if the address book cannot be read right now.
-      try { setAddresses(p ? await listMyAddresses() : []) } catch { setAddresses([]) }
+      try { setAddresses(p ? await listMyAddresses(p.id) : []) } catch { setAddresses([]) }
     } catch {
       setProfile(null); setAddresses([])
     } finally {

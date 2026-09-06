@@ -10,8 +10,10 @@ import { GEO_MESSAGE, getCurrentCoords, nearestZone, type GeoError } from '@/lib
 import { markWelcomeSeen } from '@/lib/welcome'
 import { BRAND, BRAND_TINT } from '@/theme/brand'
 
+import { SPLASH_TOTAL_MS } from '@/components/SplashScreen'
+
 /** After the splash has faded. */
-const AFTER_SPLASH_MS = 1900
+const AFTER_SPLASH_MS = SPLASH_TOTAL_MS + 100
 
 /**
  * The first thing a new device sees after the splash: where should we

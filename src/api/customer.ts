@@ -47,9 +47,27 @@ export async function setMyContactPhone(phone: string): Promise<string> {
 
 // ---------------------------------------------------------------- addresses
 
-export async function listMyAddresses(): Promise<Address[]> {
+/**
+ * The signed-in customer's id, or null. Every "my" query below filters by
+ * it explicitly rather than trusting RLS to narrow the rows: RLS lets a
+ * staff account read every customer (the admin console needs that), and a
+ * staff member browsing the shop must still see only their own address book
+ * and orders.
+ */
+export async function myCustomerId(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data, error } = await supabase.from('customers').select('id').eq('auth_uid', user.id).maybeSingle()
+  if (error) throw error
+  return (data as { id: string } | null)?.id ?? null
+}
+
+export async function listMyAddresses(customerId?: string): Promise<Address[]> {
+  const id = customerId ?? await myCustomerId()
+  if (!id) return []
   const { data, error } = await supabase
     .from('addresses').select('*')
+    .eq('customer_id', id)
     .is('deleted_at', null)
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: false })
@@ -171,8 +189,11 @@ export const ORDERS_PAGE = 20
 
 /** Newest first, a page at a time; pass the oldest placed_at seen to get the next page. */
 export async function listMyOrders(before?: string): Promise<OrderWithItems[]> {
+  const id = await myCustomerId()
+  if (!id) return []
   let q = supabase
     .from('orders').select(ORDER_LIST_SELECT)
+    .eq('customer_id', id)
     .order('placed_at', { ascending: false }).limit(ORDERS_PAGE)
   if (before) q = q.lt('placed_at', before)
   const { data, error } = await q
@@ -181,10 +202,12 @@ export async function listMyOrders(before?: string): Promise<OrderWithItems[]> {
 }
 
 export async function getMyOrder(id: string): Promise<OrderDetail> {
+  const mine = await myCustomerId()
+  if (!mine) throw new Error('Sign in to see this order.')
   const { data, error } = await supabase
     .from('orders')
     .select(`${ORDER_LIST_SELECT}, addresses(line1, landmark, label)`)
-    .eq('id', id).single()
+    .eq('id', id).eq('customer_id', mine).single()
   if (error) throw error
   return data as unknown as OrderDetail
 }
