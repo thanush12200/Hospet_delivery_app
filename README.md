@@ -145,8 +145,9 @@ src/
   store/        cart (localStorage-backed, survives refresh)
   theme/        MUI theme
 supabase/
-  migrations/   0001_schema.sql, 0002_functions.sql
-  tests/        lifecycle_test.sql, oversell_test.sh
+  migrations/   0001_schema.sql, 0002_functions.sql, 0003_rls.sql
+  tests/        lifecycle_test.sql, rls_test.sql, oversell_test.sh,
+                local_auth_shim.sql (local only)
   seed.sql
 ```
 
