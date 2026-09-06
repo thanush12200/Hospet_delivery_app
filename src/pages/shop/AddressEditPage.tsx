@@ -7,6 +7,7 @@ import MyLocationIcon from '@mui/icons-material/MyLocation'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { upsertMyAddress } from '@/api/customer'
 import { safeReturnTo } from '@/lib/returnTo'
+import { PlaceSearch } from '@/components/shop/PlaceSearch'
 import { SubPageBar } from '@/components/shop/SubPageBar'
 import { LABELS } from '@/lib/address'
 import {
@@ -120,6 +121,11 @@ export default function AddressEditPage() {
         {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
         <Box sx={{ mb: 2 }}>
+          <PlaceSearch near={mapCenter} onPick={(place) => {
+            applyPin({ lat: place.lat, lng: place.lng }, true)
+            setLandmark((l) => l.trim() ? l : place.name)
+            setGeoNote((n) => `Pin moved to ${place.name}. Drag it to your door if needed.${n ? ` ${n}` : ''}`)
+          }} />
           {showMap ? (
             <Suspense fallback={<Skeleton variant="rounded" height={220} />}>
               <AddressMap value={pin} center={mapCenter} onChange={(p) => applyPin(p, false)} />

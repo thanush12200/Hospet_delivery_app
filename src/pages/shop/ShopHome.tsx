@@ -4,7 +4,7 @@ import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ProductCard } from '@/components/ProductCard'
 import { CategoryIconRail } from '@/components/shop/CategoryIconRail'
-import { PromoBanner } from '@/components/shop/PromoBanner'
+import { HeroCarousel } from '@/components/shop/HeroCarousel'
 import { CategoryTiles } from '@/components/shop/CategoryTiles'
 import { DealsBoard } from '@/components/shop/DealsBoard'
 import { PRODUCT_PARAM } from '@/components/shop/ProductSheet'
@@ -42,7 +42,8 @@ export default function ShopHome() {
 
   return (
     <div className="shop-home">
-      {!categoryId && <PromoBanner freeAbovePaise={customer.activeZone?.free_delivery_above_paise ?? null}
+      {!categoryId && <HeroCarousel products={catalogue?.products ?? []} categories={catalogue?.categories ?? []} config={customer.storeConfig}
+        freeAbovePaise={customer.activeZone?.free_delivery_above_paise ?? null}
         zoneName={customer.activeZone?.name} minutes={customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} />}
       {!categoryId && catalogue && <DealsBoard products={catalogue.products} categories={catalogue.categories} config={customer.storeConfig} />}
       {!categoryId && catalogue && <CategoryTiles categories={shelf} products={catalogue.products}
