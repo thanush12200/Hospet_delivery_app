@@ -3,7 +3,9 @@ import {
   Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
   Divider, Paper, Stack, Switch, TextField, Typography,
 } from '@mui/material'
+import MyLocationIcon from '@mui/icons-material/MyLocation'
 import { supabase } from '@/lib/supabase'
+import { GEO_MESSAGE, getCurrentCoords, type GeoError } from '@/lib/geo'
 import { paiseToRupees } from '@/lib/money'
 import type { Zone } from '@/types/db'
 
@@ -14,9 +16,15 @@ interface Draft {
   fee: string      // rupees
   min: string      // rupees
   is_active: boolean
+  lat: number | null
+  lng: number | null
+  radius: string   // metres
 }
 
-const EMPTY: Draft = { id: null, name: '', name_kn: '', fee: '20', min: '150', is_active: true }
+const EMPTY: Draft = {
+  id: null, name: '', name_kn: '', fee: '20', min: '150',
+  is_active: true, lat: null, lng: null, radius: '1200',
+}
 
 /**
  * Delivery areas.
@@ -32,6 +40,8 @@ export default function Zones() {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [geoBusy, setGeoBusy] = useState(false)
+  const [geoNote, setGeoNote] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -60,6 +70,9 @@ export default function Zones() {
         p_delivery_fee_paise: Math.round(Number(draft.fee || 0) * 100),
         p_min_order_paise: Math.round(Number(draft.min || 0) * 100),
         p_is_active: draft.is_active,
+        p_lat: draft.lat,
+        p_lng: draft.lng,
+        p_radius_m: draft.radius === '' ? null : Number(draft.radius),
       })
       if (error) throw error
       const r = data as { ok: boolean; error?: string }
@@ -104,11 +117,14 @@ export default function Zones() {
                   </Typography>
                 </Box>
                 {!z.is_active && <Chip size="small" label="off" />}
+                {z.lat == null && <Chip size="small" color="warning" label="no centre" />}
                 <Button size="small" onClick={() => setDraft({
                   id: z.id, name: z.name, name_kn: z.name_kn ?? '',
                   fee: (z.delivery_fee_paise / 100).toString(),
                   min: (z.min_order_paise / 100).toString(),
                   is_active: z.is_active,
+                  lat: z.lat, lng: z.lng,
+                  radius: z.radius_m == null ? '1200' : z.radius_m.toString(),
                 })}>Edit</Button>
               </Stack>
             )
@@ -139,6 +155,39 @@ export default function Zones() {
                   sx={{ flex: 1 }} onChange={(e) => setDraft({ ...draft, min: e.target.value })}
                   helperText="Below this, checkout is blocked" />
               </Stack>
+              <Divider />
+              <Typography variant="caption" color="text.secondary">
+                Centre point (optional). With one set, a customer who taps
+                &ldquo;use my location&rdquo; has this area chosen automatically —
+                no maps bill, just the nearest centre. Stand in the middle of
+                the locality and tap below.
+              </Typography>
+              <Button
+                size="small" variant="outlined" startIcon={<MyLocationIcon />}
+                disabled={geoBusy}
+                onClick={async () => {
+                  setGeoBusy(true); setGeoNote(null)
+                  try {
+                    const c = await getCurrentCoords()
+                    setDraft((d) => (d ? { ...d, lat: c.lat, lng: c.lng } : d))
+                    setGeoNote(`Captured, accurate to about ${Math.round(c.accuracyM)} m`)
+                  } catch (err) {
+                    setGeoNote(GEO_MESSAGE[err as GeoError] ?? GEO_MESSAGE.UNAVAILABLE)
+                  } finally { setGeoBusy(false) }
+                }}
+              >
+                {geoBusy ? 'Finding…' : draft.lat == null ? 'Set centre from my location' : 'Re-capture centre'}
+              </Button>
+              {draft.lat != null && (
+                <Typography variant="caption" color="success.main">
+                  {draft.lat.toFixed(5)}, {draft.lng?.toFixed(5)}
+                </Typography>
+              )}
+              {geoNote && <Typography variant="caption" color="text.secondary">{geoNote}</Typography>}
+              <TextField size="small" type="number" label="Match radius (m)" value={draft.radius}
+                onChange={(e) => setDraft({ ...draft, radius: e.target.value })}
+                helperText="Beyond this, we warn the customer we may not deliver" />
+
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Switch checked={draft.is_active}
                   onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })} />

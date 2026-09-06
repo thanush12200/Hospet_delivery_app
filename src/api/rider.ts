@@ -3,14 +3,14 @@ import type { Order, OrderItem } from '@/types/db'
 
 export interface RiderOrder extends Order {
   customers: { name: string | null; phone: string } | null
-  addresses: { line1: string; landmark: string | null } | null
+  addresses: { line1: string; landmark: string | null; lat: number | null; lng: number | null } | null
   order_items: OrderItem[]
 }
 
 export async function listMyDeliveries(): Promise<RiderOrder[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, customers(name, phone), addresses(line1, landmark), order_items(*)')
+    .select('*, customers(name, phone), addresses(line1, landmark, lat, lng), order_items(*)')
     .in('status', ['PACKED', 'OUT_FOR_DELIVERY'])
     .order('placed_at')
   if (error) throw error

@@ -11,6 +11,7 @@ import {
   type CashToday, type RiderOrder,
 } from '@/api/rider'
 import { drain, enqueue, pending } from '@/lib/offlineQueue'
+import { mapsLink } from '@/lib/geo'
 import { useAuth } from '@/auth/authContext'
 import { paiseToRupees } from '@/lib/money'
 import AdminLogin from '../admin/AdminLogin'
@@ -175,9 +176,10 @@ export default function MyDeliveries() {
                 </Button>
                 <Button
                   fullWidth size="large" variant="outlined" startIcon={<NavigationIcon />}
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    `${o.addresses?.landmark ?? ''} ${o.addresses?.line1 ?? ''} Hospet`,
-                  )}`}
+                  href={mapsLink({
+                    lat: o.addresses?.lat, lng: o.addresses?.lng,
+                    landmark: o.addresses?.landmark, line1: o.addresses?.line1,
+                  })}
                   target="_blank" rel="noreferrer"
                 >
                   Map
