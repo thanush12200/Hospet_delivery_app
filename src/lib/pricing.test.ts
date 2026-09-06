@@ -4,7 +4,7 @@ import type { Zone } from '@/types/db'
 
 const zone: Zone = {
   id: 'z', name: 'Chittawadgi', name_kn: null, delivery_fee_paise: 2000, min_order_paise: 10000,
-  is_active: true, lat: null, lng: null, radius_m: null, free_delivery_above_paise: 30000,
+  is_active: true, lat: null, lng: null, radius_m: null, free_delivery_above_paise: 30000, sla_minutes: 45,
 }
 
 describe('computePricing', () => {
