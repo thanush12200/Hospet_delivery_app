@@ -25,7 +25,7 @@ export function PromoBanner({ freeAbovePaise, zoneName, minutes = BRAND.promiseM
       </section>
       <div className="shop-promises">
         <span><LocalShippingOutlinedIcon />{freeAbovePaise != null ? `Free delivery over ${paiseToRupees(freeAbovePaise)}${zoneName ? ` in ${zoneName}` : ''}` : 'Delivered from our Hospet store'}</span>
-        <span><VerifiedOutlinedIcon />Every item at MRP</span>
+        <span><VerifiedOutlinedIcon />No hidden charges</span>
         <span><PaymentsOutlinedIcon />Cash or UPI at your door</span>
       </div>
     </>

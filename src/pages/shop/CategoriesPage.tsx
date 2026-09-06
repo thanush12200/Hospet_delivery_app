@@ -1,12 +1,15 @@
 import { Box, Typography } from '@mui/material'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CategoryTiles } from '@/components/shop/CategoryTiles'
 import { useCatalogue } from '@/hooks/useCatalogue'
+import { shelvedCategories } from '@/lib/categories'
 import { BRAND_GRADIENT } from '@/theme/brand'
 
 export default function CategoriesPage() {
   const { catalogue } = useCatalogue()
   const navigate = useNavigate()
+  const shelf = useMemo(() => catalogue ? shelvedCategories(catalogue.categories, catalogue.products) : [], [catalogue])
 
   return (
     <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh' }}>
@@ -17,13 +20,13 @@ export default function CategoriesPage() {
       }}>
         <Typography sx={{ fontWeight: 800, fontSize: 22 }}>Categories</Typography>
         <Typography variant="caption" sx={{ opacity: 0.9 }}>
-          {catalogue?.products.length ?? 0} products across {catalogue?.categories.length ?? 0} categories
+          {catalogue?.products.length ?? 0} products across {shelf.length} categories
         </Typography>
       </Box>
 
       {catalogue && (
         <CategoryTiles
-          categories={catalogue.categories}
+          categories={shelf}
           products={catalogue.products}
           onSelect={(id) => navigate(`/category/${id}`)}
         />

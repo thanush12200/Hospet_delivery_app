@@ -218,3 +218,15 @@ button:disabled { cursor: default; }
 .deal-tile-photo { flex: 1; min-height: 0; margin-top: 4px; }
 @media (max-width: 480px) { .deals-grid { grid-template-columns: 1.2fr 1fr 1fr; grid-template-rows: repeat(2, 132px); gap: 8px; } .deals-header h2 { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) { .deals-bolt, .deal-featured .deal-body { animation: none !important; } }
+
+/* landing location prompt */
+.location-gate { padding: 0 18px 22px; }
+.location-gate-brand { display: flex; align-items: center; gap: 12px; }
+.location-gate-brand img { width: 44px; height: 44px; border-radius: 10px; object-fit: contain; background: #fff; }
+.location-gate-brand strong { display: block; font-size: 15px; font-weight: 800; }
+.location-gate-brand span { display: block; font-size: 12px; color: #72796f; }
+.location-gate-or { display: flex; align-items: center; gap: 12px; margin: 18px 0 12px; color: #72796f; font-size: 12px; }
+.location-gate-or::before, .location-gate-or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+.category-glyph { font-size: 40px; line-height: 1; }
+.rail-glyph { font-size: 14px; line-height: 1; }
+@media (max-width: 600px) { .category-glyph { font-size: 30px; } }

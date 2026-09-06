@@ -62,11 +62,8 @@ export default function HelpPage() {
           </Box>
           <Typography variant="h6" gutterBottom>About {BRAND.name}</Typography>
           <Typography variant="body2" color="text.secondary">
-            {BRAND.name} stands for {BRAND.expansion}. {BRAND.tagline}: everyday essentials at MRP, delivered in
+            {BRAND.name} stands for {BRAND.expansion}. {BRAND.tagline}: everyday essentials, delivered in
             minutes across {BRAND.city} from our own store. No national app serves this town, so we built one.
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
-            Product photos are reused under open licences. <a href="/catalogue/credits.html" style={{ color: 'inherit' }}>Photo credits</a>.
           </Typography>
         </Box>
       </Box>

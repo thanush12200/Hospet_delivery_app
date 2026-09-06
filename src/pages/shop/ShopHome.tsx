@@ -12,6 +12,7 @@ import { useCatalogue } from '@/hooks/useCatalogue'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
 import { unitPrice } from '@/lib/price'
+import { shelvedCategories } from '@/lib/categories'
 import { BRAND } from '@/theme/brand'
 
 export default function ShopHome() {
@@ -24,6 +25,7 @@ export default function ShopHome() {
   const [sort, setSort] = useState('featured')
   const [inStock, setInStock] = useState(false)
   const activeCategory = catalogue?.categories.find((c) => c.id === categoryId)
+  const shelf = useMemo(() => catalogue ? shelvedCategories(catalogue.categories, catalogue.products) : [], [catalogue])
 
   useEffect(() => {
     if (categoryId && catalogue && !activeCategory) navigate('/', { replace: true })
@@ -43,7 +45,7 @@ export default function ShopHome() {
       {!categoryId && <PromoBanner freeAbovePaise={customer.activeZone?.free_delivery_above_paise ?? null}
         zoneName={customer.activeZone?.name} minutes={customer.activeZone?.sla_minutes ?? BRAND.promiseMinutes} />}
       {!categoryId && catalogue && <DealsBoard products={catalogue.products} categories={catalogue.categories} config={customer.storeConfig} />}
-      {!categoryId && catalogue && <CategoryTiles categories={catalogue.categories} products={catalogue.products}
+      {!categoryId && catalogue && <CategoryTiles categories={shelf} products={catalogue.products}
         onSelect={(id) => navigate(`/category/${id}`)} limit={8} />}
       {customer.storeConfig?.is_open === false && <div className="store-closed" role="status">{customer.storeConfig.closed_message || 'The store is closed right now. You can still build your basket for later.'}</div>}
       <section id="products" className="product-section">
@@ -56,7 +58,7 @@ export default function ShopHome() {
             <option value="price-high">Price: high to low</option><option value="name">Name: A to Z</option>
           </select></label>
         </div>
-        <CategoryIconRail categories={catalogue?.categories ?? []} selected={categoryId} onSelect={(id) => navigate(id ? `/category/${id}` : '/')} />
+        <CategoryIconRail categories={shelf} selected={categoryId} onSelect={(id) => navigate(id ? `/category/${id}` : '/')} />
         <div className="product-meta"><span>{loading ? 'Loading your essentials...' : `${visible.length} products`}</span>
           <Chip size="small" label="In stock only" color={inStock ? 'success' : 'default'} variant={inStock ? 'filled' : 'outlined'}
             onClick={() => setInStock((v) => !v)} aria-pressed={inStock} />

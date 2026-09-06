@@ -908,5 +908,28 @@ begin
     (select sale_price_paise from products where id = '22222222-0000-0000-0000-000000000001'), null::int);
 end $$;
 
+-- ============================================================ TEST 18
+-- Category shelf order (0020): an imported category lands after the last
+-- one, in file order; a second import of the same name keeps its slot.
+do $$
+declare r jsonb; v_max int; v_a int; v_b int;
+begin
+  select max(sort_order) into v_max from categories;
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  r := admin_bulk_upsert_products('[
+    {"name":"T18 Bananas","category":"T18 Fresh Fruit","unit":"1 dozen","mrp_paise":6000,"stock":5},
+    {"name":"T18 Broom","category":"T18 Home Care","unit":"1 pc","mrp_paise":9000,"stock":5},
+    {"name":"T18 Apples","category":"T18 Fresh Fruit","unit":"1 kg","mrp_paise":18000,"stock":5}
+  ]'::jsonb);
+  perform as_service();
+  perform assert_eq('T18 import ok', r->>'ok', 'true');
+  select sort_order into v_a from categories where name = 'T18 Fresh Fruit';
+  select sort_order into v_b from categories where name = 'T18 Home Care';
+  perform assert_eq('T18 first new category after the shelf', v_a, v_max + 10);
+  perform assert_eq('T18 second new category after the first', v_b, v_max + 20);
+  perform assert_eq('T18 repeated category reused, not re-added',
+    (select count(*) from categories where name = 'T18 Fresh Fruit'), 1::bigint);
+end $$;
+
 drop function as_user(text, text);
 drop function as_service();

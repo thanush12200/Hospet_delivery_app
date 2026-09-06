@@ -62,7 +62,7 @@ export function ShopHeader() {
           <div className="desktop-nav-inner">
             <NavLink to="/" end>Shop</NavLink><NavLink to="/categories">All categories</NavLink>
             <NavLink to="/orders">My orders</NavLink><NavLink to="/help">Help & support</NavLink>
-            <span>Everyday essentials. Always at MRP.</span>
+            <span>Everyday essentials, at your door in minutes.</span>
           </div>
         </nav>
       </header>

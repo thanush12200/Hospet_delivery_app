@@ -75,7 +75,7 @@ export default function CartPage() {
             <IconButton className="basket-remove" size="small" aria-label={`Remove ${product.name}`} title="Remove item" onClick={() => cart.removeLine(product.id)}><DeleteOutlineIcon fontSize="small" /></IconButton>
           </article>
         })}</div>
-        <div className="basket-assurance">Every item at MRP. No handling or platform fees.</div>
+        <div className="basket-assurance">No handling or platform fees. What you see is what you pay.</div>
       </section>
       <aside className="basket-summary" aria-label="Bill summary">
         <h2>Bill details</h2><div className="bill-row"><span>Items total</span><span>{paiseToRupees(pricing.subtotalPaise)}</span></div>

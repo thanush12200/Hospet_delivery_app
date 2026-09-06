@@ -19,7 +19,7 @@ export function BrandSheet({ open, onClose }: { open: boolean; onClose: () => vo
           {BRAND.name} <Typography component="span" sx={{ fontWeight: 500, fontSize: 16, color: 'text.secondary' }}>· {BRAND.expansion}</Typography>
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {BRAND.subline}, from our own store in {BRAND.city}. Every item at MRP.
+          {BRAND.subline}, from our own store in {BRAND.city}.
         </Typography>
         <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 2 }}>
           <Button variant="contained" onClick={() => { onClose(); navigate('/') }}>Start shopping</Button>
