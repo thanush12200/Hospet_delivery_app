@@ -51,8 +51,8 @@ jobs:
           # Google OAuth web client id (public). Unset = no Google button.
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
 
-      # The site lives at the "faa" Pages project (faa.pages.dev, or with a
-      # suffix if Cloudflare had to disambiguate). Creating it is idempotent.
+      # The site lives at the "faa" Pages project (faa-dfz.pages.dev; Cloudflare added the
+      # suffix because faa.pages.dev was taken). Creating it is idempotent.
       - name: Ensure the Pages project exists
         run: npx wrangler pages project create faa --production-branch=main || echo "project already exists"
         env:
