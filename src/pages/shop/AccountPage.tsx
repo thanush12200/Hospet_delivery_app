@@ -10,7 +10,6 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
 import { useNavigate } from 'react-router-dom'
-import { BottomNav } from '@/components/BottomNav'
 import { useAuth } from '@/auth/authContext'
 import { formatIndianMobile } from '@/lib/phone'
 import { useCustomer } from '@/store/customerContext'
@@ -117,7 +116,6 @@ export default function AccountPage() {
         </Typography>
       </Box>
 
-      <BottomNav />
     </Box>
   )
 }

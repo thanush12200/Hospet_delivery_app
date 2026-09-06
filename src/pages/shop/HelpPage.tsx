@@ -2,7 +2,6 @@ import { Box, Button, Divider, Stack, Typography } from '@mui/material'
 import CallIcon from '@mui/icons-material/Call'
 import WhatsAppIcon from '@mui/icons-material/WhatsApp'
 import { useSearchParams } from 'react-router-dom'
-import { BottomNav } from '@/components/BottomNav'
 import { SubPageBar } from '@/components/shop/SubPageBar'
 import { telLink, waLink } from '@/lib/contact'
 import { useCustomer } from '@/store/customerContext'
@@ -64,7 +63,6 @@ export default function HelpPage() {
           </Typography>
         </Box>
       </Box>
-      <BottomNav />
     </Box>
   )
 }

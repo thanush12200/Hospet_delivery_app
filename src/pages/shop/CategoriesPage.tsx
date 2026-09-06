@@ -1,8 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { BottomNav } from '@/components/BottomNav'
 import { CategoryTiles } from '@/components/shop/CategoryTiles'
-import { StickyCartBar } from '@/components/StickyCartBar'
 import { useCatalogue } from '@/hooks/useCatalogue'
 
 export default function CategoriesPage() {
@@ -26,12 +24,9 @@ export default function CategoriesPage() {
         <CategoryTiles
           categories={catalogue.categories}
           products={catalogue.products}
-          onSelect={() => navigate('/')}
+          onSelect={(id) => navigate(`/category/${id}`)}
         />
       )}
-
-      <StickyCartBar />
-      <BottomNav />
     </Box>
   )
 }

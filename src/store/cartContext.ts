@@ -9,7 +9,13 @@ export interface CartApi {
   subtotalPaise: number
   qtyOf: (productId: string) => number
   add: (product: Product) => void
+  /** Decrement by one; drops the line at zero. */
   remove: (productId: string) => void
+  /** Drop the whole line. */
+  removeLine: (productId: string) => void
+  setQty: (product: Product, qty: number) => void
+  /** Replace the whole cart (reorder). */
+  replace: (lines: CartLine[]) => void
   clear: () => void
 }
 

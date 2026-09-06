@@ -1,28 +1,46 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Box, Skeleton, Typography } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AddressChooserSheet } from '@/components/shop/AddressChooserSheet'
 import { ProductCard } from '@/components/ProductCard'
-import { StickyCartBar } from '@/components/StickyCartBar'
-import { BottomNav } from '@/components/BottomNav'
 import { ShopHeader } from '@/components/shop/ShopHeader'
 import { CategoryIconRail } from '@/components/shop/CategoryIconRail'
 import { PromoBanner } from '@/components/shop/PromoBanner'
 import { CategoryTiles } from '@/components/shop/CategoryTiles'
+import { PRODUCT_PARAM } from '@/components/shop/ProductSheet'
 import { useCatalogue } from '@/hooks/useCatalogue'
-import { searchProducts } from '@/api/catalogue'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
 import { addressLabel, addressLine } from '@/lib/address'
+import { useState } from 'react'
 
+/**
+ * Home ("/") and a category ("/category/:id") are the same screen: header,
+ * category rail, then the grid. Category is in the URL so it survives a
+ * refresh, deep-links and the back button. Search has its own screen.
+ */
 export default function ShopHome() {
   const { catalogue, availability, loading, error } = useCatalogue()
   const cart = useCart()
   const customer = useCustomer()
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [categoryId, setCategoryId] = useState<string | null>(null)
+  const { categoryId = null } = useParams()
+  const [params, setParams] = useSearchParams()
   const [chooser, setChooser] = useState(false)
+
+  const activeCategory = catalogue?.categories.find((c) => c.id === categoryId)
+
+  // An unknown category id (stale link, deactivated category) goes home.
+  useEffect(() => {
+    if (categoryId && catalogue && !activeCategory) navigate('/', { replace: true })
+  }, [categoryId, catalogue, activeCategory, navigate])
+
+  const visible = useMemo(() => {
+    if (!catalogue) return []
+    return categoryId ? catalogue.products.filter((p) => p.category_id === categoryId) : catalogue.products
+  }, [catalogue, categoryId])
+
+  const browsing = !categoryId
 
   // What the header says under the delivery promise. A saved address wins;
   // otherwise the area picked on this device; otherwise ask.
@@ -35,26 +53,25 @@ export default function ShopHome() {
     ? (customer.profile.name?.trim()[0] ?? customer.profile.phone.slice(-2)).toUpperCase()
     : null
 
-  // All filtering runs against the IndexedDB-cached catalogue. No network,
-  // no debounce, no spinner -- results update as the user types.
-  const visible = useMemo(() => {
-    if (!catalogue) return []
-    const inCategory = categoryId
-      ? catalogue.products.filter((p) => p.category_id === categoryId)
-      : catalogue.products
-    return searchProducts(inCategory, query)
-  }, [catalogue, categoryId, query])
-
-  const browsing = !query && !categoryId
-  const activeCategory = catalogue?.categories.find((c) => c.id === categoryId)
+  function openProduct(id: string) {
+    const next = new URLSearchParams(params)
+    next.set(PRODUCT_PARAM, id)
+    setParams(next)
+  }
 
   if (error) {
     return (
       <Box sx={{ py: 8, px: 3, textAlign: 'center' }}>
         <Typography sx={{ fontSize: 40, mb: 1 }}>📡</Typography>
         <Typography variant="h6" gutterBottom>Can&apos;t reach the shop</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Check your connection and pull down to refresh.
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Check your connection and try again.
+        </Typography>
+        <Typography
+          component="button" variant="body2" color="primary" onClick={() => window.location.reload()}
+          sx={{ background: 'none', border: 0, fontWeight: 700, cursor: 'pointer' }}
+        >
+          Retry
         </Typography>
       </Box>
     )
@@ -63,34 +80,46 @@ export default function ShopHome() {
   return (
     <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', bgcolor: '#fff', minHeight: '100dvh' }}>
       <ShopHeader
-        query={query}
-        onQueryChange={setQuery}
+        query=""
+        onQueryChange={() => {}}
+        onSearchFocus={() => navigate('/search')}
         address={headerAddress}
         addressHint={headerHint}
         onAddressClick={() => setChooser(true)}
         onAccountClick={() => navigate(customer.status === 'anon' ? '/login?returnTo=/account' : '/account')}
         accountInitial={initial}
+        promiseMinutes={customer.activeZone?.sla_minutes ?? 45}
       />
       <AddressChooserSheet open={chooser} onClose={() => setChooser(false)} returnTo="/" />
 
       <CategoryIconRail
         categories={catalogue?.categories ?? []}
         selected={categoryId}
-        onSelect={(id) => { setCategoryId(id); setQuery('') }}
+        onSelect={(id) => navigate(id ? `/category/${id}` : '/')}
       />
 
-      {browsing && <PromoBanner />}
+      {browsing && (
+        <PromoBanner
+          freeAbovePaise={customer.activeZone?.free_delivery_above_paise ?? null}
+          zoneName={customer.activeZone?.name}
+        />
+      )}
       {browsing && catalogue && (
         <CategoryTiles
           categories={catalogue.categories}
           products={catalogue.products}
-          onSelect={setCategoryId}
+          onSelect={(id) => navigate(`/category/${id}`)}
         />
       )}
 
       <Box sx={{ px: 2, pt: 2.5 }}>
         <Typography sx={{ fontWeight: 800, fontSize: 16, mb: 1.25 }}>
-          {query ? `Results for “${query}”` : activeCategory ? activeCategory.name : 'All products'}
+          {activeCategory ? activeCategory.name : 'All products'}
+          {activeCategory?.name_kn && (
+            <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+              {activeCategory.name_kn}
+            </Typography>
+          )}
         </Typography>
 
         {loading ? (
@@ -99,10 +128,8 @@ export default function ShopHome() {
           </Box>
         ) : visible.length === 0 ? (
           <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 34, mb: 0.5 }}>🔍</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Nothing matches {query ? `“${query}”` : 'this category'} yet.
-            </Typography>
+            <Typography sx={{ fontSize: 34, mb: 0.5 }}>🛒</Typography>
+            <Typography variant="body2" color="text.secondary">Nothing in this category yet.</Typography>
           </Box>
         ) : (
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 1.25 }}>
@@ -115,14 +142,12 @@ export default function ShopHome() {
                 available={availability.get(p.id)}
                 onAdd={() => cart.add(p)}
                 onRemove={() => cart.remove(p.id)}
+                onOpen={() => openProduct(p.id)}
               />
             ))}
           </Box>
         )}
       </Box>
-
-      <StickyCartBar />
-      <BottomNav />
     </Box>
   )
 }

@@ -5,13 +5,13 @@
 // loaded home route, so it measures what actually ships on first paint
 // rather than the whole dist. Fails (exit 1) above the budget in README.md.
 //
-// Usage: node scripts/bundle-budget.mjs [route-chunk-name=ShopHome] [budgetKB=200]
+// Usage: node scripts/bundle-budget.mjs [route-chunks=ShopLayout,ShopHome] [budgetKB=200]
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 import path from 'node:path'
 
-const ROUTE = process.argv[2] ?? 'ShopHome'
+const ROUTES = (process.argv[2] ?? 'ShopLayout,ShopHome').split(',')
 const BUDGET_KB = Number(process.argv[3] ?? 200)
 const dir = path.resolve('dist/assets')
 
@@ -23,7 +23,7 @@ if (!statSync(dir, { throwIfNoEntry: false })) {
 const files = readdirSync(dir).filter((f) => f.endsWith('.js'))
 const html = readFileSync(path.resolve('dist/index.html'), 'utf8')
 const entry = [...html.matchAll(/assets\/(index-[^"']+\.js)/g)].map((m) => m[1])
-const route = files.filter((f) => f.startsWith(`${ROUTE}-`))
+const route = files.filter((f) => ROUTES.some((r) => f.startsWith(`${r}-`)))
 
 const seen = new Set()
 const queue = [...entry, ...route]

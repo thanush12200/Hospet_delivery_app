@@ -29,6 +29,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     remove: (id) => setLines((prev) =>
       prev.flatMap((l) =>
         l.product.id === id ? (l.qty > 1 ? [{ ...l, qty: l.qty - 1 }] : []) : [l])),
+    removeLine: (id) => setLines((prev) => prev.filter((l) => l.product.id !== id)),
+    setQty: (product, qty) => setLines((prev) => {
+      if (qty <= 0) return prev.filter((l) => l.product.id !== product.id)
+      const found = prev.find((l) => l.product.id === product.id)
+      return found
+        ? prev.map((l) => (l.product.id === product.id ? { ...l, product, qty } : l))
+        : [...prev, { product, qty }]
+    }),
+    replace: (next) => setLines(next.filter((l) => l.qty > 0)),
     clear: () => setLines([]),
   }), [lines])
 
