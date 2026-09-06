@@ -15,3 +15,13 @@ export async function getAvailability(productIds: string[]): Promise<Map<string,
   return new Map((data as { product_id: string; available: number }[])
     .map((r) => [r.product_id, r.available]))
 }
+
+export interface StockRow { product_id: string; on_hand: number; reserved: number; available: number }
+
+/** Physical, reserved and sellable counts for the stock screen. */
+export async function listInventory(): Promise<Map<string, StockRow>> {
+  const { data, error } = await supabase
+    .from('inventory_available').select('product_id, on_hand, reserved, available')
+  if (error) throw error
+  return new Map((data as StockRow[]).map((r) => [r.product_id, r]))
+}

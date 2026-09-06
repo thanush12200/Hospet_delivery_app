@@ -12,6 +12,7 @@ import {
 import { useCatalogueLoader } from '@/hooks/useCatalogue'
 import { describePlaceOrderError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
+import { toE164 } from '@/lib/phone'
 import type { Address, PaymentMethod, Product, Zone } from '@/types/db'
 
 /**
@@ -46,10 +47,20 @@ export default function NewOrder() {
     [lines],
   )
 
+  // The matched customer belongs to the number that was looked up. Editing
+  // the number after a match must not leave the old customer's addresses
+  // selected under a different phone.
+  function changePhone(v: string) {
+    setPhone(v)
+    if (customerId) { setCustomerId(null); setAddresses([]); setAddressId('') }
+  }
+
   async function lookupCustomer() {
     setError(null); setBusy(true)
     try {
-      const id = await findOrCreateCustomer(phone.trim(), name.trim() || undefined)
+      const e164 = toE164(phone)
+      if (!e164) { setError('Enter a 10-digit Indian mobile number.'); return }
+      const id = await findOrCreateCustomer(e164, name.trim() || undefined)
       setCustomerId(id)
       const addrs = await listAddresses(id)
       setAddresses(addrs)
@@ -97,7 +108,7 @@ export default function NewOrder() {
         <Stack direction="row" spacing={1}>
           <TextField
             size="small" label="Phone" placeholder="+919900000000"
-            value={phone} onChange={(e) => setPhone(e.target.value)} sx={{ flex: 1 }}
+            value={phone} onChange={(e) => changePhone(e.target.value)} sx={{ flex: 1 }}
           />
           <TextField
             size="small" label="Name (optional)"

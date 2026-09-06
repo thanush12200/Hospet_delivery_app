@@ -5,8 +5,10 @@ import {
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  assignRider, getAdminOrder, listRiders, transitionOrder, type AdminOrder, type Rider,
+  assignRider, getAdminOrder, listRiders, receiveReturn, transitionOrder, verifyPayment,
+  type AdminOrder, type Rider,
 } from '@/api/admin'
+import { deliveryOf } from '@/lib/address'
 import { describeTransitionError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { OrderStatus } from '@/types/db'
@@ -27,16 +29,21 @@ export default function OrderDetail() {
   const [riderId, setRiderId] = useState('')
   const [picked, setPicked] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [returning, setReturning] = useState(false)
+  const [good, setGood] = useState<Record<string, number>>({})
 
   const load = useCallback(async () => {
     try {
       const o = await getAdminOrder(id)
       setOrder(o)
+      setLoadError(null)
       setRiderId(o.rider_id ?? '')
       // Default a short-pick form to the full quantity ordered.
       setPicked(Object.fromEntries(o.order_items.map((i) => [i.product_id, i.fulfilled_qty ?? i.qty])))
-    } catch (e) { setError((e as Error).message) }
+      setGood(Object.fromEntries(o.order_items.map((i) => [i.product_id, i.fulfilled_qty ?? i.qty])))
+    } catch (e) { setLoadError((e as Error).message) }
   }, [id])
 
   useEffect(() => { void load(); void listRiders().then(setRiders).catch(() => {}) }, [load])
@@ -76,11 +83,48 @@ export default function OrderDetail() {
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
 
+  async function markUpiReceived() {
+    if (!order) return
+    setBusy(true); setError(null)
+    try {
+      const r = await verifyPayment(order.id)
+      if (!r.ok) setError(describeTransitionError(r.error))
+      await load()
+    } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
+  }
+
+  async function confirmReturn() {
+    if (!order) return
+    setBusy(true); setError(null)
+    try {
+      const r = await receiveReturn(order.id, order.order_items.map((i) => ({
+        product_id: i.product_id, good_qty: good[i.product_id] ?? (i.fulfilled_qty ?? i.qty),
+      })))
+      if (!r.ok) setError(describeTransitionError(r.error))
+      setReturning(false)
+      await load()
+    } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
+  }
+
+  if (loadError && !order) {
+    return (
+      <Box sx={{ maxWidth: 780 }}>
+        <Button size="small" onClick={() => navigate('/admin')} sx={{ mb: 1 }}>← Board</Button>
+        <Alert severity="error" action={<Button color="inherit" size="small" onClick={() => void load()}>Retry</Button>}>
+          Couldn&apos;t load this order: {loadError}
+        </Alert>
+      </Box>
+    )
+  }
   if (!order) {
     return <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}><CircularProgress /></Box>
   }
 
   const actions = NEXT[order.status] ?? []
+  const payment = order.payments?.[0]
+  const upiPending = order.status === 'DELIVERED' && order.payment_status !== 'PAID'
+  const awaitingReturn = order.status === 'FAILED' && !order.returned_at
+  const addr = deliveryOf(order, order.addresses)
   const isShort = order.order_items.some((i) => (picked[i.product_id] ?? i.qty) < i.qty)
   const live = actions.length > 0
   const riderChanged = riderId !== (order.rider_id ?? '')
@@ -114,8 +158,51 @@ export default function OrderDetail() {
           {order.customers?.name ?? 'Unnamed'} · {order.customers?.phone}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {order.addresses?.line1}{order.addresses?.landmark ? ` (${order.addresses.landmark})` : ''}
+          {addr?.line1}{addr?.landmark ? ` (${addr.landmark})` : ''}
+          {addr?.zone_name ? ` · ${addr.zone_name}` : ''}
         </Typography>
+        {order.note && <Typography variant="body2" sx={{ fontStyle: 'italic' }}>“{order.note}”</Typography>}
+
+        {upiPending && (
+          <Alert severity="warning" sx={{ mt: 1.5 }}
+            action={<Button color="inherit" size="small" disabled={busy} onClick={() => void markUpiReceived()}>Mark UPI received</Button>}>
+            Delivered, payment not yet confirmed.
+            {payment?.reported_method === 'UPI'
+              ? ` Rider reported UPI to the store${payment.reported_reference ? ` (ref ${payment.reported_reference})` : ''}. Confirm once the credit shows in the store's UPI app.`
+              : ' Confirm once the money is in.'}
+          </Alert>
+        )}
+        {awaitingReturn && !returning && (
+          <Alert severity="warning" sx={{ mt: 1.5 }}
+            action={<Button color="inherit" size="small" disabled={busy} onClick={() => setReturning(true)}>Received back</Button>}>
+            Delivery failed. The goods are not back in stock until the store receives and checks them.
+          </Alert>
+        )}
+        {order.status === 'FAILED' && order.returned_at && (
+          <Alert severity="success" sx={{ mt: 1.5 }}>Goods received back on {new Date(order.returned_at).toLocaleString('en-IN')}.</Alert>
+        )}
+        {returning && (
+          <Paper sx={{ p: 1.5, mt: 1.5, bgcolor: '#FFF8E1' }}>
+            <Typography variant="subtitle2" gutterBottom>What came back in sellable condition?</Typography>
+            <Stack spacing={1}>
+              {order.order_items.map((i) => {
+                const sent = i.fulfilled_qty ?? i.qty
+                return (
+                  <Stack key={i.id} direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="body2" sx={{ flex: 1 }} noWrap>{i.product_name} (sent {sent})</Typography>
+                    <TextField size="small" type="number" label="Good" sx={{ width: 92 }}
+                      inputProps={{ min: 0, max: sent }} value={good[i.product_id] ?? sent}
+                      onChange={(e) => setGood((g) => ({ ...g, [i.product_id]: Math.max(0, Math.min(sent, Number(e.target.value) || 0)) }))} />
+                  </Stack>
+                )
+              })}
+            </Stack>
+            <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+              <Button variant="contained" disabled={busy} onClick={() => void confirmReturn()}>Restock the good units</Button>
+              <Button onClick={() => setReturning(false)}>Cancel</Button>
+            </Stack>
+          </Paper>
+        )}
 
         <Divider sx={{ my: 1.5 }} />
 

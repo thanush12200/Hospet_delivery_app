@@ -125,15 +125,24 @@ export async function placeMyOrder(args: {
   paymentMethod: PaymentMethod
   clientTotalPaise: number
   note?: string
+  /**
+   * Idempotency key for this attempt. A retry after a lost response sends the
+   * same key and gets the same order back instead of a second one.
+   */
+  clientKey: string
 }): Promise<PlaceOrderResult> {
-  const { data, error } = await supabase.rpc('place_order', {
+  const params = {
     p_customer_id: args.customerId,
     p_address_id: args.addressId,
     p_items: args.items,
     p_payment_method: args.paymentMethod,
     p_client_total_paise: args.clientTotalPaise,
     p_note: args.note ?? null,
-  })
+  }
+  let { data, error } = await supabase.rpc('place_order', { ...params, p_client_key: args.clientKey })
+  // A database that has not yet received migration 0017 does not know the
+  // key; fall back to the older shape rather than blocking every checkout.
+  if (error && error.code === 'PGRST202') ({ data, error } = await supabase.rpc('place_order', params))
   if (error) throw error
   return data as PlaceOrderResult
 }

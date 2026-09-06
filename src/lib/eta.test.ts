@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cancelSecondsLeft, etaHeadline, promisedAt } from './eta'
+import { cancelSecondsLeft, etaHeadline, promiseOf, promisedAt } from './eta'
 
 const placed = '2026-09-06T10:00:00.000Z'
 
@@ -20,6 +20,15 @@ describe('etaHeadline', () => {
   })
   it('admits lateness past the grace', () => {
     expect(etaHeadline(placed, 45, new Date('2026-09-06T11:00:00Z'))).toBe('Running 15 min late, sorry')
+  })
+})
+
+describe('promiseOf', () => {
+  it('prefers the stamped promise over the zone SLA', () => {
+    expect(promiseOf({ placed_at: placed, promised_at: '2026-09-06T10:20:00.000Z' }, 45).toISOString()).toBe('2026-09-06T10:20:00.000Z')
+  })
+  it('falls back to placed_at + SLA for older orders', () => {
+    expect(promiseOf({ placed_at: placed, promised_at: null }, 30).toISOString()).toBe('2026-09-06T10:30:00.000Z')
   })
 })
 

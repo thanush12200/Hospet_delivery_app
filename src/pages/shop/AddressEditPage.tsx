@@ -58,10 +58,12 @@ export default function AddressEditPage() {
       if (existing.lat != null && existing.lng != null) { setPin({ lat: existing.lat, lng: existing.lng }); setShowMap(true) }
     } else {
       setZoneId(customer.activeZone?.id ?? customer.zones[0]?.id ?? '')
-      setIsDefault(customer.addresses.length === 0)
+      // First address, or one added on the way to checkout, is where this
+      // order goes: make it the default rather than leaving the old one selected.
+      setIsDefault(customer.addresses.length === 0 || returnTo === '/checkout')
     }
     setLoaded(true)
-  }, [loaded, isNew, existing, customer, navigate])
+  }, [loaded, isNew, existing, customer, navigate, returnTo])
 
   // Keep the zone select in sync when zones arrive after the form did.
   useEffect(() => {

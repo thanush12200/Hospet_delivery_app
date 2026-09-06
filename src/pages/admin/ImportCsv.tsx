@@ -118,8 +118,10 @@ export default function ImportCsv() {
         results: { row: number; status: string; message?: string }[]
       }
       setResult({ created: d.created, updated: d.updated, errors: d.errors })
+      // The server numbers the rows it was sent (the valid ones); translate
+      // back to the spreadsheet's row numbers so staff fix the right line.
       setFailed(d.results.filter((x) => x.status === 'error')
-        .map((x) => ({ row: x.row, message: x.message ?? 'Failed' })))
+        .map((x) => ({ row: valid[x.row - 1]?.row ?? x.row, message: x.message ?? 'Failed' })))
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
 

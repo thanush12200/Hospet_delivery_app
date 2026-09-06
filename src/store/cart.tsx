@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CartContext, CART_STORAGE_KEY, type CartApi, type CartLine } from './cartContext'
+import { sanitiseLines } from './sanitise'
 
 export function CartProvider({ children, storageKey = CART_STORAGE_KEY }: { children: ReactNode; storageKey?: string }) {
   // The cart lives in localStorage so a refresh or a dropped connection never
@@ -7,7 +8,7 @@ export function CartProvider({ children, storageKey = CART_STORAGE_KEY }: { chil
   const [lines, setLines] = useState<CartLine[]>(() => {
     try {
       const raw = localStorage.getItem(storageKey)
-      return raw ? (JSON.parse(raw) as CartLine[]) : []
+      return raw ? sanitiseLines(JSON.parse(raw) as unknown) : []
     } catch { return [] }
   })
 

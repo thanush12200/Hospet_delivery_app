@@ -47,9 +47,14 @@ export default function OrderBoard() {
 
   useEffect(() => {
     void refresh()
-    // Realtime rather than polling: the board updates the moment a rider marks
-    // an order delivered, without a request every few seconds.
-    return subscribeToOrders(() => { void refresh() })
+    // Realtime first: the board updates the moment a rider marks an order
+    // delivered. A 30 s poll and a refetch on focus cover a dropped channel,
+    // which otherwise leaves staff acting on a stale board without knowing.
+    const unsub = subscribeToOrders(() => { void refresh() })
+    const t = setInterval(() => { if (document.visibilityState === 'visible') void refresh() }, 30000)
+    const onVisible = () => { if (document.visibilityState === 'visible') void refresh() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { unsub(); clearInterval(t); document.removeEventListener('visibilitychange', onVisible) }
   }, [refresh])
 
   async function advance(o: AdminOrder, to: OrderStatus) {

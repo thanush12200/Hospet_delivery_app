@@ -3,7 +3,7 @@ import {
   Alert, Box, Button, Chip, Divider, Paper, Stack, TextField, Typography,
 } from '@mui/material'
 import { adjustStock } from '@/api/admin'
-import { getAvailability } from '@/api/inventory'
+import { listInventory, type StockRow } from '@/api/inventory'
 import { useCatalogueLoader } from '@/hooks/useCatalogue'
 import { paiseToRupees } from '@/lib/money'
 
@@ -14,7 +14,7 @@ import { paiseToRupees } from '@/lib/money'
  */
 export default function Inventory() {
   const { catalogue } = useCatalogueLoader()
-  const [avail, setAvail] = useState<Map<string, number>>(new Map())
+  const [stock, setStock] = useState<Map<string, StockRow>>(new Map())
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [msg, setMsg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +22,7 @@ export default function Inventory() {
   const refresh = useCallback(async () => {
     if (!catalogue) return
     try {
-      setAvail(await getAvailability(catalogue.products.map((p) => p.id)))
+      setStock(await listInventory())
     } catch (e) { setError((e as Error).message) }
   }, [catalogue])
 
@@ -59,7 +59,8 @@ export default function Inventory() {
       <Paper sx={{ border: '1px solid', borderColor: 'divider' }}>
         <Stack divider={<Divider />}>
           {catalogue?.products.map((p) => {
-            const a = avail.get(p.id)
+            const s = stock.get(p.id)
+            const a = s?.available
             return (
               <Stack key={p.id} direction="row" alignItems="center" spacing={1.5} sx={{ p: 1.5 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -68,14 +69,22 @@ export default function Inventory() {
                     {p.unit_label} · {paiseToRupees(p.mrp_paise)}
                   </Typography>
                 </Box>
-                <Chip
-                  size="small"
-                  label={a === undefined ? '—' : `${a} available`}
-                  color={a === undefined ? 'default' : a === 0 ? 'error' : a < 5 ? 'warning' : 'success'}
-                />
+                <Box sx={{ textAlign: 'right', minWidth: 118 }}>
+                  <Chip
+                    size="small"
+                    label={a === undefined ? '—' : `${a} sellable`}
+                    color={a === undefined ? 'default' : a === 0 ? 'error' : a < 5 ? 'warning' : 'success'}
+                  />
+                  {s && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {s.on_hand} on hand · {s.reserved} reserved
+                    </Typography>
+                  )}
+                </Box>
                 <TextField
-                  size="small" type="number" label="Set on hand" sx={{ width: 130 }}
-                  inputProps={{ min: 0 }}
+                  size="small" type="number" label="Physical count" sx={{ width: 130 }}
+                  inputProps={{ min: 0, step: 1 }}
+                  helperText={s && s.reserved > 0 ? `min ${s.reserved}` : undefined}
                   value={draft[p.id] ?? ''}
                   onChange={(e) => setDraft((d) => ({ ...d, [p.id]: e.target.value }))}
                 />

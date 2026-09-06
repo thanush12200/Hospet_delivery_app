@@ -40,6 +40,10 @@ export function describeTransitionError(code: TransitionError | string | undefin
     case 'NO_RIDER':            return 'Assign a rider before sending the order out.'
     case 'INVALID_RIDER':       return 'That rider is not active.'
     case 'ORDER_CLOSED':        return 'This order is complete; nothing more to do.'
+    case 'NOTHING_PACKED':      return 'Nothing was packed. Cancel the order instead of sending an empty one.'
+    case 'INVALID_QTY':         return 'A packed quantity is invalid.'
+    case 'NOT_FAILED':          return 'Only a failed delivery can be received back.'
+    case 'ALREADY_RETURNED':    return 'This return was already received.'
     case 'NO_SUCH_ORDER':       return 'Order not found.'
     default:                    return 'The change was refused. Please refresh and try again.'
   }
