@@ -41,7 +41,34 @@ refresh.
 3. Add the two environment variables
 4. Deploy
 
-## Option C — CLI
+## Auto-deploy (in use)
+
+`.github/workflows/deploy.yml` builds and deploys on every push to `main`.
+
+Cloudflare's own Git integration is **not** used, because `wink` was created as
+a Direct Upload project and Cloudflare cannot convert one to Git-connected.
+Doing so would mean a new project on a new `*.pages.dev` URL, and that URL is
+already registered in Supabase's auth configuration.
+
+Four repository secrets are required
+(GitHub → Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://troouqapzkufohftxvne.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | the anon / publishable key |
+| `CLOUDFLARE_ACCOUNT_ID` | `6914013b02e3503e8e5e475911f3cf5d` |
+| `CLOUDFLARE_API_TOKEN` | see below |
+
+**Creating the API token:** dash.cloudflare.com → My Profile → API Tokens →
+Create Token → **Edit Cloudflare Workers** template (it includes Pages), or a
+custom token with `Account → Cloudflare Pages → Edit`. Scope it to this account
+only.
+
+The workflow runs `typecheck` and `lint` before building, so a type error
+fails the deploy rather than shipping.
+
+## Option C — Manual CLI
 
 ```bash
 npx wrangler login          # opens a browser

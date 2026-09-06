@@ -1,0 +1,53 @@
+name: Deploy to Cloudflare Pages
+
+# Auto-deploy on every push to main.
+#
+# We drive wrangler from Actions rather than using Cloudflare's Git
+# integration because the `wink` Pages project was created as Direct Upload,
+# and Cloudflare cannot convert an existing Direct Upload project to a
+# Git-connected one. Connecting Git would mean a new project on a new
+# *.pages.dev URL, which is already registered in Supabase's auth
+# configuration. This keeps the URL stable.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Fail the build on a type or lint error rather than shipping it.
+      - run: npm run typecheck
+      - run: npm run lint
+
+      - run: npm run build
+        env:
+          # The anon/publishable key is public by design -- it ships inside the
+          # bundle, and RLS is what protects the data. Kept in secrets purely
+          # to avoid pinning project identifiers in the repo.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=wink --branch=main
