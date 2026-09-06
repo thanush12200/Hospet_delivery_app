@@ -1,0 +1,194 @@
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import {
+  Alert, Box, Button, Chip, FormControlLabel, MenuItem, Skeleton, Stack, Switch,
+  TextField, Typography,
+} from '@mui/material'
+import MyLocationIcon from '@mui/icons-material/MyLocation'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { upsertMyAddress } from '@/api/customer'
+import { safeReturnTo } from '@/lib/returnTo'
+import { SubPageBar } from '@/components/shop/SubPageBar'
+import { LABELS } from '@/lib/address'
+import {
+  GEO_MESSAGE, getCurrentCoords, nearestZone, type GeoError, type LatLng,
+} from '@/lib/geo'
+import { useCustomer } from '@/store/customerContext'
+import type { AddressLabel } from '@/types/db'
+
+// Leaflet (~40 KB gzipped + tiles) is only ever needed here.
+const AddressMap = lazy(() => import('@/components/AddressMap'))
+
+/** Hospet town centre: where the map looks before anything is pinned. */
+const HOSPET: LatLng = { lat: 15.2689, lng: 76.3909 }
+
+export default function AddressEditPage() {
+  const { id } = useParams()
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+  const customer = useCustomer()
+
+  const existing = useMemo(() => customer.addresses.find((a) => a.id === id) ?? null, [customer.addresses, id])
+  const isNew = !id
+  const returnTo = safeReturnTo(params.get('returnTo'), '/account/addresses')
+
+  const [label, setLabel] = useState<AddressLabel>('HOME')
+  const [line1, setLine1] = useState('')
+  const [landmark, setLandmark] = useState('')
+  const [zoneId, setZoneId] = useState('')
+  const [isDefault, setIsDefault] = useState(false)
+  const [pin, setPin] = useState<LatLng | null>(null)
+  const [showMap, setShowMap] = useState(false)
+  const [geoBusy, setGeoBusy] = useState(false)
+  const [geoNote, setGeoNote] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  // Populate once from the existing address (or defaults for a new one).
+  useEffect(() => {
+    if (loaded) return
+    if (!isNew && !existing) {
+      if (customer.status === 'ready') navigate('/account/addresses', { replace: true })
+      return
+    }
+    if (existing) {
+      setLabel(existing.label); setLine1(existing.line1); setLandmark(existing.landmark ?? '')
+      setZoneId(existing.zone_id); setIsDefault(existing.is_default)
+      if (existing.lat != null && existing.lng != null) { setPin({ lat: existing.lat, lng: existing.lng }); setShowMap(true) }
+    } else {
+      setZoneId(customer.activeZone?.id ?? customer.zones[0]?.id ?? '')
+      setIsDefault(customer.addresses.length === 0)
+    }
+    setLoaded(true)
+  }, [loaded, isNew, existing, customer, navigate])
+
+  // Keep the zone select in sync when zones arrive after the form did.
+  useEffect(() => {
+    if (!zoneId && customer.zones[0]) setZoneId(customer.activeZone?.id ?? customer.zones[0].id)
+  }, [customer.zones, customer.activeZone, zoneId])
+
+  const zone = customer.zones.find((z) => z.id === zoneId)
+  const mapCenter: LatLng = zone?.lat != null && zone.lng != null ? { lat: zone.lat, lng: zone.lng } : HOSPET
+
+  function applyPin(p: LatLng, announce: boolean) {
+    setPin(p); setShowMap(true)
+    const near = nearestZone(p, customer.zones
+      .filter((z) => z.lat != null && z.lng != null)
+      .map((z) => ({ id: z.id, name: z.name, lat: z.lat as number, lng: z.lng as number, radius_m: z.radius_m })))
+    if (!near) { if (announce) setGeoNote('Pin saved for the rider. Pick your area below.'); return }
+    if (near.withinRadius) {
+      setZoneId(near.id)
+      if (announce) setGeoNote(`Looks like you're in ${near.name}. Change it below if that's wrong.`)
+    } else if (announce) {
+      setGeoNote(`Nearest area is ${near.name}, about ${Math.round(near.distanceM / 100) / 10} km away. We may not deliver there yet.`)
+    }
+  }
+
+  async function locate() {
+    setGeoBusy(true); setGeoNote(null)
+    try {
+      const c = await getCurrentCoords()
+      applyPin({ lat: c.lat, lng: c.lng }, true)
+      if (c.accuracyM > 150) setGeoNote((n) => `${n ?? ''} Accuracy is about ${Math.round(c.accuracyM)} m; drag the pin to your door.`.trim())
+    } catch (e) {
+      setGeoNote(GEO_MESSAGE[e as GeoError] ?? GEO_MESSAGE.UNAVAILABLE)
+    } finally { setGeoBusy(false) }
+  }
+
+  async function save() {
+    setBusy(true); setError(null)
+    try {
+      await upsertMyAddress({
+        id: existing?.id ?? null, zoneId, line1: line1.trim(), landmark: landmark.trim() || null,
+        label, isDefault, lat: pin?.lat ?? null, lng: pin?.lng ?? null,
+      })
+      await customer.refresh()
+      navigate(returnTo, { replace: true })
+    } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
+  }
+
+  const canSave = !!line1.trim() && !!zoneId && !busy
+
+  return (
+    <Box sx={{ minHeight: '100dvh', bgcolor: '#fff', pb: 12 }}>
+      <SubPageBar title={isNew ? 'Add address' : 'Edit address'} />
+
+      <Box sx={{ px: 2, pt: 2 }}>
+        {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+
+        <Box sx={{ mb: 2 }}>
+          {showMap ? (
+            <Suspense fallback={<Skeleton variant="rounded" height={220} />}>
+              <AddressMap value={pin} center={mapCenter} onChange={(p) => applyPin(p, false)} />
+            </Suspense>
+          ) : (
+            <Box
+              role="button" tabIndex={0}
+              onClick={() => setShowMap(true)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setShowMap(true) }}
+              sx={{ height: 120, borderRadius: 3, bgcolor: '#EEF6F2', display: 'grid', placeItems: 'center',
+                    cursor: 'pointer', border: '1px dashed', borderColor: 'primary.light' }}
+            >
+              <Typography variant="body2" color="primary" fontWeight={700}>📍 Pin your door on the map</Typography>
+            </Box>
+          )}
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+            <Button size="small" variant="outlined" startIcon={<MyLocationIcon />}
+              onClick={() => void locate()} disabled={geoBusy}>
+              {geoBusy ? 'Finding you…' : 'Use my location'}
+            </Button>
+            {pin && <Typography variant="caption" color="success.main">Pinned. The rider gets an exact spot.</Typography>}
+          </Stack>
+          {geoNote && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{geoNote}</Typography>
+          )}
+        </Box>
+
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>SAVE AS</Typography>
+        <Stack direction="row" spacing={1} sx={{ mt: 0.75, mb: 2 }}>
+          {LABELS.map((l) => (
+            <Chip
+              key={l.value}
+              label={`${l.icon} ${l.text}`}
+              onClick={() => setLabel(l.value)}
+              color={label === l.value ? 'primary' : 'default'}
+              variant={label === l.value ? 'filled' : 'outlined'}
+            />
+          ))}
+        </Stack>
+
+        <Stack spacing={1.75}>
+          <TextField
+            label="House / flat / street" value={line1} fullWidth autoFocus={isNew}
+            onChange={(e) => setLine1(e.target.value)} inputProps={{ maxLength: 120 }}
+            placeholder="No. 12, 2nd Cross, Chittawadgi"
+          />
+          <TextField
+            label="Landmark" value={landmark} fullWidth
+            onChange={(e) => setLandmark(e.target.value)} inputProps={{ maxLength: 120 }}
+            placeholder="Near Anjaneya temple"
+            helperText="Riders find a landmark faster than a pin in Hospet's lanes."
+          />
+          <TextField select label="Area" value={zoneId} fullWidth onChange={(e) => setZoneId(e.target.value)}>
+            {customer.zones.map((z) => (
+              <MenuItem key={z.id} value={z.id}>{z.name}{z.name_kn ? ` · ${z.name_kn}` : ''}</MenuItem>
+            ))}
+            {customer.zones.length === 0 && <MenuItem value="" disabled>Loading areas…</MenuItem>}
+          </TextField>
+          <FormControlLabel
+            control={<Switch checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)}
+              disabled={existing?.is_default === true} />}
+            label={<Typography variant="body2">Deliver here by default</Typography>}
+          />
+        </Stack>
+      </Box>
+
+      <Box sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, p: 2, pb: 'calc(16px + env(safe-area-inset-bottom))',
+                 bgcolor: '#fff', borderTop: '1px solid', borderColor: 'divider' }}>
+        <Button fullWidth size="large" variant="contained" disabled={!canSave} onClick={() => void save()}>
+          {busy ? 'Saving…' : 'Save address'}
+        </Button>
+      </Box>
+    </Box>
+  )
+}

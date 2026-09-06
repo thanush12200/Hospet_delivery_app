@@ -47,7 +47,7 @@ export default function OrdersPage() {
       <Box sx={{ py: 8, px: 3, textAlign: 'center' }}>
         <Typography sx={{ fontSize: 40, mb: 1 }}>🧾</Typography>
         <Typography variant="h6" gutterBottom>Sign in to see your orders</Typography>
-        <Button variant="contained" onClick={() => navigate('/checkout')}>Sign in</Button>
+        <Button variant="contained" onClick={() => navigate('/login?returnTo=/orders')}>Sign in</Button>
       </Box>,
     )
   }

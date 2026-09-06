@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import {
-  Alert, Box, Button, Stack, TextField, Typography,
+  Alert, Box, Button, IconButton, Stack, TextField, Typography,
 } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { linkMyCustomer } from '@/api/customer'
+import { useAuth } from '@/auth/authContext'
+import { safeReturnTo } from '@/lib/returnTo'
 import { toE164 } from '@/lib/phone'
+import { useCustomer } from '@/store/customerContext'
 
 const RESEND_SECONDS = 30
 
@@ -13,11 +17,12 @@ const RESEND_SECONDS = 30
  * Phone OTP sign-in.
  *
  * Requires an SMS provider configured in Supabase (Authentication -> Providers
- * -> Phone). Without one, sending the code fails and the error below says so
- * plainly rather than hanging.
+ * -> Phone), or test phone numbers for QA. Without either, sending the code
+ * fails and the error below says so plainly rather than hanging.
  *
- * Login is deliberately deferred to checkout: forcing it at the front door
- * loses most first-time visitors, and browsing needs no identity.
+ * Login is deliberately deferred: browsing needs no identity, so this screen
+ * is only reached from checkout, the account tab, or a guarded route. It goes
+ * back to wherever it was reached from (?returnTo=/checkout).
  */
 export default function Login() {
   const [phone, setPhone] = useState('')
@@ -28,8 +33,17 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const { session, loading } = useAuth()
+  const customer = useCustomer()
 
+  const returnTo = safeReturnTo(params.get('returnTo'), '/account')
   const e164 = toE164(phone)
+
+  // Already signed in (back button, or a stale link): nothing to do here.
+  useEffect(() => {
+    if (!loading && session && !busy) navigate(returnTo, { replace: true })
+  }, [loading, session, busy, navigate, returnTo])
 
   useEffect(() => {
     if (cooldown <= 0) return
@@ -55,32 +69,39 @@ export default function Login() {
     if (error) { setError(error.message); setBusy(false); return }
     try {
       await linkMyCustomer(e164, name.trim() || undefined)
-      navigate('/checkout')
-    } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
+      await customer.refresh()
+      navigate(returnTo, { replace: true })
+    } catch (e) { setError((e as Error).message); setBusy(false) }
   }
 
   return (
-    <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', px: 3, bgcolor: '#fff' }}>
-      <Box sx={{ width: '100%', maxWidth: 360 }}>
+    <Box sx={{ minHeight: '100dvh', bgcolor: '#fff', px: 3, pt: 'calc(8px + env(safe-area-inset-top))' }}>
+      <IconButton edge="start" aria-label="Back" onClick={() => navigate(-1)}>
+        <ArrowBackIcon />
+      </IconButton>
+
+      <Box sx={{ maxWidth: 360, mx: 'auto', pt: 4 }}>
         <Typography sx={{ fontWeight: 800, fontSize: 30, color: 'primary.main' }}>Wink</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Everything you need, in a wink
+          {sent ? 'Enter the code we just sent you' : 'Sign in with your mobile number'}
         </Typography>
 
         <Stack spacing={2}>
-          {error && <Alert severity="error">{error}</Alert>}
+          {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
 
           {!sent ? (
             <>
               <TextField
-                label="Mobile number" value={phone} size="small" fullWidth
+                label="Mobile number" value={phone} size="small" fullWidth autoFocus
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="9900000000" inputMode="tel"
-                helperText="We send a 6-digit code to confirm it's you"
+                placeholder="98765 43210" inputMode="tel"
+                inputProps={{ autoComplete: 'tel-national' }}
+                helperText="We send a 6-digit code to confirm it's you. No password."
               />
               <TextField
                 label="Your name (optional)" value={name} size="small" fullWidth
                 onChange={(e) => setName(e.target.value)}
+                inputProps={{ autoComplete: 'name' }}
               />
               <Button
                 variant="contained" size="large" disabled={busy || !e164}
