@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { usePricing } from '@/hooks/usePricing'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
+import { BRAND_SHADOW } from '@/theme/brand'
 
 export function StickyCartBar() {
   const { count } = useCart()
@@ -18,7 +19,7 @@ export function StickyCartBar() {
           bottom: 'calc(58px + env(safe-area-inset-bottom) + 8px)',
           p: 1.25, px: 2, borderRadius: 3,
           bgcolor: 'primary.main', color: '#fff',
-          boxShadow: '0 6px 20px rgba(11,110,79,0.35)',
+          boxShadow: `0 6px 20px ${BRAND_SHADOW}`,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
       >

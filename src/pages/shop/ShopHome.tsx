@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Box, Skeleton, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AddressChooserSheet } from '@/components/shop/AddressChooserSheet'
+import { BrandSheet } from '@/components/shop/BrandSheet'
 import { ProductCard } from '@/components/ProductCard'
 import { ShopHeader } from '@/components/shop/ShopHeader'
 import { CategoryIconRail } from '@/components/shop/CategoryIconRail'
@@ -27,6 +28,7 @@ export default function ShopHome() {
   const { categoryId = null } = useParams()
   const [params, setParams] = useSearchParams()
   const [chooser, setChooser] = useState(false)
+  const [brand, setBrand] = useState(false)
 
   const activeCategory = catalogue?.categories.find((c) => c.id === categoryId)
 
@@ -59,24 +61,6 @@ export default function ShopHome() {
     setParams(next)
   }
 
-  if (error) {
-    return (
-      <Box sx={{ py: 8, px: 3, textAlign: 'center' }}>
-        <Typography sx={{ fontSize: 40, mb: 1 }}>📡</Typography>
-        <Typography variant="h6" gutterBottom>Can&apos;t reach the shop</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Check your connection and try again.
-        </Typography>
-        <Typography
-          component="button" variant="body2" color="primary" onClick={() => window.location.reload()}
-          sx={{ background: 'none', border: 0, fontWeight: 700, cursor: 'pointer' }}
-        >
-          Retry
-        </Typography>
-      </Box>
-    )
-  }
-
   return (
     <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', bgcolor: '#fff', minHeight: '100dvh' }}>
       <ShopHeader
@@ -87,10 +71,12 @@ export default function ShopHome() {
         addressHint={headerHint}
         onAddressClick={() => setChooser(true)}
         onAccountClick={() => navigate(customer.status === 'anon' ? '/login?returnTo=/account' : '/account')}
+        onBrandClick={() => setBrand(true)}
         accountInitial={initial}
         promiseMinutes={customer.activeZone?.sla_minutes ?? 45}
       />
       <AddressChooserSheet open={chooser} onClose={() => setChooser(false)} returnTo="/" />
+      <BrandSheet open={brand} onClose={() => setBrand(false)} />
 
       <CategoryIconRail
         categories={catalogue?.categories ?? []}
@@ -122,7 +108,21 @@ export default function ShopHome() {
           )}
         </Typography>
 
-        {loading ? (
+        {error ? (
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: 40, mb: 1 }}>📡</Typography>
+            <Typography variant="h6" gutterBottom>Can&apos;t reach the shop</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Check your connection and try again.
+            </Typography>
+            <Typography
+              component="button" variant="body2" color="primary" onClick={() => window.location.reload()}
+              sx={{ background: 'none', border: 0, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Retry
+            </Typography>
+          </Box>
+        ) : loading ? (
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 1.25 }}>
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} variant="rounded" height={228} />)}
           </Box>

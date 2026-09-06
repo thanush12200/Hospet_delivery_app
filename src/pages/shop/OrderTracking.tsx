@@ -17,6 +17,7 @@ import { cancelSecondsLeft, etaHeadline, formatClock, isTerminal, promisedAt } f
 import { paiseToRupees } from '@/lib/money'
 import { formatIndianMobile } from '@/lib/phone'
 import { useCustomer } from '@/store/customerContext'
+import { BRAND_GRADIENT, BRAND_TINT, MUTED_GRADIENT } from '@/theme/brand'
 import type { OrderEvent, OrderStatus } from '@/types/db'
 
 const STEPS: { status: OrderStatus; label: string; hint: string }[] = [
@@ -136,9 +137,7 @@ export default function OrderTracking() {
       <SubPageBar title={`Order ${order.order_no}`} backTo="/orders" />
 
       <Box sx={{
-        background: cancelled
-          ? 'linear-gradient(165deg, #5B6472 0%, #3E4552 100%)'
-          : 'linear-gradient(165deg, #0E8A62 0%, #0B6E4F 100%)',
+        background: cancelled ? MUTED_GRADIENT : BRAND_GRADIENT,
         color: '#fff', px: 2, pt: 2.5, pb: 3, borderRadius: '0 0 20px 20px',
       }}>
         <Typography sx={{ fontWeight: 800, fontSize: 24, lineHeight: 1.15 }}>{headline}</Typography>
@@ -156,7 +155,7 @@ export default function OrderTracking() {
       <Box sx={{ px: 2, pt: 2 }}>
         {rider && (
           <Paper sx={{ p: 1.5, mb: 1.5, border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: '#E7F3EE', display: 'grid', placeItems: 'center', fontSize: 22 }} aria-hidden>🛵</Box>
+            <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: BRAND_TINT, display: 'grid', placeItems: 'center', fontSize: 22 }} aria-hidden>🛵</Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="body2" fontWeight={700}>{rider.name} is bringing your order</Typography>
               <Typography variant="caption" color="text.secondary">+91 {formatIndianMobile(rider.phone)}</Typography>
@@ -178,7 +177,7 @@ export default function OrderTracking() {
                       <Box sx={{
                         width: current ? 14 : 10, height: current ? 14 : 10, borderRadius: '50%', mt: 0.5,
                         bgcolor: done ? 'primary.main' : '#D9DDE3',
-                        boxShadow: current ? '0 0 0 4px rgba(11,110,79,0.18)' : 'none',
+                        boxShadow: current ? '0 0 0 4px rgba(229,35,31,0.18)' : 'none',
                       }} />
                       {i < STEPS.length - 1 && (
                         <Box sx={{ width: 2, flex: 1, bgcolor: i < reachedIdx ? 'primary.main' : '#E6E9EE', my: 0.5 }} />

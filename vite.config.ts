@@ -27,12 +27,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'brand/*'],
       manifest: {
-        name: 'Wink',
-        short_name: 'Wink',
-        description: 'Everything you need, in a wink. Groceries delivered across Hospet.',
-        theme_color: '#0B6E4F',
+        name: 'FAA — Fast at any Accuracy',
+        short_name: 'FAA',
+        description: 'FAA it, get it, love it. Everyday essentials delivered in minutes across Hospet.',
+        theme_color: '#E5231F',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',

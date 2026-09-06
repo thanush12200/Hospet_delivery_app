@@ -14,6 +14,7 @@ import { useAuth } from '@/auth/authContext'
 import { formatIndianMobile } from '@/lib/phone'
 import { useCustomer } from '@/store/customerContext'
 import { addressLine } from '@/lib/address'
+import { BRAND, BRAND_GRADIENT } from '@/theme/brand'
 
 export default function AccountPage() {
   const { signOut } = useAuth()
@@ -43,7 +44,7 @@ export default function AccountPage() {
   return (
     <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh', bgcolor: '#F7F8FA' }}>
       <Box sx={{
-        background: 'linear-gradient(165deg, #0E8A62 0%, #0B6E4F 100%)', color: '#fff',
+        background: BRAND_GRADIENT, color: '#fff',
         px: 2, pt: 'calc(20px + env(safe-area-inset-top))', pb: 3, borderRadius: '0 0 20px 20px',
       }}>
         <Stack direction="row" spacing={2} alignItems="center">
@@ -101,7 +102,7 @@ export default function AccountPage() {
             subtitle={customer.storeConfig?.phone ? `Call or WhatsApp ${customer.storeConfig.phone}` : 'Talk to the store'}
             onClick={() => navigate('/help')} />
           <Divider />
-          <Row icon={<InfoOutlinedIcon />} title="About Wink" subtitle="Groceries across Hospet in 45 minutes"
+          <Row icon={<InfoOutlinedIcon />} title={`About ${BRAND.name}`} subtitle={BRAND.tagline}
             onClick={() => navigate('/help#about')} />
         </Box>
 

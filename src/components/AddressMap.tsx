@@ -14,7 +14,7 @@ const PIN = L.divIcon({
   className: '',
   html: `<svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg">
     <path d="M17 1C8.2 1 1 8.1 1 16.8 1 28.5 17 43 17 43s16-14.5 16-26.2C33 8.1 25.8 1 17 1z"
-          fill="#0B6E4F" stroke="#fff" stroke-width="2"/>
+          fill="#E5231F" stroke="#fff" stroke-width="2"/>
     <circle cx="17" cy="17" r="6" fill="#fff"/></svg>`,
   iconSize: [34, 44],
   iconAnchor: [17, 43],

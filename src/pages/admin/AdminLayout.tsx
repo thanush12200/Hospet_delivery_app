@@ -41,7 +41,7 @@ export default function AdminLayout() {
     <Box sx={{ minHeight: '100dvh', bgcolor: '#FAFBFC' }}>
       <AppBar position="sticky" color="inherit" sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
         <Toolbar sx={{ gap: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>Wink</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>FAA</Typography>
           <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>admin</Typography>
           <Stack direction="row" spacing={0.5} sx={{ flex: 1 }}>
             {TABS.map((t) => (

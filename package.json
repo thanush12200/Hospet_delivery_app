@@ -2,7 +2,7 @@
   "name": "wink",
   "version": "0.1.0",
   "private": true,
-  "description": "Wink — everything you need, in a wink. Local grocery delivery for Hospet: customer PWA, rider app and admin console over a Supabase/Postgres core.",
+  "description": "FAA (Fast at any Accuracy) — everyday essentials delivered in minutes. Local grocery delivery for Hospet: customer PWA, rider app and admin console over a Supabase/Postgres core.",
   "type": "module",
   "scripts": {
     "dev": "vite",
