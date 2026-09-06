@@ -6,6 +6,17 @@ export type OrderStatus =
   | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'FAILED'
 
 export type PaymentMethod = 'COD' | 'UPI'
+export type ActorType = 'CUSTOMER' | 'ADMIN' | 'RIDER' | 'SYSTEM'
+
+export interface OrderEvent {
+  id: number
+  order_id: string
+  from_status: OrderStatus | null
+  to_status: OrderStatus
+  actor_type: ActorType
+  note: string | null
+  created_at: string
+}
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
 
 export interface Category {
