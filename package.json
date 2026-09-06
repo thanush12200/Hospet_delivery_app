@@ -1,8 +1,8 @@
 {
-  "name": "hospet-delivery",
+  "name": "wink",
   "version": "0.1.0",
   "private": true,
-  "description": "Local grocery delivery platform for Hospet — customer PWA, rider app and admin console over a Supabase/Postgres core.",
+  "description": "Wink — everything you need, in a wink. Local grocery delivery for Hospet: customer PWA, rider app and admin console over a Supabase/Postgres core.",
   "type": "module",
   "scripts": {
     "dev": "vite",

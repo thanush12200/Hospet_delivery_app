@@ -25,9 +25,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Hospet Delivery',
-        short_name: 'Hospet',
-        description: 'Groceries delivered across Hospet in 45 minutes.',
+        name: 'Wink',
+        short_name: 'Wink',
+        description: 'Everything you need, in a wink. Groceries delivered across Hospet.',
         theme_color: '#0B6E4F',
         background_color: '#ffffff',
         display: 'standalone',

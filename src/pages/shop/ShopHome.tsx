@@ -41,12 +41,26 @@ export default function ShopHome() {
     <Box sx={{ pb: 12 }}>
       <AppBar position="sticky" color="inherit" sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
         <Toolbar sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1, py: 1.5 }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <AccessTimeIcon fontSize="small" color="primary" />
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Box>
-              <Typography variant="h6" lineHeight={1.1}>Delivery in 45 minutes</Typography>
-              <Typography variant="caption" color="text.secondary">Hospet · 583201</Typography>
+              <Typography
+                variant="h5"
+                lineHeight={1}
+                sx={{ fontWeight: 800, color: 'primary.main', letterSpacing: '-0.02em' }}
+              >
+                Wink
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Everything you need, in a wink
+              </Typography>
             </Box>
+            <Stack direction="row" alignItems="center" spacing={0.5}>
+              <AccessTimeIcon fontSize="small" color="primary" />
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography variant="body2" fontWeight={700} lineHeight={1.1}>45 min</Typography>
+                <Typography variant="caption" color="text.secondary">Hospet · 583201</Typography>
+              </Box>
+            </Stack>
           </Stack>
           <TextField
             size="small" fullWidth placeholder="Search for rice, dal, tea…"
