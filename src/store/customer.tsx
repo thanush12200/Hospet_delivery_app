@@ -21,9 +21,9 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
   // anyone is signed in. Failure here is not fatal -- the shop still browses.
   useEffect(() => {
     let active = true
-    void Promise.all([listZones(), getStoreConfig()])
-      .then(([z, c]) => { if (active) { setZones(z); setStoreConfig(c) } })
-      .catch(() => {})
+    // Independently: a missing store_config row must not hide the zones.
+    void listZones().then((z) => { if (active) setZones(z) }).catch(() => {})
+    void getStoreConfig().then((c) => { if (active) setStoreConfig(c) }).catch(() => {})
     return () => { active = false }
   }, [])
 
@@ -41,7 +41,8 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         } catch { /* staff account without a phone, or a genuine conflict */ }
       }
       setProfile(p)
-      setAddresses(p ? await listMyAddresses() : [])
+      // The profile stands even if the address book cannot be read right now.
+      try { setAddresses(p ? await listMyAddresses() : []) } catch { setAddresses([]) }
     } catch {
       setProfile(null); setAddresses([])
     } finally {

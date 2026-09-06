@@ -17,8 +17,12 @@ export const BRAND = {
   ink: '#14181F',
 } as const
 
-/** Header and status banners. */
-export const BRAND_GRADIENT = `linear-gradient(165deg, #F0322B 0%, ${BRAND.red} 55%, ${BRAND.redDark} 100%)`
+/**
+ * Header and status banners. Lighter and warmer than the logo red on purpose:
+ * these are large surfaces, and a saturated red block is tiring to look at.
+ * The logo red stays for buttons, chips and the tab bar.
+ */
+export const BRAND_GRADIENT = 'linear-gradient(160deg, #FF8578 0%, #FA6054 45%, #F1443A 100%)'
 export const MUTED_GRADIENT = 'linear-gradient(165deg, #5B6472 0%, #3E4552 100%)'
 /** Light red tint for selected states. */
 export const BRAND_TINT = '#FFF2F1'
