@@ -1,0 +1,162 @@
+import { supabase } from '@/lib/supabase'
+import type {
+  Address, Order, OrderItem, OrderStatus, PaymentMethod, PlaceOrderResult, Zone,
+} from '@/types/db'
+
+export interface AdminOrder extends Order {
+  customers: { name: string | null; phone: string } | null
+  addresses: { line1: string; landmark: string | null } | null
+  order_items: OrderItem[]
+}
+
+export interface Rider { id: string; name: string; phone: string; is_active: boolean }
+
+const ORDER_SELECT =
+  '*, customers(name, phone), addresses(line1, landmark), order_items(*)'
+
+/** Orders currently in play. Terminal ones are excluded from the board. */
+export async function listActiveOrders(): Promise<AdminOrder[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .in('status', ['PLACED', 'CONFIRMED', 'PICKING', 'PACKED', 'OUT_FOR_DELIVERY'])
+    .order('placed_at', { ascending: true })
+  if (error) throw error
+  return data as unknown as AdminOrder[]
+}
+
+export async function listRecentOrders(limit = 50): Promise<AdminOrder[]> {
+  const { data, error } = await supabase
+    .from('orders').select(ORDER_SELECT)
+    .order('placed_at', { ascending: false }).limit(limit)
+  if (error) throw error
+  return data as unknown as AdminOrder[]
+}
+
+export async function getAdminOrder(id: string): Promise<AdminOrder> {
+  const { data, error } = await supabase
+    .from('orders').select(ORDER_SELECT).eq('id', id).single()
+  if (error) throw error
+  return data as unknown as AdminOrder
+}
+
+export interface TransitionResult {
+  ok: boolean
+  error?: string
+  from?: OrderStatus
+  to?: OrderStatus
+  total_paise?: number
+}
+
+/**
+ * The ONLY way to move an order. Never update orders.status directly --
+ * a database trigger rejects it.
+ *
+ * fulfilment is meaningful only when moving to PACKED, and records a short
+ * pick. The server then recomputes the bill from what was actually packed.
+ */
+export async function transitionOrder(args: {
+  orderId: string
+  to: OrderStatus
+  actorType?: 'ADMIN' | 'RIDER' | 'CUSTOMER' | 'SYSTEM'
+  actorId?: string | null
+  note?: string | null
+  fulfilment?: { product_id: string; fulfilled_qty: number }[] | null
+  riderId?: string | null
+}): Promise<TransitionResult> {
+  const { data, error } = await supabase.rpc('transition_order', {
+    p_order_id: args.orderId,
+    p_to_status: args.to,
+    p_actor_type: args.actorType ?? 'ADMIN',
+    p_actor_id: args.actorId ?? null,
+    p_note: args.note ?? null,
+    p_fulfilment: args.fulfilment ?? null,
+    p_rider_id: args.riderId ?? null,
+  })
+  if (error) throw error
+  return data as TransitionResult
+}
+
+export async function listRiders(): Promise<Rider[]> {
+  const { data, error } = await supabase
+    .from('riders').select('*').eq('is_active', true).order('name')
+  if (error) throw error
+  return data as Rider[]
+}
+
+export async function listZones(): Promise<Zone[]> {
+  const { data, error } = await supabase
+    .from('zones').select('*').eq('is_active', true).order('name')
+  if (error) throw error
+  return data as Zone[]
+}
+
+// ---------------------------------------------------------------- manual entry
+// The WhatsApp pilot runs through these: an order arrives as a message, and
+// staff key it in here.
+
+export async function findOrCreateCustomer(phone: string, name?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('find_or_create_customer', {
+    p_phone: phone, p_name: name ?? null,
+  })
+  if (error) throw error
+  return data as string
+}
+
+export async function listAddresses(customerId: string): Promise<Address[]> {
+  const { data, error } = await supabase
+    .from('addresses').select('*').eq('customer_id', customerId)
+    .order('is_default', { ascending: false })
+  if (error) throw error
+  return data as Address[]
+}
+
+export async function addAddress(args: {
+  customerId: string; zoneId: string; line1: string; landmark?: string
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('admin_add_address', {
+    p_customer_id: args.customerId,
+    p_zone_id: args.zoneId,
+    p_line1: args.line1,
+    p_landmark: args.landmark ?? null,
+  })
+  if (error) throw error
+  return data as string
+}
+
+/** Same guarded path a customer's own checkout uses. */
+export async function placeOrderForCustomer(args: {
+  customerId: string
+  addressId: string
+  items: { product_id: string; qty: number }[]
+  paymentMethod: PaymentMethod
+  note?: string
+}): Promise<PlaceOrderResult> {
+  const { data, error } = await supabase.rpc('place_order', {
+    p_customer_id: args.customerId,
+    p_address_id: args.addressId,
+    p_items: args.items,
+    p_payment_method: args.paymentMethod,
+    p_client_total_paise: null,   // admin entry: trust the server's arithmetic
+    p_note: args.note ?? null,
+  })
+  if (error) throw error
+  return data as PlaceOrderResult
+}
+
+export async function adjustStock(productId: string, newOnHand: number, reason = 'ADJUST') {
+  const { data, error } = await supabase.rpc('admin_adjust_stock', {
+    p_product_id: productId, p_new_on_hand: newOnHand, p_reason: reason,
+  })
+  if (error) throw error
+  return data as { ok: boolean; error?: string; from?: number; to?: number; reserved?: number }
+}
+
+/** Push updates for the board, so it never needs polling. */
+export function subscribeToOrders(onChange: () => void) {
+  const channel = supabase
+    .channel('admin:orders')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onChange)
+    .subscribe()
+  return () => { void supabase.removeChannel(channel) }
+}
