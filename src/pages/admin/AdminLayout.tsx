@@ -6,7 +6,9 @@ import AdminLogin from './AdminLogin'
 const TABS = [
   { to: '/admin',           label: 'Orders' },
   { to: '/admin/new',       label: 'New order' },
+  { to: '/admin/catalogue', label: 'Catalogue' },
   { to: '/admin/inventory', label: 'Stock' },
+  { to: '/admin/riders',    label: 'Riders' },
 ]
 
 export default function AdminLayout() {

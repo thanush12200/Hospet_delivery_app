@@ -183,14 +183,30 @@ Routes are code-split so a customer never downloads the admin or rider bundle.
 
 MUI is deliberately **not** forced into a single manual chunk. Doing that pulled admin-only components (Autocomplete, pickers) into the shared vendor bundle and pushed the customer route over budget — shoppers were paying to download admin UI they can never reach. Letting Rollup split by actual usage keeps the shop lean.
 
-### Admin console
+### The three surfaces
+
+**Customer** (`/`) — shop, search, cart, phone-OTP sign-in, checkout, live order tracking, order history and reorder.
+
+**Admin** (`/admin`)
 
 | Screen | Purpose |
 |---|---|
 | **Orders** | Live kanban board by status, updated over Supabase realtime rather than polling. One-tap advance on each card. |
 | **Order detail** | Full items and customer, short-pick entry, rider assignment, every legal transition. |
 | **New order** | Manual entry — the screen the WhatsApp pilot runs on. Goes through the same `place_order()` path as a customer checkout, so stock and pricing behave identically. |
+| **Catalogue** | Add and edit products, including photos taken on a phone. Images are downscaled to 480px and re-encoded before upload. |
 | **Stock** | Set on-hand per SKU via `admin_adjust_stock()`, which records a `stock_movements` row every time. Reserved units belong to live orders and cannot be adjusted away. |
+| **Riders** | Add riders, activate/deactivate, and settle each day's cash against what the system expects. |
+
+**Rider** (`/rider`) — today's deliveries, one-tap call and map, mark delivered or failed, running cash total. Built for one thumb in sunlight.
+
+### Product images
+
+Photographs are taken on a phone in the admin console and uploaded to the `product-images` bucket (public read, admin write). Before upload the browser downscales to 480px and re-encodes: **WebP where supported, JPEG as fallback**. Safari lacked WebP encoding for years and some engines never invoke the `toBlob` callback at all rather than returning `null`, so the encoder is time-boxed — otherwise an admin on the wrong browser sits on a spinner with no error. Products without a photo fall back to a category glyph rather than an empty box.
+
+### Offline-tolerant rider actions
+
+Riders lose signal in stairwells and half the lanes in Hospet. Every rider action is written to a local queue **first** and synced after, so "delivered" always works. On drain, a server rejection (the order was already delivered from the admin console) is dropped rather than retried forever; a transport failure is kept for the next attempt.
 
 ---
 
@@ -199,9 +215,12 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 - [x] **Phase 1** — schema, atomic order functions, RLS policies, test suite, app scaffold
 - [x] **Phase 1b** — admin console: order board, order detail, manual entry, stock
 - [x] **Phase 1c** — Supabase Security Advisor findings resolved (`0005`)
-- [ ] **Phase 2** — customer PWA: checkout, phone OTP, order tracking
-- [ ] **Phase 3** — rider app: assigned orders, offline-tolerant delivery marking, cash collection
-- [ ] **Phase 4** — Razorpay UPI with webhook verification, FCM push, daily rider settlement
+- [x] **Phase 2** — customer PWA: checkout, phone OTP, order tracking, history, reorder
+- [x] **Phase 3** — rider app: assigned orders, offline-tolerant delivery marking, cash collection
+- [x] **Phase 3b** — product images, catalogue and rider management
+- [ ] **Phase 4** — Razorpay UPI with webhook verification, FCM push
+
+**Phone OTP needs an SMS provider** configured in Supabase (Authentication → Providers → Phone). Until one is set, sending a code fails with a clear message rather than hanging.
 
 **Out of scope for v1**, deliberately: ratings, wallets, referrals, coupons, loyalty points, live GPS tracking, scheduled orders, multi-warehouse. Each is a week not spent getting customers.
 
