@@ -1,4 +1,6 @@
-# Hospet Delivery
+# Wink
+
+**Everything you need, in a wink.** 🛒
 
 Local grocery delivery for **Hospet (Hosapete), Vijayanagara district, Karnataka** — a customer PWA, a rider app and an admin console over a Postgres core.
 
