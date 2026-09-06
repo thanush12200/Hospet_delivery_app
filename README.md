@@ -49,6 +49,14 @@ PLACED ──> CONFIRMED ──> PICKING ──> PACKED ──> OUT_FOR_DELIVERY
 
 A database trigger rejects any direct `UPDATE orders SET status`. `order_events` is append-only and cannot be edited or deleted.
 
+### Row Level Security
+
+The anon key ships inside the frontend and is readable by anyone, so it is not a secret. `0003_rls.sql` makes it harmless:
+
+- The **catalogue is public** — the shop works logged out.
+- **Everything else is private to its owner.** A customer sees only their own orders, addresses and payments; a rider sees only orders assigned to them; an admin sees all.
+- **No client may write to `orders`, `order_items`, `order_events`, `payments` or `inventory` at all.** Those tables have RLS enabled and deliberately *no* write policy, so every mutation must go through the `SECURITY DEFINER` functions above.
+
 ### Three rules that keep the data honest
 
 1. **`order_items` copies the price at order time.** Never join `products` for a historical price — changing an MRP tomorrow must not rewrite what a customer paid last week.
@@ -96,8 +104,11 @@ Or apply to Supabase by running the files in `supabase/migrations/` in order.
 ```bash
 npm run db:reset
 psql -d hospet_test -f supabase/tests/lifecycle_test.sql
+psql -d hospet_test -f supabase/tests/rls_test.sql
 ./supabase/tests/oversell_test.sh hospet_test 40
 ```
+
+`local_auth_shim.sql` stubs `auth.uid()` and the `anon`/`authenticated` roles so the RLS policies can be exercised on plain Postgres. **Never run the shim against Supabase** — it has real versions of all of it.
 
 The lifecycle suite covers 36 assertions: price-tamper rejection, illegal transitions, reservation release on cancel, restocking after a cancelled pack, bill recomputation on a short pick, COD cash reconciliation, and the append-only guarantee.
 
@@ -112,6 +123,10 @@ PASS  no oversell under 40-way concurrency (sold exactly 5 of 5)
 ```
 
 Overselling destroys customer trust faster than slow delivery does. It is the one thing in this system that cannot be wrong.
+
+The RLS suite (8 assertions) proves the anon key can read the catalogue but cannot read another customer's orders, insert an order, alter stock, delete records, or call `place_order()` without logging in.
+
+One subtlety worth knowing when reading these tests: **RLS filters rows, it does not raise.** A blocked `UPDATE` matches zero rows and returns successfully. Assertions must therefore check rows affected, not catch an exception.
 
 ---
 
@@ -141,7 +156,7 @@ Routes are code-split so a customer never downloads the admin or rider bundle.
 
 ## Roadmap
 
-- [x] **Phase 1** — schema, atomic order functions, test suite, app scaffold
+- [x] **Phase 1** — schema, atomic order functions, RLS policies, test suite, app scaffold
 - [ ] **Phase 2** — customer PWA: checkout, phone OTP, order tracking
 - [ ] **Phase 3** — rider app: assigned orders, offline-tolerant delivery marking, cash collection
 - [ ] **Phase 4** — Razorpay UPI with webhook verification, FCM push, daily rider settlement
