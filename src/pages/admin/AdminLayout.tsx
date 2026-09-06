@@ -9,6 +9,7 @@ const TABS = [
   { to: '/admin/catalogue', label: 'Catalogue' },
   { to: '/admin/inventory', label: 'Stock' },
   { to: '/admin/riders',    label: 'Riders' },
+  { to: '/admin/zones',     label: 'Areas' },
 ]
 
 export default function AdminLayout() {
