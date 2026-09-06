@@ -17,7 +17,7 @@
 --
 -- store_config.site_url is the link in the message (admin order page).
 
-alter table store_config add column if not exists site_url text not null default 'https://wink-1nn.pages.dev';
+alter table store_config add column if not exists site_url text not null default 'https://faa-dfz.pages.dev';
 
 create table if not exists notify_targets (
   id           uuid primary key default gen_random_uuid(),
