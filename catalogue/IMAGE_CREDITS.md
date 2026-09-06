@@ -1,0 +1,87 @@
+# Product photo credits
+
+Photos under `public/catalogue/` are reused under their original licences. Open Food Facts photos are CC BY-SA 3.0 by Open Food Facts contributors.
+
+- **Agarbatti 1 pack** — Vis M, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Agarbatti_-_Lavender_fragrance.jpg
+- **Aluminium Foil 9 m** — Lewis Ronald, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:Aluminium_cooking_foil.jpg
+- **Banana 6 pcs** — McKay Savage from London, UK, CC BY 2.0 — https://commons.wikimedia.org/wiki/File:India_-_Koyambedu_Market_-_Banana_02_(3986188141).jpg
+- **Basmati Rice 1 kg** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/0690225101134
+- **Bathing Soap 100 g** — Shyamal L., CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Mysore_Sandal_box_2016.jpg
+- **Biscuits - Cream 150 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901719107474
+- **Biscuits - Glucose 300 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901719902413
+- **Biscuits - Marie 250 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901063151383
+- **Bread 400 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901063341500
+- **Butter 100 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8906036670809
+- **Candle 1 pack** — စာကလေး, CC0 — https://commons.wikimedia.org/wiki/File:Wax_Candle.jpg
+- **Chana Dal 500 g** — Gaurav Dhwaj Khadka, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Split_Chickpeas.jpg
+- **Chilli Powder 200 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901786391011
+- **Coconut Oil 500 ml** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901088000451
+- **Coffee Powder 200 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901030774980
+- **Coriander Leaves 1 bunch** — Kpsudeep, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Bunches_of_coriander_leaves.jpg
+- **Coriander Powder 100 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901786432011
+- **Cumin Seeds 100 g** — Misterneedlemouse, CC0 — https://commons.wikimedia.org/wiki/File:Whole_Cumin_Seeds.jpg
+- **Curd 400 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8906036670212
+- **Curry Leaves 1 bunch** — Sonja Pauen - Stanhopea, CC BY 2.0 DE — https://commons.wikimedia.org/wiki/File:Murraya_koenigii_leaves_-_curry_leaves.jpg
+- **Detergent Bar 250 g** — Museum Rotterdam, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:Ongebruikt_stuk_zeep,_waarop_in_reli%C3%ABf_%E2%80%9CSunlight_Soap%E2%80%9D,_objectnr_30704.JPG
+- **Detergent Powder 1 kg** — Satya24x7, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:Ghari_Detergent_1_kg_Pack.jpg
+- **Dishwash Bar 300 g** — SamBlob, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:Bar_of_carbolic_soap.jpg
+- **Dishwash Liquid 500 ml** — Maa chamunda devi enterprises pvt.ltd., CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Dish_Wash_Gel.jpg
+- **Eggs 6 pcs** — Evan-Amos, Public domain — https://commons.wikimedia.org/wiki/File:6-Pack-Chicken-Eggs.jpg
+- **Floor Cleaner 1 L** — ajay_suresh, CC BY 2.0 — https://commons.wikimedia.org/wiki/File:Lysol_-_All_Purpose_Cleaner_(51012787263).jpg
+- **Garbage Bags 30 pcs** — Wiki Farazi, Public domain — https://commons.wikimedia.org/wiki/File:Black_garbage_bag.jpg
+- **Garlic 250 g** — Thamizhpparithi Maari, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Garlic_bulbs_of_Salem.jpg
+- **Ghee 500 ml** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901262030519
+- **Ginger 250 g** — Khlshnuramalina, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Ginger_(Zingiber_officinale).jpg
+- **Green Chilli 250 g** — Ravi Dwivedi, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Green-chillies.jpg
+- **Green Moong 500 g** — Ivar Leidus, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Mung_beans_(Vigna_radiata).jpg
+- **Groundnut 500 g** — NIAID, CC BY 2.0 — https://commons.wikimedia.org/wiki/File:Shelled_Peanuts_in_a_Bowl_(32910711266).jpg
+- **Groundnut Oil 1 L** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8906035030918
+- **Hair Oil 100 ml** — Dineshkumar Nallaveerappan, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Parachute_coconut_oil_25ml.jpg
+- **Health Drink Powder 500 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/7622202026423
+- **Idli Rice 5 kg** — Thamizhpparithi Maari, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:A_closeup_of_Ponni_Rice.JPG
+- **Instant Coffee 50 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/89009949
+- **Jaggery 1 kg** — Sushant Medhe Pawar of Kolhapur Agricultural Produce Market, CC0 — https://commons.wikimedia.org/wiki/File:Organic_Chemical_free_Kolhapur_Jaggery_Dhep_(Block)_-_1_Kg_each.jpg
+- **Kabuli Chana 500 g** — AlixSaz, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Ordinary_chickpeas_in_a_ceramic_bowl.jpg
+- **Lemon 4 pcs** — Ivar Leidus, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Lemon_-_whole_and_split.jpg
+- **Maida 500 g** — Thamizhpparithi Maari, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Maida_flour.jpg
+- **Masoor Dal 500 g** — Fumikas Sagisavas, CC0 — https://commons.wikimedia.org/wiki/File:Red_lentils_(1).jpg
+- **Matchbox 1 pc** — AnimalReport, CC0 — https://commons.wikimedia.org/wiki/File:Indian_Matchbox.jpg
+- **Milk 500 ml** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8906036670014
+- **Moong Dal 500 g** — Sudeshna Banerjee, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:Moong_Dal.jpg
+- **Mustard Seeds 100 g** — Jonathunder, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:BrownMustardSeed.JPG
+- **Namkeen Mixture 200 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8904004412956
+- **Noodles 70 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901058851298
+- **Onion 1 kg** — McKay Savage from London, UK, CC BY 2.0 — https://commons.wikimedia.org/wiki/File:India_-_Koyambedu_Market_-_Onions_10_(3986292991).jpg
+- **Paneer 200 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8906036674005
+- **Poha / Avalakki 500 g** — Sanjay Acharya, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:Poha.jpg
+- **Potato 1 kg** — McKay Savage from London, UK, CC BY 2.0 — https://commons.wikimedia.org/wiki/File:India_-_Koyambedu_Market_-_Potatoes_03_(3986298003).jpg
+- **Potato Chips 52 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901491981552
+- **Ragi Flour 1 kg** — Medhi jyoti, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Ragi_millet_flour.jpg
+- **Rasam Powder 100 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8906095290390
+- **Rava / Sooji 500 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901725001070
+- **Rusk 300 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901063325357
+- **Salt 1 kg** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8904043901015
+- **Sambar Powder 100 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901042968919
+- **Sanitary Pads 8 pcs** — Linn.KnowSex, CC BY 4.0 — https://commons.wikimedia.org/wiki/File:A_Sanitary_Towel_on_White_Background.jpg
+- **Shampoo Bottle 180 ml** — Ranjima np, CC0 — https://commons.wikimedia.org/wiki/File:Dove_shampoo_bottle.jpg
+- **Shampoo Sachet 5 ml** — Sunlight Fabrieken, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:Vijf_sachets_%E2%80%9CLux_Shampoo%E2%80%9D,_in_poedervorm,_objectnr_73019-1-5.JPG
+- **Shaving Cream 70 g** — Manoj1234567, CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:Crolon.JPG
+- **Sona Masoori Rice 25 kg** — McKay Savage from London, UK, CC BY 2.0 — https://commons.wikimedia.org/wiki/File:India_-_Markets_-_rice_(5208913462).jpg
+- **Sona Masoori Rice 5 kg** — Sanjay Acharya, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:Sona-masuri.jpg
+- **Sugar 1 kg** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8906026900046
+- **Sunflower Oil 1 L** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8908000502017
+- **Sunflower Oil 5 L** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8906007280280
+- **Talcum Powder 100 g** — Alf van Beem, CC0 — https://commons.wikimedia.org/wiki/File:Johnsons_Baby_Powder_1,5_OZS_talc,_pic1.JPG
+- **Tamarind 500 g** — David E Mead, CC0 — https://commons.wikimedia.org/wiki/File:Tamarind_(marketed).jpg
+- **Tea Powder 250 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901030877124
+- **Tea Powder 500 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901052000906
+- **Toilet Cleaner 500 ml** — Alofok, CC BY-SA 3.0 — https://commons.wikimedia.org/wiki/File:ToiletcleanersbyAlofok_(8).JPG
+- **Tomato 1 kg** — McKay Savage from London, UK, CC BY 2.0 — https://commons.wikimedia.org/wiki/File:India_-_Koyambedu_Market_-_Tomatoes_02_(3987058522).jpg
+- **Toor Dal 1 kg** — BaluBFA12, CC0 — https://commons.wikimedia.org/wiki/File:Split_pigeon_peas.jpg
+- **Toothbrush 1 pc** — Jonas Bergsten, Public domain — https://commons.wikimedia.org/wiki/File:Toothbrush_x3_20050716_002.jpg
+- **Toothpaste 100 g** — William Warby from London, England, CC BY 2.0 — https://commons.wikimedia.org/wiki/File:Toothpaste_(5146809288).jpg
+- **Turmeric Powder 100 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901725125349
+- **Urad Dal 500 g** — BaluBFA12, CC0 — https://commons.wikimedia.org/wiki/File:Peeled_urad_beans.jpg
+- **Vermicelli 400 g** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901242114406
+- **Whole Wheat Atta 10 kg** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901725016869
+- **Whole Wheat Atta 5 kg** — Open Food Facts contributors, CC BY-SA 3.0 — https://world.openfoodfacts.org/product/8901725121723
