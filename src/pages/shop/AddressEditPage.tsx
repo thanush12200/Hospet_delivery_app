@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import {
-  Alert, Box, Button, Chip, FormControlLabel, MenuItem, Skeleton, Stack, Switch,
+  Alert, Box, Button, Chip, FormControlLabel, Skeleton, Stack, Switch,
   TextField, Typography,
 } from '@mui/material'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
@@ -11,7 +11,7 @@ import { PlaceSearch } from '@/components/shop/PlaceSearch'
 import { SubPageBar } from '@/components/shop/SubPageBar'
 import { LABELS } from '@/lib/address'
 import {
-  GEO_MESSAGE, getCurrentCoords, nearestZone, type GeoError, type LatLng,
+  GEO_MESSAGE, geoPermission, getCurrentCoords, nearestZone, pickZone, type GeoError, type LatLng,
 } from '@/lib/geo'
 import { useCustomer } from '@/store/customerContext'
 import { BRAND_TINT } from '@/theme/brand'
@@ -36,7 +36,6 @@ export default function AddressEditPage() {
   const [label, setLabel] = useState<AddressLabel>('HOME')
   const [line1, setLine1] = useState('')
   const [landmark, setLandmark] = useState('')
-  const [zoneId, setZoneId] = useState('')
   const [isDefault, setIsDefault] = useState(false)
   const [pin, setPin] = useState<LatLng | null>(null)
   const [showMap, setShowMap] = useState(false)
@@ -55,10 +54,9 @@ export default function AddressEditPage() {
     }
     if (existing) {
       setLabel(existing.label); setLine1(existing.line1); setLandmark(existing.landmark ?? '')
-      setZoneId(existing.zone_id); setIsDefault(existing.is_default)
+      setIsDefault(existing.is_default)
       if (existing.lat != null && existing.lng != null) { setPin({ lat: existing.lat, lng: existing.lng }); setShowMap(true) }
     } else {
-      setZoneId(customer.activeZone?.id ?? customer.zones[0]?.id ?? '')
       // First address, or one added on the way to checkout, is where this
       // order goes: make it the default rather than leaving the old one selected.
       setIsDefault(customer.addresses.length === 0 || returnTo === '/checkout')
@@ -66,12 +64,12 @@ export default function AddressEditPage() {
     setLoaded(true)
   }, [loaded, isNew, existing, customer, navigate, returnTo])
 
-  // Keep the zone select in sync when zones arrive after the form did.
-  useEffect(() => {
-    if (!zoneId && customer.zones[0]) setZoneId(customer.activeZone?.id ?? customer.zones[0].id)
-  }, [customer.zones, customer.activeZone, zoneId])
-
-  const zone = customer.zones.find((z) => z.id === zoneId)
+  // The area comes from the pin (or the store's only area); never from a form field.
+  const resolvedZone = useMemo(
+    () => pickZone(pin, customer.zones) ?? (existing ? customer.zones.find((z) => z.id === existing.zone_id) ?? null : null),
+    [pin, customer.zones, existing])
+  const zoneId = resolvedZone?.id ?? ''
+  const zone = resolvedZone
   const mapCenter: LatLng = zone?.lat != null && zone.lng != null ? { lat: zone.lat, lng: zone.lng } : HOSPET
 
   function applyPin(p: LatLng, announce: boolean) {
@@ -79,10 +77,9 @@ export default function AddressEditPage() {
     const near = nearestZone(p, customer.zones
       .filter((z) => z.lat != null && z.lng != null)
       .map((z) => ({ id: z.id, name: z.name, lat: z.lat as number, lng: z.lng as number, radius_m: z.radius_m })))
-    if (!near) { if (announce) setGeoNote('Pin saved for the rider. Pick your area below.'); return }
+    if (!near) { if (announce) setGeoNote('Pin saved for the rider.'); return }
     if (near.withinRadius) {
-      setZoneId(near.id)
-      if (announce) setGeoNote(`Looks like you're in ${near.name}. Change it below if that's wrong.`)
+      if (announce) setGeoNote(`Looks like you're in ${near.name}.`)
     } else if (announce) {
       setGeoNote(`Nearest area is ${near.name}, about ${Math.round(near.distanceM / 100) / 10} km away. We may not deliver there yet.`)
     }
@@ -103,13 +100,22 @@ export default function AddressEditPage() {
     setBusy(true); setError(null)
     try {
       await upsertMyAddress({
-        id: existing?.id ?? null, zoneId, line1: line1.trim(), landmark: landmark.trim() || null,
+        id: existing?.id ?? null, zoneId: zoneId || null, line1: line1.trim(), landmark: landmark.trim() || null,
         label, isDefault, lat: pin?.lat ?? null, lng: pin?.lng ?? null,
       })
       await customer.refresh()
       navigate(returnTo, { replace: true })
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
+
+  // A new address on a device that already allows location: find it at once.
+  useEffect(() => {
+    if (!loaded || !isNew || pin) return
+    let cancelled = false
+    void geoPermission().then((perm) => { if (!cancelled && perm === 'granted') void locate() })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, isNew])
 
   const canSave = !!line1.trim() && !!zoneId && !busy
 
@@ -178,12 +184,9 @@ export default function AddressEditPage() {
             placeholder="Near Anjaneya temple"
             helperText="Riders find a landmark faster than a pin in Hospet's lanes."
           />
-          <TextField select label="Area" value={zoneId} fullWidth onChange={(e) => setZoneId(e.target.value)}>
-            {customer.zones.map((z) => (
-              <MenuItem key={z.id} value={z.id}>{z.name}</MenuItem>
-            ))}
-            {customer.zones.length === 0 && <MenuItem value="" disabled>Loading areas…</MenuItem>}
-          </TextField>
+          {resolvedZone
+            ? <Typography variant="caption" color="text.secondary">Delivery area: <strong>{resolvedZone.name}</strong>, worked out from the pin.</Typography>
+            : pin && <Typography variant="caption" color="error.main">We don't deliver at this spot yet. Move the pin closer to the store.</Typography>}
           <FormControlLabel
             control={<Switch checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)}
               disabled={existing?.is_default === true} />}

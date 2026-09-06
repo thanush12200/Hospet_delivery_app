@@ -7,6 +7,7 @@ import { useToast } from '@/components/toastContext'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { etaHeadlineAt, isTerminal, promiseOf } from '@/lib/eta'
 import { paiseToRupees } from '@/lib/money'
+import ReplayIcon from '@mui/icons-material/Replay'
 import { buildReorderLines } from '@/lib/reorder'
 import { useCart } from '@/store/cartContext'
 import type { OrderStatus } from '@/types/db'
@@ -67,7 +68,7 @@ export default function OrdersPage() {
   }
 
   const shell = (children: React.ReactNode) => (
-    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh' }}>
+    <Box sx={{ pb: 'calc(var(--nav-clearance) + 8px)', minHeight: '100dvh' }}>
       <Box sx={{
         background: BRAND_GRADIENT, color: '#fff',
         px: 2, pt: 'calc(16px + env(safe-area-inset-top))', pb: 2.5, borderRadius: '0 0 20px 20px',
@@ -139,7 +140,7 @@ export default function OrdersPage() {
           {(o.status === 'DELIVERED' || o.status === 'CANCELLED') && (
             // Reorder is the single biggest driver of repeat purchases in
             // grocery, so it gets a one-tap path rather than a buried menu.
-            <Button size="small" sx={{ mt: 0.5, ml: -0.75 }} onClick={(e) => { e.stopPropagation(); reorder(o) }}>
+            <Button size="small" variant="contained" startIcon={<ReplayIcon />} sx={{ mt: 1 }} onClick={(e) => { e.stopPropagation(); reorder(o) }}>
               Order again
             </Button>
           )}

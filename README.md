@@ -270,7 +270,7 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 
 ### The three surfaces
 
-**Customer** (`/`) — a delivery-area prompt on first landing (GPS to the nearest area, or pick one); tap the logo for the brand sheet; home and category grids (`/category/:id`), a product sheet over any page (`?product=<id>`), search with recent searches (`/search`), a cart that shows the same zone fee as checkout, phone-OTP sign-in (`/login?returnTo=`), an account tab with name edit and sign-out, an address book with labels, a default, soft delete and a Leaflet/OpenStreetMap pin (`/account/addresses`), checkout from the address book, live tracking with ETA, timeline, rider card, cancel-within-window and WhatsApp/call to the store (`/order/:id`), order history with paging and a reorder that rebuilds the cart, and Help (`/help`).
+**Customer** (`/`) — a one-tap location prompt on first landing (the area is worked out from GPS, or the store's only area is used); tap the logo for the brand sheet; home and category grids (`/category/:id`), a product sheet over any page (`?product=<id>`), search with recent searches (`/search`), a cart that shows the same zone fee as checkout, phone-OTP sign-in (`/login?returnTo=`), an account tab with name edit and sign-out, an address book with labels, a default, soft delete, place search and a Leaflet/OpenStreetMap pin that decides the delivery area (`/account/addresses`), checkout from the address book, live tracking with ETA, timeline, rider card, cancel-within-window and WhatsApp/call to the store (`/order/:id`), order history with paging and a reorder that rebuilds the cart, and Help (`/help`).
 
 **Admin** (`/admin`)
 

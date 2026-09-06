@@ -14,7 +14,7 @@ export default function HelpPage() {
   const text = orderNo ? `Hi, I need help with order ${orderNo}` : `Hi, I need some help with ${BRAND.name}`
 
   return (
-    <Box sx={{ minHeight: '100dvh', bgcolor: '#fff', pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)' }}>
+    <Box sx={{ minHeight: '100dvh', bgcolor: '#fff', pb: 'calc(var(--nav-clearance) + 8px)' }}>
       <SubPageBar title="Help & support" />
       <Box sx={{ px: 2, pt: 2 }}>
         {storeConfig && !storeConfig.is_open && (

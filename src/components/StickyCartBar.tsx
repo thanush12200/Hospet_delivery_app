@@ -15,18 +15,20 @@ export function StickyCartBar() {
     <Slide direction="up" in={count > 0} mountOnEnter unmountOnExit>
       <Box
         sx={{
-          position: 'fixed', left: 12, right: 12, zIndex: 1200, maxWidth: 560, mx: 'auto',
-          // Sits directly above the tab bar, not underneath it.
-          bottom: { xs: 'calc(58px + env(safe-area-inset-bottom) + 8px)', md: 16 },
+          position: 'fixed', left: 12, right: 12, zIndex: 1350, maxWidth: 560, mx: 'auto',
+          // Sits directly above the floating tab bar, not underneath it.
+          bottom: { xs: 'calc(var(--nav-clearance) + 6px)', md: 'calc(var(--nav-clearance) + 6px)' },
           display: 'flex', flexDirection: 'column', gap: 0.75,
         }}
       >
         <FreeDeliveryBar pricing={pricing} compact />
         <Box
           sx={{
-            p: 1.25, px: 2, borderRadius: '8px', gap: 1,
-            bgcolor: 'primary.main', color: '#fff',
-            boxShadow: `0 6px 20px ${BRAND_SHADOW}`,
+            p: 1.25, px: 2, borderRadius: '18px', gap: 1,
+            bgcolor: 'rgba(229,35,31,0.86)', color: '#fff',
+            backdropFilter: 'blur(18px) saturate(1.6)', WebkitBackdropFilter: 'blur(18px) saturate(1.6)',
+            border: '1px solid rgba(255,255,255,0.35)',
+            boxShadow: `0 10px 30px ${BRAND_SHADOW}, inset 0 1px 0 rgba(255,255,255,0.35)`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}
         >

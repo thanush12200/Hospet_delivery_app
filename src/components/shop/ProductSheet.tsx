@@ -60,7 +60,7 @@ export function ProductSheet() {
   const low = available !== undefined && available > 0 && available <= 5
 
   return (
-    <BottomSheet open={!!id && !!product} onClose={close} title={product?.name}>
+    <BottomSheet open={!!id && !!product} onClose={close} title={product?.name} modal={false} maxHeight="88dvh">
       {product && (
         <Box sx={{ px: 2, pb: 3 }}>
           <Box sx={{

@@ -2,84 +2,92 @@ import { useEffect, useRef, useState } from 'react'
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import AddLocationAltOutlinedIcon from '@mui/icons-material/AddLocationAltOutlined'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { BottomSheet } from '@/components/BottomSheet'
+import { SPLASH_TOTAL_MS } from '@/components/SplashScreen'
 import { useCustomer } from '@/store/customerContext'
-import { GEO_MESSAGE, getCurrentCoords, nearestZone, type GeoError } from '@/lib/geo'
+import { GEO_MESSAGE, geoPermission, getCurrentCoords, pickZone, type GeoError } from '@/lib/geo'
 import { markWelcomeSeen } from '@/lib/welcome'
 import { BRAND, BRAND_TINT } from '@/theme/brand'
-
-import { SPLASH_TOTAL_MS } from '@/components/SplashScreen'
 
 /** After the splash has faded. */
 const AFTER_SPLASH_MS = SPLASH_TOTAL_MS + 100
 
 /**
- * The first thing a new device sees after the splash: where should we
- * deliver? Prices, the delivery fee and the promise all depend on the area,
- * so it is asked before browsing, the way Blinkit and Zepto do.
+ * First thing on a new device: find where the customer is. One tap allows
+ * location, the app matches it to a delivery area and carries on. When the
+ * browser already granted location, nothing is shown at all: the area is
+ * worked out silently. Refusing (or a phone with no fix) falls back to the
+ * store's only area when there is exactly one, so the shop still works;
+ * only when several areas exist and none could be matched is a list shown.
  *
- *   "Use my current location"  GPS → nearest delivery area (no geocoding bill)
- *   pick an area               one tap, remembered on the device
- *   signed in, no address      shortcut to the address form
- *
- * Mounted by ShopLayout only while no delivery address or area is known, and
- * only once the customer has resolved, so the chunk is never fetched on a
- * device that already chose. Closing without choosing is allowed; the header
- * chip keeps saying "Select delivery area" and the prompt returns on the
- * next full load.
+ * Mounted by ShopLayout only while no delivery address or area is known.
  */
 export default function LocationGate() {
   const { pathname } = useLocation()
   const customer = useCustomer()
-  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [locating, setLocating] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  const [showList, setShowList] = useState(false)
+  const decided = useRef(false)
+  const zonesRef = useRef(customer.zones)
+  zonesRef.current = customer.zones
+  const setZoneRef = useRef(customer.setSelectedZoneId)
+  setZoneRef.current = customer.setSelectedZoneId
 
-  const signedIn = customer.status === 'ready' && !!customer.customerId
-  const asked = useRef(false)
-
-  // Mounted only while no location is known (see ShopLayout). Ask the first
-  // time the home page is reached in this load, after the splash has faded.
-  useEffect(() => {
-    if (asked.current || pathname !== '/') return
-    const t = setTimeout(() => { asked.current = true; setOpen(true) }, AFTER_SPLASH_MS)
-    return () => clearTimeout(t)
-  }, [pathname])
-
-  function close() {
+  function finish() {
     setOpen(false)
     markWelcomeSeen()
   }
 
-  function choose(id: string) {
-    customer.setSelectedZoneId(id)
-    close()
-  }
-
-  async function locate() {
+  /** Try the browser position; resolve an area; fall back to the only area. */
+  async function locate(silent: boolean) {
     setLocating(true); setNote(null)
     try {
       const at = await getCurrentCoords()
-      const near = nearestZone(at, customer.zones.map((z) => ({
-        id: z.id, name: z.name, lat: z.lat ?? NaN, lng: z.lng ?? NaN, radius_m: z.radius_m,
-      })))
-      if (!near) {
-        setNote("We couldn't match your location to a delivery area yet. Please pick your area below.")
-      } else if (!near.withinRadius) {
-        setNote(`${near.name} is the nearest area, about ${(near.distanceM / 1000).toFixed(1)} km away. We don't deliver there yet. Pick an area below if you are nearby.`)
-      } else {
-        choose(near.id)
-      }
+      const zone = pickZone(at, zonesRef.current)
+      if (zone) { setZoneRef.current(zone.id); finish(); return }
+      if (!silent) {
+        const placed = zonesRef.current.some((z) => z.lat != null && z.lng != null)
+        setNote(placed ? "We don't deliver at your location yet. You can still browse, or pick an area below."
+          : 'We could not match a delivery area. Pick one below.')
+        setShowList(true)
+      } else { setOpen(true) }
     } catch (e) {
-      setNote(GEO_MESSAGE[e as GeoError] ?? GEO_MESSAGE.UNAVAILABLE)
+      const fallback = pickZone(null, zonesRef.current)
+      if (fallback) { setZoneRef.current(fallback.id); finish(); return }
+      if (!silent) { setNote(GEO_MESSAGE[e as GeoError] ?? GEO_MESSAGE.UNAVAILABLE); setShowList(true) } else { setOpen(true) }
     } finally { setLocating(false) }
   }
 
+  // Once per load, the first time the home page is reached: if location is
+  // already allowed, find the area quietly; otherwise ask after the splash.
+  useEffect(() => {
+    if (decided.current || pathname !== '/' || customer.zones.length === 0) return
+    decided.current = true
+    let cancelled = false
+    void (async () => {
+      const perm = await geoPermission()
+      if (cancelled) return
+      if (perm === 'granted') { await locate(true); return }
+      setTimeout(() => { if (!cancelled) setOpen(true) }, AFTER_SPLASH_MS)
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, customer.zones.length])
+
+  function skip() {
+    const fallback = pickZone(null, zonesRef.current)
+    if (fallback) { setZoneRef.current(fallback.id); finish(); return }
+    setShowList(true)
+    setNote('Pick your area to continue.')
+  }
+
+  function choose(id: string) { setZoneRef.current(id); finish() }
+
   return (
-    <BottomSheet open={open} onClose={close} title={`Welcome to ${BRAND.name}`}>
+    <BottomSheet open={open} onClose={skip} title={`Welcome to ${BRAND.name}`}>
       <Box className="location-gate">
         <div className="location-gate-brand">
           <img src={BRAND.mark} alt="" width={44} height={44} />
@@ -88,61 +96,45 @@ export default function LocationGate() {
             <span>Groceries at your door in {BRAND.promiseMinutes} minutes, across {BRAND.city}.</span>
           </div>
         </div>
-        <Typography component="h3" sx={{ fontWeight: 800, fontSize: 20, mt: 2 }}>Where should we deliver?</Typography>
+        <Typography component="h3" sx={{ fontWeight: 800, fontSize: 20, mt: 2 }}>Allow your location</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-          Prices and delivery charges depend on your area.
+          So we can show delivery time and prices for where you are. Nothing is saved until you add an address.
         </Typography>
 
         <Button
-          fullWidth variant="contained" size="large" onClick={() => void locate()} disabled={locating}
+          fullWidth variant="contained" size="large" onClick={() => void locate(false)} disabled={locating}
           startIcon={locating ? <CircularProgress size={18} color="inherit" /> : <MyLocationIcon />}
         >
-          {locating ? 'Finding you…' : 'Use my current location'}
+          {locating ? 'Finding you…' : 'Allow location'}
         </Button>
         {note && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>{note}</Typography>}
 
-        <div className="location-gate-or"><span>or pick your area</span></div>
-
-        <Stack spacing={0.75}>
-          {customer.zones.map((z) => (
-            <Box
-              key={z.id} role="button" tabIndex={0}
-              onClick={() => choose(z.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter') choose(z.id) }}
-              sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                p: 1.25, px: 1.5, border: '1.5px solid', borderColor: 'divider',
-                borderRadius: 2, cursor: 'pointer', bgcolor: '#fff',
-                '&:hover': { bgcolor: BRAND_TINT },
-              }}
-            >
-              <Typography variant="body2" fontWeight={600}>
-                {z.name}
-                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>{BRAND.city}</Typography>
-              </Typography>
-              <CheckCircleIcon sx={{ color: 'divider' }} fontSize="small" />
-            </Box>
-          ))}
-          {customer.zones.length === 0 && (
-            <Typography variant="caption" color="text.secondary">Loading areas…</Typography>
-          )}
-        </Stack>
-
-        {signedIn ? (
-          <Button
-            fullWidth variant="outlined" sx={{ mt: 2 }} startIcon={<AddLocationAltOutlinedIcon />}
-            onClick={() => { close(); navigate('/account/addresses/new?returnTo=%2F') }}
-          >
-            Add your full address
-          </Button>
-        ) : (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, textAlign: 'center' }}>
-            <Box component="button" type="button" onClick={() => { close(); navigate('/login?returnTo=%2F') }}
-              sx={{ border: 0, background: 'none', p: 0, font: 'inherit', color: 'primary.main', fontWeight: 700, cursor: 'pointer' }}>
-              Sign in
-            </Box>{' '}to save your full address for faster checkout.
-          </Typography>
+        {showList && customer.zones.length > 1 && (
+          <Stack spacing={0.75} sx={{ mt: 2 }}>
+            {customer.zones.map((z) => (
+              <Box
+                key={z.id} role="button" tabIndex={0}
+                onClick={() => choose(z.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter') choose(z.id) }}
+                sx={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  p: 1.25, px: 1.5, border: '1.5px solid', borderColor: 'divider',
+                  borderRadius: 2, cursor: 'pointer', bgcolor: '#fff', '&:hover': { bgcolor: BRAND_TINT },
+                }}
+              >
+                <Typography variant="body2" fontWeight={600}>{z.name}<Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>{BRAND.city}</Typography></Typography>
+                <CheckCircleIcon sx={{ color: 'divider' }} fontSize="small" />
+              </Box>
+            ))}
+          </Stack>
         )}
+
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, textAlign: 'center' }}>
+          <Box component="button" type="button" onClick={skip}
+            sx={{ border: 0, background: 'none', p: 0, font: 'inherit', color: 'text.secondary', textDecoration: 'underline', cursor: 'pointer' }}>
+            Not now
+          </Box>
+        </Typography>
       </Box>
     </BottomSheet>
   )
