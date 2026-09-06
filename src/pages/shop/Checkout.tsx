@@ -8,6 +8,7 @@ import { AddressChooserSheet } from '@/components/shop/AddressChooserSheet'
 import { SubPageBar } from '@/components/shop/SubPageBar'
 import { usePricing } from '@/hooks/usePricing'
 import { LABELS, addressLine } from '@/lib/address'
+import { formatIndianMobile, toE164 } from '@/lib/phone'
 import { attemptKeyFor, clearAttempt } from '@/lib/attempt'
 import { describePlaceOrderError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
@@ -32,6 +33,8 @@ export default function Checkout() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [chooser, setChooser] = useState(false)
+  const [phoneDraft, setPhoneDraft] = useState('')
+  const [phoneBusy, setPhoneBusy] = useState(false)
 
   const address = customer.defaultAddress
   const pricing = usePricing(address?.zone_id)
@@ -80,9 +83,16 @@ export default function Checkout() {
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
 
+  async function savePhone() {
+    if (!toE164(phoneDraft)) { setError('Enter a 10-digit Indian mobile number.'); return }
+    setPhoneBusy(true); setError(null)
+    try { await customer.updateContactPhone(phoneDraft) } catch (e) { setError((e as Error).message) } finally { setPhoneBusy(false) }
+  }
+
   const label = address ? LABELS.find((l) => l.value === address.label) : null
   const zoneName = address ? customer.zones.find((z) => z.id === address.zone_id)?.name : null
-  const canPlace = !!address && !busy && !pricing.belowMin && !closed && !!customer.customerId
+  const contactPhone = customer.profile?.contact_phone ?? customer.profile?.phone ?? null
+  const canPlace = !!address && !busy && !pricing.belowMin && !closed && !!customer.customerId && !!contactPhone
 
   return (
     <Box sx={{ pb: 16, minHeight: '100dvh' }}>
@@ -123,6 +133,32 @@ export default function Checkout() {
           )}
         </Paper>
         <AddressChooserSheet open={chooser} onClose={() => setChooser(false)} returnTo="/checkout" />
+
+        {customer.profile && !contactPhone && (
+          <>
+            <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>Your mobile number</Typography>
+            <Paper sx={{ p: 1.5, mb: 2, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                The delivery partner calls this number if they cannot find you. No code, no password.
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <TextField
+                  size="small" fullWidth label="Mobile number" value={phoneDraft} placeholder="98765 43210"
+                  inputMode="tel" inputProps={{ autoComplete: 'tel-national' }}
+                  onChange={(e) => setPhoneDraft(e.target.value)}
+                />
+                <Button variant="contained" disabled={phoneBusy || !toE164(phoneDraft)} onClick={() => void savePhone()}>
+                  {phoneBusy ? 'Saving…' : 'Save'}
+                </Button>
+              </Stack>
+            </Paper>
+          </>
+        )}
+        {contactPhone && customer.profile && !customer.profile.phone && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+            The delivery partner will call +91 {formatIndianMobile(contactPhone)}. Change it from your account.
+          </Typography>
+        )}
 
         <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>Order</Typography>
         <Paper sx={{ p: 1.5, mb: 2, boxShadow: CARD_SHADOW, borderRadius: 3 }}>

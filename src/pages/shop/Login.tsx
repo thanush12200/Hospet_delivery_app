@@ -11,6 +11,8 @@ import { safeReturnTo } from '@/lib/returnTo'
 import { describeAuthError } from '@/lib/errors'
 import { toE164 } from '@/lib/phone'
 import { BrandLockup } from '@/components/shop/BrandLockup'
+import { GoogleButton } from '@/components/GoogleButton'
+import { GOOGLE_CLIENT_ID } from '@/lib/google'
 import { useCustomer } from '@/store/customerContext'
 
 const RESEND_SECONDS = 30
@@ -55,6 +57,14 @@ export default function Login() {
     return () => clearTimeout(t)
   }, [cooldown])
 
+  async function afterGoogle() {
+    setBusy(true); setError(null)
+    try {
+      await customer.refresh()
+      navigate(returnTo, { replace: true })
+    } catch (e) { setError((e as Error).message); setBusy(false) }
+  }
+
   async function sendCode() {
     if (!e164) { setError('Enter a 10-digit mobile number.'); return }
     setBusy(true); setError(null)
@@ -87,11 +97,18 @@ export default function Login() {
       <Box sx={{ maxWidth: 360, mx: 'auto', pt: 4 }}>
         <Box sx={{ mb: 1 }}><BrandLockup height={30} /></Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          {sent ? 'Enter the code we just sent you' : 'Sign in with your mobile number'}
+          {sent ? 'Enter the code we just sent you' : GOOGLE_CLIENT_ID ? 'Sign in to save your address and track orders' : 'Sign in with your mobile number'}
         </Typography>
 
         <Stack spacing={2}>
           {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
+
+          {!sent && GOOGLE_CLIENT_ID && (
+            <>
+              <GoogleButton disabled={busy} onSignedIn={afterGoogle} onError={(m) => setError(describeAuthError(m))} />
+              <Box className="login-or"><span>or use your mobile number</span></Box>
+            </>
+          )}
 
           {!sent ? (
             <>

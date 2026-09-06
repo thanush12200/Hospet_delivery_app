@@ -30,6 +30,8 @@ export interface CustomerApi {
   activeZone: Zone | null
   refresh: () => Promise<void>
   updateName: (name: string) => Promise<void>
+  /** The number the rider calls; required before checkout for Google accounts. */
+  updateContactPhone: (phone: string) => Promise<void>
 }
 
 export const CustomerContext = createContext<CustomerApi | null>(null)

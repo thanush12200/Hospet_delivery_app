@@ -12,6 +12,7 @@ import { deliveryOf } from '@/lib/address'
 import { describeTransitionError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import type { OrderStatus } from '@/types/db'
+import { callablePhone } from '@/lib/phone'
 
 const NEXT: Partial<Record<OrderStatus, { to: OrderStatus; label: string }[]>> = {
   PLACED:           [{ to: 'CONFIRMED', label: 'Accept' },   { to: 'CANCELLED', label: 'Cancel' }],
@@ -155,7 +156,7 @@ export default function OrderDetail() {
 
         <Typography variant="subtitle2">Customer</Typography>
         <Typography variant="body2">
-          {order.customers?.name ?? 'Unnamed'} · {order.customers?.phone}
+          {order.customers?.name ?? 'Unnamed'} · {callablePhone(order.customers)}
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {addr?.line1}{addr?.landmark ? ` (${addr.landmark})` : ''}

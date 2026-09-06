@@ -48,6 +48,8 @@ jobs:
           # to avoid pinning project identifiers in the repo.
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Google OAuth web client id (public). Unset = no Google button.
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
 
       - uses: cloudflare/wrangler-action@v3
         with:

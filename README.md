@@ -286,6 +286,24 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 
 **Rider** (`/rider`) — orders assigned to them, live (a new assignment appears without a reload), with the customer's name, phone, landmark and map link; "Picked up" at the store, then Delivered (with a cash confirmation on COD) or Couldn't deliver. Built for one thumb in sunlight.
 
+### Google sign-in
+
+Customers can sign in with Google as well as by phone OTP. It uses Google's own button (Google Identity
+Services) and `supabase.auth.signInWithIdToken()`, so the page never navigates away — the OAuth redirect flow
+breaks inside an installed PWA on iOS. Setup, all free:
+
+1. Google Cloud → Google Auth Platform → Clients → **Web application**. Authorised JavaScript origins: the
+   site URL (and `http://localhost:3020` for dev). Authorised redirect URI:
+   `https://<project>.supabase.co/auth/v1/callback`.
+2. Supabase → Authentication → Providers → **Google**: enable, paste the client ID and secret.
+3. Put the client ID in `VITE_GOOGLE_CLIENT_ID` (`.env` locally; repository variable for the deploy). The
+   button is simply not rendered when it is unset.
+
+A Google account carries a verified email and no phone, so `customers.phone` is nullable since 0021. The
+number the rider calls is `customers.contact_phone`: copied from the sign-in number for phone customers, typed
+once at checkout by a Google customer (no OTP; a wrong digit costs one delivery, never someone's account).
+`place_order()` refuses `NO_CONTACT_PHONE` until it is set.
+
 ### Product images
 
 Photographs are taken on a phone in the admin console and uploaded to the `product-images` bucket (public read, admin write). Before upload the browser downscales to 480px and re-encodes: **WebP where supported, JPEG as fallback**. Safari lacked WebP encoding for years and some engines never invoke the `toBlob` callback at all rather than returning `null`, so the encoder is time-boxed — otherwise an admin on the wrong browser sits on a spinner with no error. Products without a photo fall back to a category glyph rather than an empty box.

@@ -17,6 +17,15 @@ export function toE164(input: string): string | null {
   return `+91${d}`
 }
 
+/**
+ * The number the rider or the store calls: the contact number the customer
+ * gave, else the sign-in number. Null for a Google account that has not
+ * added one yet (checkout refuses those, so live orders always have one).
+ */
+export function callablePhone(c: { phone: string | null; contact_phone?: string | null } | null | undefined): string | null {
+  return c?.contact_phone ?? c?.phone ?? null
+}
+
 /** "+919876543210" -> "98765 43210" for display. */
 export function formatIndianMobile(e164: string): string {
   const d = e164.replace(/\D/g, '')

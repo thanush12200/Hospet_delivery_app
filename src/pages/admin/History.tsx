@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { listRecentOrders, type AdminOrder } from '@/api/admin'
 import { paiseToRupees } from '@/lib/money'
 import type { OrderStatus } from '@/types/db'
+import { callablePhone } from '@/lib/phone'
 
 type Filter = 'all' | 'unpaid' | 'returns' | 'done'
 
@@ -46,7 +47,7 @@ export default function History() {
       list = list.filter((o) =>
         o.order_no.toLowerCase().includes(needle)
         || (o.customers?.name ?? '').toLowerCase().includes(needle)
-        || (o.customers?.phone ?? '').includes(needle))
+        || (callablePhone(o.customers) ?? '').includes(needle))
     }
     return list
   }, [orders, filter, q, unpaid, returns])
@@ -90,7 +91,7 @@ export default function History() {
                     </Typography>
                   </Typography>
                   <Typography variant="caption" color="text.secondary" noWrap display="block">
-                    {o.customers?.name ?? 'Unnamed'} · {o.customers?.phone} · {o.order_items.length} items
+                    {o.customers?.name ?? 'Unnamed'} · {callablePhone(o.customers)} · {o.order_items.length} items
                     {o.riders ? ` · ${o.riders.name}` : ''}
                   </Typography>
                 </Box>

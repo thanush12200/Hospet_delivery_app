@@ -23,6 +23,8 @@ export function describePlaceOrderError(r: Extract<PlaceOrderResult, { ok: false
       return 'One of the quantities is invalid. Please review your cart.'
     case 'EMPTY_CART':
       return 'Your cart is empty.'
+    case 'NO_CONTACT_PHONE':
+      return 'Add a mobile number so the delivery partner can reach you.'
     case 'STORE_CLOSED':
       return r.message?.trim() || 'The store is closed right now. Please try again later.'
     case 'NOT_AUTHORIZED':
@@ -60,6 +62,10 @@ export function describeAuthError(message: string): string {
     return 'SMS sign-in is still being switched on for this store. Please try again a little later, or message the store.'
   if (m.includes('signups not allowed') || m.includes('phone_provider_disabled'))
     return 'Phone sign-in is turned off right now. Please message the store.'
+  if (m.includes('provider is not enabled') || m.includes('unsupported provider'))
+    return 'Google sign-in is not switched on for this store yet. Please use your mobile number.'
+  if (m.includes('nonce') || m.includes('audience'))
+    return "Google sign-in isn't set up correctly for this site yet. Please use your mobile number."
   if (m.includes('rate limit') || m.includes('too many'))
     return 'Too many attempts. Please wait a minute and try again.'
   if (m.includes('token has expired') || m.includes('otp_expired'))

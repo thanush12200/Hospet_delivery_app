@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  getMyProfile, getStoreConfig, linkMyCustomer, listMyAddresses, listZones, updateMyProfile,
+  getMyProfile, getStoreConfig, linkMyCustomer, listMyAddresses, listZones, setMyContactPhone, updateMyProfile,
 } from '@/api/customer'
 import { useAuth } from '@/auth/authContext'
 import type { Address, Customer, StoreConfig, Zone } from '@/types/db'
@@ -31,12 +31,17 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     if (!session) { setProfile(null); setAddresses([]); setStatus('anon'); return }
     try {
       let p = await getMyProfile()
-      // A phone session with no customer row yet (the link after OTP failed,
-      // or an older client never ran it). The server reads the phone from the
-      // JWT, so this is safe to retry from anywhere.
-      if (!p && session.user.phone) {
+      // A session with no customer row yet: the link after OTP failed, an
+      // older client never ran it, or this is a Google sign-in. The server
+      // reads the phone or email from the JWT, so this is safe to retry from
+      // anywhere; the name is only a hint for a brand-new row.
+      if (!p && (session.user.phone || session.user.email)) {
         try {
-          await linkMyCustomer(`+${session.user.phone.replace(/\D/g, '')}`)
+          const meta = session.user.user_metadata as { full_name?: string; name?: string } | undefined
+          await linkMyCustomer(
+            session.user.phone ? `+${session.user.phone.replace(/\D/g, '')}` : null,
+            meta?.full_name ?? meta?.name ?? undefined,
+          )
           p = await getMyProfile()
         } catch { /* staff account without a phone, or a genuine conflict */ }
       }
@@ -82,6 +87,10 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       updateName: async (name) => {
         await updateMyProfile(name)
         setProfile((p) => (p ? { ...p, name: name.trim() } : p))
+      },
+      updateContactPhone: async (phone) => {
+        const saved = await setMyContactPhone(phone)
+        setProfile((p) => (p ? { ...p, contact_phone: saved } : p))
       },
     }
   }, [status, profile, addresses, zones, storeConfig, selectedZoneId, setSelectedZoneId, loadCustomer])

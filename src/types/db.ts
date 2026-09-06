@@ -79,7 +79,11 @@ export interface Address {
 
 export interface Customer {
   id: string
-  phone: string
+  /** Verified sign-in number; null for a Google account. */
+  phone: string | null
+  /** The number the rider calls: the sign-in number, or one typed at checkout. */
+  contact_phone: string | null
+  email: string | null
   name: string | null
 }
 
@@ -158,7 +162,7 @@ export interface StoreConfig {
 export type PlaceOrderError =
   | 'EMPTY_CART' | 'INVALID_ADDRESS' | 'INVALID_QTY' | 'PRODUCT_UNAVAILABLE'
   | 'OUT_OF_STOCK' | 'BELOW_MIN_ORDER' | 'PRICE_MISMATCH'
-  | 'NOT_AUTHORIZED' | 'STORE_CLOSED'
+  | 'NOT_AUTHORIZED' | 'STORE_CLOSED' | 'NO_CONTACT_PHONE'
 
 /** Discriminated result of the place_order() RPC. */
 export type PlaceOrderResult =

@@ -5,7 +5,7 @@ import type {
 } from '@/types/db'
 
 export interface AdminOrder extends Order {
-  customers: { name: string | null; phone: string } | null
+  customers: { name: string | null; phone: string | null; contact_phone: string | null } | null
   addresses: { line1: string; landmark: string | null } | null
   riders: { name: string; phone: string } | null
   payments: { status: string; reported_method: PaymentMethod | null; reported_reference: string | null; reported_at: string | null }[]
@@ -15,7 +15,7 @@ export interface AdminOrder extends Order {
 export interface Rider { id: string; name: string; phone: string; is_active: boolean }
 
 const ORDER_SELECT =
-  '*, customers(name, phone), addresses(line1, landmark), riders(name, phone), order_items(*), payments(status, reported_method, reported_reference, reported_at)'
+  '*, customers(name, phone, contact_phone), addresses(line1, landmark), riders(name, phone), order_items(*), payments(status, reported_method, reported_reference, reported_at)'
 
 /** Orders currently in play. Terminal ones are excluded from the board. */
 export async function listActiveOrders(): Promise<AdminOrder[]> {

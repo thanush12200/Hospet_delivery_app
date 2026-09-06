@@ -17,6 +17,7 @@ import { useAuth } from '@/auth/authContext'
 import { paiseToRupees } from '@/lib/money'
 import AdminLogin from '../admin/AdminLogin'
 import { BRAND_GRADIENT } from '@/theme/brand'
+import { callablePhone } from '@/lib/phone'
 
 const POLL_MS = 60000
 
@@ -304,7 +305,7 @@ function OrderCard({ o, children }: { o: RiderOrder; children: React.ReactNode }
       <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
         <Button
           fullWidth size="large" variant="outlined" startIcon={<CallIcon />}
-          href={`tel:${o.customers?.phone ?? ''}`} disabled={!o.customers?.phone}
+          href={`tel:${callablePhone(o.customers) ?? ''}`} disabled={!callablePhone(o.customers)}
         >
           Call
         </Button>
