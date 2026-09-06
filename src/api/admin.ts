@@ -160,3 +160,17 @@ export function subscribeToOrders(onChange: () => void) {
     .subscribe()
   return () => { void supabase.removeChannel(channel) }
 }
+
+export async function settleRiderCash(riderId: string, depositedPaise: number, note?: string) {
+  const { data, error } = await supabase.rpc('settle_rider_cash', {
+    p_rider_id: riderId,
+    p_date: new Date().toISOString().slice(0, 10),
+    p_deposited_paise: depositedPaise,
+    p_note: note ?? null,
+  })
+  if (error) throw error
+  return data as {
+    ok: boolean; error?: string
+    expected_paise?: number; deposited_paise?: number; difference_paise?: number
+  }
+}
