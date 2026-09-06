@@ -25,6 +25,7 @@ export function BottomNav() {
 
   return (
     <Paper
+      className="mobile-nav"
       elevation={0}
       sx={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 1100,
@@ -39,8 +40,7 @@ export function BottomNav() {
           return (
             <Box
               key={t.to}
-              role="button"
-              tabIndex={0}
+              component="button"
               aria-label={t.label}
               aria-current={active ? 'page' : undefined}
               onClick={() => navigate(t.to)}
@@ -48,7 +48,7 @@ export function BottomNav() {
               sx={{
                 flex: 1, display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', gap: 0.25,
-                cursor: 'pointer', color: active ? 'primary.main' : 'text.secondary',
+                border: 0, background: 'none', cursor: 'pointer', color: active ? 'success.main' : 'text.secondary',
               }}
             >
               {t.to === '/cart' && count > 0 ? (

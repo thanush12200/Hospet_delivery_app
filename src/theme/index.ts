@@ -10,23 +10,25 @@ export const theme = createTheme({
   palette: {
     primary:   { main: BRAND.red, dark: BRAND.redDark, light: '#FF6A61', contrastText: '#fff' },
     secondary: { main: BRAND.ink, contrastText: '#fff' },
-    success:   { main: '#1B8A4C' },
+    success:   { main: '#16734B', dark: '#105B3B', contrastText: '#fff' },
     warning:   { main: '#E8930C' },
     background:{ default: PAGE_BG, paper: '#FFFFFF' },
-    text:      { primary: BRAND.ink, secondary: '#5B6472' },
-    divider:   '#EDEFF3',
+    text:      { primary: BRAND.ink, secondary: '#68706B' },
+    divider:   '#E7EBE7',
   },
-  shape: { borderRadius: 12 },
+  shape: { borderRadius: 8 },
   typography: {
     // System fonts on purpose: a webfont request on patchy 4G delays first
     // paint for a face the customer will not notice.
     fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Kannada", sans-serif',
-    h6:   { fontWeight: 700, fontSize: '1rem' },
-    body2:{ fontSize: '0.8125rem' },
-    button: { textTransform: 'none', fontWeight: 700 },
+    allVariants: { letterSpacing: 0 },
+    h6:   { fontWeight: 750, fontSize: '1.125rem' },
+    body2:{ fontSize: '0.875rem' },
+    button: { textTransform: 'none', fontWeight: 700, letterSpacing: 0 },
   },
   components: {
-    MuiButton: { defaultProps: { disableElevation: true } },
+    MuiButton: { defaultProps: { disableElevation: true }, styleOverrides: { root: { borderRadius: 6, minHeight: 36 } } },
     MuiPaper:  { defaultProps: { elevation: 0 } },
+    MuiCssBaseline: { styleOverrides: { ':focus-visible': { outline: '3px solid #16734B', outlineOffset: 3 }, 'html': { scrollBehavior: 'smooth' }, 'body': { letterSpacing: 0 }, '@media (prefers-reduced-motion: reduce)': { 'html': { scrollBehavior: 'auto' }, '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important' } } } },
   },
 })

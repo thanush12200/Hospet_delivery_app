@@ -166,7 +166,7 @@ export default function Checkout() {
           placeholder="Ring the bell twice, gate is blue" />
       </Box>
 
-      <Box sx={{
+      <Box className="flow-action" sx={{
         position: 'fixed', left: 0, right: 0, bottom: 0, p: 2,
         pb: 'calc(16px + env(safe-area-inset-bottom))',
         bgcolor: '#fff', borderTop: '1px solid', borderColor: 'divider',

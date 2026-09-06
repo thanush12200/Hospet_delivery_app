@@ -18,17 +18,16 @@ export const BRAND = {
 } as const
 
 /**
- * Header and status banners. Lighter and warmer than the logo red on purpose:
- * these are large surfaces, and a saturated red block is tiring to look at.
- * The logo red stays for buttons, chips and the tab bar.
+ * Solid status surfaces complement the red identity. Legacy constant names
+ * remain shared by the existing account, tracking and rider screens.
  */
-export const BRAND_GRADIENT = 'linear-gradient(160deg, #FF8578 0%, #FA6054 45%, #F1443A 100%)'
-export const MUTED_GRADIENT = 'linear-gradient(165deg, #5B6472 0%, #3E4552 100%)'
+export const BRAND_GRADIENT = '#16734B'
+export const MUTED_GRADIENT = '#59645E'
 /** Light red tint for selected states. */
 export const BRAND_TINT = '#FFF2F1'
 export const BRAND_SHADOW = 'rgba(229,35,31,0.35)'
-/** Page background: cool light grey so white cards read as cards. */
-export const PAGE_BG = '#F4F5F7'
-/** Card elevation, soft enough for a grocery app, visible on PAGE_BG. */
-export const CARD_SHADOW = '0 1px 2px rgba(20,24,31,0.05), 0 6px 16px rgba(20,24,31,0.06)'
+/** White storefront with borders separating products and working surfaces. */
+export const PAGE_BG = '#FFFFFF'
+/** A subtle outline shared by secondary screens. */
+export const CARD_SHADOW = '0 0 0 1px #E7EBE7'
 export const HEADER_SHADOW = '0 4px 14px rgba(0,0,0,0.14)'

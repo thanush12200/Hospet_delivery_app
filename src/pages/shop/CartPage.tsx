@@ -1,144 +1,67 @@
-import { useEffect, useState } from 'react'
-import {
-  Alert, Box, Button, Container, Divider, IconButton, Stack, Typography,
-} from '@mui/material'
+import { useEffect } from 'react'
+import { Alert, Button, IconButton } from '@mui/material'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined'
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import { useNavigate } from 'react-router-dom'
-import { getAvailability } from '@/api/inventory'
+import { useCatalogue } from '@/hooks/useCatalogue'
 import { QtyStepper } from '@/components/QtyStepper'
-import { SubPageBar } from '@/components/shop/SubPageBar'
+import { ProductImage } from '@/components/shop/ProductImage'
 import { usePricing } from '@/hooks/usePricing'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
 import { useCustomer } from '@/store/customerContext'
-import { CARD_SHADOW } from '@/theme/brand'
 
 export default function CartPage() {
   const cart = useCart()
   const customer = useCustomer()
   const navigate = useNavigate()
   const pricing = usePricing()
-  const [stock, setStock] = useState<Map<string, number>>(new Map())
-
-  // Live stock for exactly the lines in the cart: a sold-out line is flagged
-  // here rather than discovered as a rejection two screens later.
-  useEffect(() => {
-    const ids = cart.lines.map((l) => l.product.id)
-    if (ids.length === 0) return
-    let active = true
-    getAvailability(ids).then((m) => { if (active) setStock(m) }).catch(() => {})
-    return () => { active = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart.lines.map((l) => l.product.id).join(',')])
-
+  const { availability: stock, refreshAvailability } = useCatalogue()
+  const productIds = cart.lines.map((l) => l.product.id).join(',')
+  useEffect(() => { if (productIds) void refreshAvailability(productIds.split(',')) }, [productIds, refreshAvailability])
   const short = cart.lines.filter((l) => {
-    const a = stock.get(l.product.id)
-    return a !== undefined && a < l.qty
+    const available = stock.get(l.product.id)
+    return available !== undefined && available < l.qty
   })
+  if (cart.lines.length === 0) return <div className="empty-state empty-basket"><ShoppingBagOutlinedIcon />
+    <h1>A little empty. A lot of possibilities.</h1><p>Your everyday essentials are a few taps away.</p>
+    <Button variant="contained" color="success" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/')}>Start shopping</Button></div>
 
-  if (cart.lines.length === 0) {
-    return (
-      <Container sx={{ py: 10, textAlign: 'center' }}>
-        <Typography sx={{ fontSize: 40, mb: 1 }}>🛒</Typography>
-        <Typography variant="h6" gutterBottom>Your cart is empty</Typography>
-        <Button variant="contained" onClick={() => navigate('/')}>Start shopping</Button>
-      </Container>
-    )
-  }
-
-  return (
-    <Box sx={{ pb: 'calc(150px + env(safe-area-inset-bottom))' }}>
-      <SubPageBar title="Your cart" backTo="/" />
-
-      <Container sx={{ px: 2, pt: 2 }}>
-        {short.length > 0 && (
-          <Alert severity="warning" sx={{ mb: 1.5 }}>
-            Only limited stock left for {short.map((l) => l.product.name).join(', ')}. Reduce the quantity to continue.
-          </Alert>
-        )}
-
-        <Stack divider={<Divider />} spacing={0} sx={{ bgcolor: '#fff', borderRadius: 3, px: 1.5, boxShadow: CARD_SHADOW }}>
-          {cart.lines.map((l) => {
-            const a = stock.get(l.product.id)
-            const over = a !== undefined && a < l.qty
-            return (
-              <Stack key={l.product.id} direction="row" alignItems="center" spacing={1} sx={{ py: 1.5 }}>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" fontWeight={600} noWrap>{l.product.name}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {l.product.unit_label} · {paiseToRupees(l.product.mrp_paise)}
-                  </Typography>
-                  {over && (
-                    <Typography variant="caption" color="error" sx={{ display: 'block' }}>
-                      {a === 0 ? 'Sold out' : `Only ${a} left`}
-                    </Typography>
-                  )}
-                </Box>
-                <QtyStepper
-                  qty={l.qty}
-                  max={a}
-                  onAdd={() => cart.add(l.product)}
-                  onRemove={() => cart.remove(l.product.id)}
-                />
-                <Typography variant="body2" fontWeight={700} sx={{ minWidth: 60, textAlign: 'right' }}>
-                  {paiseToRupees(l.product.mrp_paise * l.qty)}
-                </Typography>
-                <IconButton size="small" aria-label={`Remove ${l.product.name}`} onClick={() => cart.removeLine(l.product.id)}>
-                  <DeleteOutlineIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            )
-          })}
-        </Stack>
-
-        <Box sx={{ mt: 2, p: 2, bgcolor: '#fff', borderRadius: 3, boxShadow: CARD_SHADOW }}>
-          <Typography variant="subtitle2" gutterBottom>Bill summary</Typography>
-          <Row label="Item total" value={paiseToRupees(pricing.subtotalPaise)} />
-          <Row
-            label={pricing.zone ? `Delivery to ${pricing.zone.name}` : 'Delivery fee'}
-            value={!pricing.knownZone ? 'Pick your area' : pricing.feePaise === 0 ? 'FREE' : paiseToRupees(pricing.feePaise)}
-          />
-          <Divider sx={{ my: 1 }} />
-          <Row label="To pay" value={paiseToRupees(pricing.totalPaise)} bold />
-          {pricing.toFreeDeliveryPaise != null && (
-            <Typography variant="caption" color="primary" sx={{ mt: 1, display: 'block' }}>
-              Add {paiseToRupees(pricing.toFreeDeliveryPaise)} more for free delivery
-            </Typography>
-          )}
-          {pricing.belowMin && (
-            <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-              Minimum order for {pricing.zone?.name} is {paiseToRupees(pricing.minOrderPaise)}. Add {paiseToRupees(pricing.minOrderPaise - pricing.subtotalPaise)} more.
-            </Typography>
-          )}
-          {!pricing.knownZone && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              {customer.status === 'anon' ? 'Sign in or pick an area on the home screen to see the delivery fee.' : 'Add an address to see the delivery fee.'}
-            </Typography>
-          )}
-        </Box>
-      </Container>
-
-      <Box sx={{
-        position: 'fixed', left: 0, right: 0, p: 2,
-        bottom: 'calc(58px + env(safe-area-inset-bottom))',
-        bgcolor: '#fff', borderTop: '1px solid', borderColor: 'divider',
-      }}>
-        <Button fullWidth size="large" variant="contained"
-          disabled={short.length > 0 || pricing.belowMin}
-          onClick={() => navigate('/checkout')}>
-          {pricing.belowMin ? `Add ${paiseToRupees(pricing.minOrderPaise - pricing.subtotalPaise)} more to order`
-            : `Proceed · ${paiseToRupees(pricing.totalPaise)}`}
-        </Button>
-      </Box>
-    </Box>
-  )
-}
-
-function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
-  return (
-    <Stack direction="row" justifyContent="space-between" sx={{ py: 0.25 }}>
-      <Typography variant="body2" fontWeight={bold ? 700 : 400}>{label}</Typography>
-      <Typography variant="body2" fontWeight={bold ? 700 : 400}>{value}</Typography>
-    </Stack>
-  )
+  return <div className="basket-page">
+    <div className="section-heading"><div><span className="eyebrow">YOUR DAILY HAUL</span><h1>Your basket <small>{cart.count} {cart.count === 1 ? 'item' : 'items'}</small></h1></div>
+      <Button color="success" onClick={() => navigate('/')}>Keep shopping</Button></div>
+    {short.length > 0 && <Alert severity="warning" sx={{ mb: 2 }}>Stock has changed for {short.map((l) => l.product.name).join(', ')}. Reduce the quantity to continue.</Alert>}
+    <div className="basket-layout">
+      <section aria-label="Basket items">
+        <div className="basket-delivery"><LocalShippingOutlinedIcon /><div><strong>At your door in about {customer.activeZone?.sla_minutes ?? 45} minutes</strong>
+          <span>{customer.activeZone ? `Delivering to ${customer.activeZone.name}` : 'Choose your delivery address at checkout'}</span></div></div>
+        <div className="basket-items">{cart.lines.map(({ product, qty }) => {
+          const available = stock.get(product.id)
+          const over = available !== undefined && available < qty
+          return <article className="basket-item" key={product.id}>
+            <div className="basket-photo"><ProductImage src={product.image_url} name={product.name} /></div>
+            <div className="basket-item-name"><h3>{product.name}</h3><span>{product.unit_label} - {paiseToRupees(product.mrp_paise)}</span>
+              {over && <small className="basket-short">{available === 0 ? 'Sold out' : `Only ${available} left`}</small>}</div>
+            <div className="basket-quantity"><QtyStepper qty={qty} max={available} onAdd={() => cart.add(product)} onRemove={() => cart.remove(product.id)} /></div>
+            <strong className="basket-line-price">{paiseToRupees(product.mrp_paise * qty)}</strong>
+            <IconButton className="basket-remove" size="small" aria-label={`Remove ${product.name}`} title="Remove item" onClick={() => cart.removeLine(product.id)}><DeleteOutlineIcon fontSize="small" /></IconButton>
+          </article>
+        })}</div>
+        <div className="basket-assurance">Every item at MRP. No handling or platform fees.</div>
+      </section>
+      <aside className="basket-summary" aria-label="Bill summary">
+        <h2>Bill details</h2><div className="bill-row"><span>Items total</span><span>{paiseToRupees(pricing.subtotalPaise)}</span></div>
+        <div className="bill-row"><span>Delivery fee</span><span>{!pricing.knownZone ? 'At checkout' : pricing.feePaise === 0 ? 'FREE' : paiseToRupees(pricing.feePaise)}</span></div>
+        <div className="bill-total"><strong>To pay</strong><strong>{paiseToRupees(pricing.totalPaise)}</strong></div>
+        {pricing.toFreeDeliveryPaise != null && <div className="free-delivery-note"><LocalShippingOutlinedIcon /><span>Add {paiseToRupees(pricing.toFreeDeliveryPaise)} for free delivery</span></div>}
+        {pricing.belowMin && <Alert severity="warning" sx={{ my: 2 }}>Minimum order is {paiseToRupees(pricing.minOrderPaise)}. Add {paiseToRupees(pricing.minOrderPaise - pricing.subtotalPaise)} more.</Alert>}
+        {!pricing.knownZone && <p className="bill-note">Delivery charges will be confirmed after you choose an address.</p>}
+        <div className="basket-checkout"><Button fullWidth size="large" color="success" variant="contained" endIcon={<ArrowForwardIcon />}
+          disabled={short.length > 0 || pricing.belowMin} onClick={() => navigate('/checkout')}>Continue to checkout</Button></div>
+        <p className="bill-note">Pay with cash or UPI at your door.</p>
+      </aside>
+    </div>
+  </div>
 }

@@ -27,7 +27,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'brand/*'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'brand/*', 'storefront/groceries-cutout.webp'],
       manifest: {
         name: 'FAA — Fast at any Accuracy',
         short_name: 'FAA',
@@ -47,6 +47,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Sample catalogue photos are for the development preview, not offline boot.
+        globIgnores: ['**/storefront/products/**'],
         runtimeCaching: [
           {
             urlPattern: /\/storage\/v1\/object\/public\//,
