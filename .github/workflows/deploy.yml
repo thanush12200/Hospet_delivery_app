@@ -51,8 +51,30 @@ jobs:
           # Google OAuth web client id (public). Unset = no Google button.
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
 
+      # The site lives at the "faa" Pages project (faa.pages.dev, or with a
+      # suffix if Cloudflare had to disambiguate). Creating it is idempotent.
+      - name: Ensure the Pages project exists
+        run: npx wrangler pages project create faa --production-branch=main || echo "project already exists"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=wink --branch=main
+          command: pages deploy dist --project-name=faa --branch=main
+
+      # The original address keeps working: it now redirects to the new one.
+      - name: Redirect the old wink address
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy redirect --project-name=wink --branch=main
+
+      - name: Show the live address
+        run: npx wrangler pages project list
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
