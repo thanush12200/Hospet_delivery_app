@@ -11,6 +11,14 @@ set -uo pipefail
 
 DB="${1:-hospet_test}"
 N="${2:-10}"
+
+# Pass "remote" as the database to run against the live Supabase project
+# instead of a local database.
+if [[ "$DB" == "remote" ]]; then
+  PSQL=(./scripts/remote-psql.sh)
+else
+  PSQL=(psql -d "$DB")
+fi
 TEA='22222222-0000-0000-0000-000000000003'   # seeded with on_hand = 1
 CUST='44444444-0000-0000-0000-000000000001'
 ADDR='55555555-0000-0000-0000-000000000001'
@@ -19,7 +27,7 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
 # Derive the expectation from real stock rather than hardcoding it.
-read -r STOCK <<<"$(psql -q -A -t -d "$DB" \
+read -r STOCK <<<"$("${PSQL[@]}" -q -A -t \
   -c "select on_hand - reserved from inventory where product_id='$TEA';")"
 EXPECT_OK=$(( STOCK < N ? STOCK : N ))
 
@@ -27,7 +35,7 @@ echo "Firing $N concurrent orders for a product with available=$STOCK ..."
 echo "Expecting exactly $EXPECT_OK to succeed."
 
 for i in $(seq 1 "$N"); do
-  psql -q -A -t -d "$DB" -c \
+  "${PSQL[@]}" -q -A -t -c \
     "select place_order('$CUST','$ADDR',
        '[{\"product_id\":\"$TEA\",\"qty\":1}]'::jsonb,'COD');" \
     > "$TMP/r$i.json" 2>"$TMP/e$i.txt" &
@@ -47,7 +55,7 @@ for i in $(seq 1 "$N"); do
   fi
 done
 
-read -r on_hand reserved <<<"$(psql -q -A -t -F' ' -d "$DB" \
+read -r on_hand reserved <<<"$("${PSQL[@]}" -q -A -t -F' ' \
   -c "select on_hand, reserved from inventory where product_id='$TEA';")"
 
 echo
