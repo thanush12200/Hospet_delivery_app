@@ -112,18 +112,18 @@ begin
   perform assert_eq('T5 cash expected matches order total',
     (select cash_expected_paise from rider_settlements
       where rider_id = '66666666-0000-0000-0000-000000000001'
-        and settlement_date = current_date), 70000);
+        and settlement_date = business_date()), 70000);
 
   perform assert_eq('T5 payment marked PAID',
     (select status::text from payments order by created_at desc limit 1), 'PAID');
 
   -- Rider deposits ₹100 short.
-  r := settle_rider_cash('66666666-0000-0000-0000-000000000001', current_date, 60000, 'short');
+  r := settle_rider_cash('66666666-0000-0000-0000-000000000001', business_date(), 60000, 'short');
   perform assert_eq('T5 shortfall surfaced', (r->>'difference_paise')::int, -10000);
   perform assert_eq('T5 marked SHORT',
     (select status::text from rider_settlements
       where rider_id = '66666666-0000-0000-0000-000000000001'
-        and settlement_date = current_date), 'SHORT');
+        and settlement_date = business_date()), 'SHORT');
 end $$;
 
 -- ============================================================ TEST 4
@@ -371,7 +371,7 @@ begin
   perform assert_eq('T7 assigned rider picks up', r->>'ok', 'true');
 
   select coalesce(cash_expected_paise, 0) into v_cash_before from rider_settlements
-   where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = current_date;
+   where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = business_date();
 
   perform as_user('77777777-0000-0000-0000-000000000011');
   r := transition_order(v_order, 'DELIVERED', 'RIDER',
@@ -383,7 +383,7 @@ begin
     '66666666-0000-0000-0000-000000000001'::uuid);
   perform assert_eq('T7 cash booked to the rider',
     (select cash_expected_paise from rider_settlements
-      where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = current_date),
+      where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = business_date()),
     v_cash_before + (select total_paise from orders where id = v_order));
   perform assert_eq('T7 payment collected by the rider',
     (select collected_by_rider_id from payments where order_id = v_order),
@@ -536,12 +536,12 @@ do $$
 declare r jsonb;
 begin
   perform as_user('77777777-0000-0000-0000-000000000011');           -- the rider themself
-  r := settle_rider_cash('66666666-0000-0000-0000-000000000001', current_date, 0, 'nope');
+  r := settle_rider_cash('66666666-0000-0000-0000-000000000001', business_date(), 0, 'nope');
   perform as_service();
   perform assert_eq('T11 rider cannot settle their own cash', r->>'error', 'NOT_AUTHORIZED');
 
   perform as_user('77777777-0000-0000-0000-000000000021');
-  r := settle_rider_cash('66666666-0000-0000-0000-000000000001', current_date, 0, 'eod');
+  r := settle_rider_cash('66666666-0000-0000-0000-000000000001', business_date(), 0, 'eod');
   perform as_service();
   perform assert_eq('T11 staff settles', r->>'ok', 'true');
 end $$;
@@ -696,6 +696,182 @@ begin
     (select note from order_events where order_id = v_order and to_status = 'CANCELLED'), 'ordered by mistake');
   perform assert_eq('T13 recorded as the customer',
     (select actor_type::text from order_events where order_id = v_order and to_status = 'CANCELLED'), 'CUSTOMER');
+end $$;
+
+-- ============================================================ TEST 14
+-- Hardening (0017): idempotent placement, deleted address, snapshot,
+-- nothing-packed, returns, UPI collection, settlement reopen, stock refusal.
+do $$
+declare r jsonb; r2 jsonb; v_a uuid; v_key uuid := gen_random_uuid(); v_res int;
+begin
+  select reserved into v_res from inventory where product_id = '22222222-0000-0000-0000-000000000002';
+
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb, 'COD', null, null, v_key);
+  r2 := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                    '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb, 'COD', null, null, v_key);
+  perform as_service();
+  perform assert_eq('T14 first placement ok', r->>'ok', 'true');
+  perform assert_eq('T14 retry with same key returns the same order', r2->>'order_id', r->>'order_id');
+  perform assert_eq('T14 retry is flagged as a replay', r2->>'replayed', 'true');
+  perform assert_eq('T14 stock reserved once',
+    (select reserved from inventory where product_id = '22222222-0000-0000-0000-000000000002'), v_res + 1);
+  v_a := (r->>'order_id')::uuid;
+  perform assert_eq('T14 delivery address snapshotted',
+    (select delivery_snapshot->>'line1' from orders where id = v_a), '2nd Cross, Chittawadgi');
+  perform assert_eq('T14 promise stamped from the zone SLA',
+    (select promised_at = placed_at + interval '15 minutes' from orders where id = v_a), true);
+
+  -- Duplicate product lines are rejected rather than half-reserved.
+  r := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1},{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb, 'COD');
+  perform assert_eq('T14 duplicate lines refused', r->>'error', 'INVALID_QTY');
+
+  -- Nothing packed is a cancellation, not a fee-only delivery.
+  perform transition_order(v_a, 'CONFIRMED', 'ADMIN');
+  perform transition_order(v_a, 'PICKING', 'ADMIN');
+  r := transition_order(v_a, 'PACKED', 'ADMIN', null, null,
+                        '[{"product_id":"22222222-0000-0000-0000-000000000002","fulfilled_qty":0}]'::jsonb);
+  perform assert_eq('T14 packing nothing refused', r->>'error', 'NOTHING_PACKED');
+  perform assert_eq('T14 order still picking', (select status::text from orders where id = v_a), 'PICKING');
+  perform transition_order(v_a, 'CANCELLED', 'ADMIN');
+
+  -- A deleted address cannot take a new order.
+  perform as_user('77777777-0000-0000-0000-000000000002');
+  r := upsert_my_address(null, '33333333-0000-0000-0000-000000000001', 'Temporary', null, 'OTHER', false, null, null);
+  v_a := (r->>'id')::uuid;
+  perform delete_my_address(v_a);
+  r := place_order('44444444-0000-0000-0000-000000000002', v_a,
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb, 'COD');
+  perform as_service();
+  perform assert_eq('T14 deleted address refused', r->>'error', 'INVALID_ADDRESS');
+end $$;
+
+-- ============================================================ TEST 15
+-- Failed delivery: stock waits for the return; UPI waits for verification;
+-- cash after settlement reopens the day.
+do $$
+declare r jsonb; v_order uuid; v_hand int; v_cash int;
+begin
+  select on_hand into v_hand from inventory where product_id = '22222222-0000-0000-0000-000000000002';
+  r := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":2}]'::jsonb, 'COD');
+  v_order := (r->>'order_id')::uuid;
+  perform transition_order(v_order, 'CONFIRMED', 'ADMIN');
+  perform transition_order(v_order, 'PICKING',   'ADMIN');
+  perform transition_order(v_order, 'PACKED',    'ADMIN');
+  perform assert_eq('T15 packed leaves the shelf',
+    (select on_hand from inventory where product_id = '22222222-0000-0000-0000-000000000002'), v_hand - 2);
+  perform assign_rider(v_order, '66666666-0000-0000-0000-000000000001');
+  perform transition_order(v_order, 'OUT_FOR_DELIVERY', 'ADMIN');
+
+  perform as_user('77777777-0000-0000-0000-000000000011');
+  r := transition_order(v_order, 'FAILED', 'RIDER', null, 'door locked');
+  perform as_service();
+  perform assert_eq('T15 failed ok', r->>'ok', 'true');
+  perform assert_eq('T15 failed does NOT restock by itself',
+    (select on_hand from inventory where product_id = '22222222-0000-0000-0000-000000000002'), v_hand - 2);
+
+  perform as_user('77777777-0000-0000-0000-000000000002');           -- a customer
+  r := admin_receive_return(v_order);
+  perform as_service();
+  perform assert_eq('T15 customer cannot receive a return', r->>'error', 'NOT_AUTHORIZED');
+
+  perform as_user('77777777-0000-0000-0000-000000000021');           -- owner
+  r := admin_receive_return(v_order, '[{"product_id":"22222222-0000-0000-0000-000000000002","good_qty":1}]'::jsonb);
+  perform as_service();
+  perform assert_eq('T15 return received', r->>'ok', 'true');
+  perform assert_eq('T15 one unit not resellable', (r->>'not_resellable')::int, 1);
+  perform assert_eq('T15 only the good unit restocked',
+    (select on_hand from inventory where product_id = '22222222-0000-0000-0000-000000000002'), v_hand - 1);
+  r := admin_receive_return(v_order);
+  perform assert_eq('T15 second receipt refused', r->>'error', 'ALREADY_RETURNED');
+
+  -- UPI at the door: reported by the rider, pending until staff verify, no rider cash.
+  r := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb, 'COD');
+  v_order := (r->>'order_id')::uuid;
+  perform transition_order(v_order, 'CONFIRMED', 'ADMIN');
+  perform transition_order(v_order, 'PICKING',   'ADMIN');
+  perform transition_order(v_order, 'PACKED',    'ADMIN');
+  perform assign_rider(v_order, '66666666-0000-0000-0000-000000000001');
+  perform transition_order(v_order, 'OUT_FOR_DELIVERY', 'ADMIN');
+  select coalesce(cash_expected_paise, 0) into v_cash from rider_settlements
+   where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = business_date();
+
+  perform as_user('77777777-0000-0000-0000-000000000011');
+  r := rider_deliver(v_order, 'UPI', ' UPI-123 ');
+  perform as_service();
+  perform assert_eq('T15 UPI delivery ok', r->>'ok', 'true');
+  perform assert_eq('T15 order delivered', (select status::text from orders where id = v_order), 'DELIVERED');
+  perform assert_eq('T15 payment still pending', (select status::text from payments where order_id = v_order), 'PENDING');
+  perform assert_eq('T15 reported as UPI', (select reported_method::text from payments where order_id = v_order), 'UPI');
+  perform assert_eq('T15 reference trimmed', (select reported_reference from payments where order_id = v_order), 'UPI-123');
+  perform assert_eq('T15 no rider cash for UPI',
+    (select coalesce(cash_expected_paise, 0) from rider_settlements
+      where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = business_date()), v_cash);
+
+  perform as_user('77777777-0000-0000-0000-000000000011');
+  r := admin_verify_payment(v_order);
+  perform as_service();
+  perform assert_eq('T15 rider cannot verify payment', r->>'error', 'NOT_AUTHORIZED');
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  r := admin_verify_payment(v_order);
+  perform as_service();
+  perform assert_eq('T15 staff verified', r->>'ok', 'true');
+  perform assert_eq('T15 payment now PAID', (select status::text from payments where order_id = v_order), 'PAID');
+  perform assert_eq('T15 order payment_status PAID', (select payment_status::text from orders where id = v_order), 'PAID');
+
+  -- Settle the day, then deliver cash: the day reopens.
+  perform settle_rider_cash('66666666-0000-0000-0000-000000000001', business_date(),
+    (select cash_expected_paise from rider_settlements
+      where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = business_date()), 'closed');
+  perform assert_eq('T15 day settled', (select status::text from rider_settlements
+      where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = business_date()), 'SETTLED');
+  r := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb, 'COD');
+  v_order := (r->>'order_id')::uuid;
+  perform transition_order(v_order, 'CONFIRMED', 'ADMIN');
+  perform transition_order(v_order, 'PICKING',   'ADMIN');
+  perform transition_order(v_order, 'PACKED',    'ADMIN');
+  perform transition_order(v_order, 'OUT_FOR_DELIVERY', 'ADMIN', null, null, null, '66666666-0000-0000-0000-000000000001');
+  perform transition_order(v_order, 'DELIVERED', 'RIDER', '66666666-0000-0000-0000-000000000001');
+  perform assert_eq('T15 late cash reopens the day', (select status::text from rider_settlements
+      where rider_id = '66666666-0000-0000-0000-000000000001' and settlement_date = business_date()), 'OPEN');
+end $$;
+
+-- ============================================================ TEST 16
+-- A refused stock count fails the product save and the import row.
+do $$
+declare r jsonb; v_res int; v_name text; v_order uuid;
+begin
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  perform admin_adjust_stock('22222222-0000-0000-0000-000000000002', 10, 'RESTOCK');
+  perform as_service();
+  r := place_order('44444444-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":2}]'::jsonb, 'COD');
+  perform assert_eq('T16 setup order placed', r->>'ok', 'true');
+  v_order := (r->>'order_id')::uuid;
+  select reserved into v_res from inventory where product_id = '22222222-0000-0000-0000-000000000002';
+  select name into v_name from products where id = '22222222-0000-0000-0000-000000000002';
+
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  r := admin_upsert_product('22222222-0000-0000-0000-000000000002', '11111111-0000-0000-0000-000000000001',
+                            'Renamed Dal', '1 kg', 16500, null, null, null, true, v_res - 1, null);
+  perform as_service();
+  perform assert_eq('T16 below-reserved save refused', r->>'error', 'BELOW_RESERVED');
+  perform assert_eq('T16 product untouched by the refused save',
+    (select name from products where id = '22222222-0000-0000-0000-000000000002'), v_name);
+
+  perform as_user('77777777-0000-0000-0000-000000000021');
+  r := admin_bulk_upsert_products(jsonb_build_array(jsonb_build_object(
+         'name', v_name, 'unit', '1 kg', 'mrp_paise', 16500, 'stock', v_res - 1, 'category', 'Staples', 'brand', 'Nope')));
+  perform as_service();
+  perform assert_eq('T16 import row reports the refusal', r->'results'->0->>'status', 'error');
+  perform assert_eq('T16 import brand not applied on the refused row',
+    (select brand from products where id = '22222222-0000-0000-0000-000000000002') is distinct from 'Nope', true);
+  perform transition_order(v_order, 'CANCELLED', 'ADMIN');
 end $$;
 
 drop function as_user(text, text);
