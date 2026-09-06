@@ -47,9 +47,19 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Sample catalogue photos are for the development preview, not offline boot.
-        globIgnores: ['**/storefront/products/**'],
+        // Catalogue photos (public/catalogue) and the preview's sample photos
+        // ship with the site but must not bloat the precache; catalogue photos
+        // are cached on first view like the uploaded product images.
+        globIgnores: ['**/catalogue/**', '**/storefront/products/**'],
         runtimeCaching: [
+          {
+            urlPattern: /\/catalogue\/.*\.(?:jpg|png|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'catalogue-images',
+              expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
           {
             urlPattern: /\/storage\/v1\/object\/public\//,
             handler: 'CacheFirst',

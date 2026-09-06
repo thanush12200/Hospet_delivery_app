@@ -19,6 +19,9 @@ interface Parsed {
   mrp_paise: number | null
   stock: number | null
   category: string
+  category_kn: string
+  description: string
+  image_url: string
   error: string | null
 }
 
@@ -60,6 +63,8 @@ export default function ImportCsv() {
       // mistake. Say so, rather than flagging 84 rows as broken.
       else if (rawMrp === '') err = 'Add a price'
       else if (mrp === null) err = `"${rawMrp}" is not a valid price`
+      const image = (r.image_url ?? r.image ?? '').trim()
+      if (!err && image && !/^https?:\/\//.test(image)) err = 'image_url must be a full http(s) link'
       return {
         row: i + 1,
         name,
@@ -69,6 +74,9 @@ export default function ImportCsv() {
         mrp_paise: mrp,
         stock: toInt(r.stock ?? r.qty ?? ''),
         category: r.category ?? '',
+        category_kn: r.category_kn ?? '',
+        description: (r.description ?? '').trim(),
+        image_url: image,
         error: err,
       }
     })
@@ -101,6 +109,7 @@ export default function ImportCsv() {
         p_rows: valid.map((p) => ({
           name: p.name, name_kn: p.name_kn, brand: p.brand, unit: p.unit,
           mrp_paise: p.mrp_paise, stock: p.stock, category: p.category,
+          category_kn: p.category_kn, description: p.description, image_url: p.image_url,
         })),
       })
       if (error) throw error
@@ -124,8 +133,10 @@ export default function ImportCsv() {
       <Paper sx={{ p: 2, mb: 2, border: '1px solid', borderColor: 'divider' }}>
         <Typography variant="body2" sx={{ mb: 1.5 }}>
           Columns: <code>name</code>, <code>name_kn</code>, <code>brand</code>,{' '}
-          <code>unit</code>, <code>mrp</code>, <code>stock</code>, <code>category</code>.
-          Only <strong>name</strong> and <strong>mrp</strong> are required.
+          <code>unit</code>, <code>mrp</code>, <code>stock</code>, <code>category</code>,{' '}
+          <code>category_kn</code>, <code>description</code>, <code>image_url</code>.
+          Only <strong>name</strong> and <strong>mrp</strong> are required; a blank description or
+          image never overwrites an existing one.
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
           A product already in the catalogue with the same name <em>and</em> pack size is
@@ -210,6 +221,7 @@ export default function ImportCsv() {
                   <TableCell align="right">MRP</TableCell>
                   <TableCell align="right">Stock</TableCell>
                   <TableCell>Category</TableCell>
+                  <TableCell>Photo</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -238,6 +250,11 @@ export default function ImportCsv() {
                     </TableCell>
                     <TableCell align="right">{p.stock ?? '—'}</TableCell>
                     <TableCell>{p.category || 'General'}</TableCell>
+                    <TableCell>
+                      {p.image_url
+                        ? <img src={p.image_url} alt="" width={32} height={32} loading="lazy" style={{ objectFit: 'cover', borderRadius: 4 }} />
+                        : p.description ? '📝' : '—'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
