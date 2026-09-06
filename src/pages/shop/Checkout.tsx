@@ -8,6 +8,7 @@ import { AddressChooserSheet } from '@/components/shop/AddressChooserSheet'
 import { SubPageBar } from '@/components/shop/SubPageBar'
 import { usePricing } from '@/hooks/usePricing'
 import { LABELS, addressLine } from '@/lib/address'
+import { attemptKeyFor, clearAttempt } from '@/lib/attempt'
 import { describePlaceOrderError } from '@/lib/errors'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
@@ -64,8 +65,15 @@ export default function Checkout() {
         items: cart.lines.map((l) => ({ product_id: l.product.id, qty: l.qty })),
         clientTotalPaise: pricing.totalPaise,
         note: note.trim() || undefined,
+        clientKey: attemptKeyFor(cart.lines),
       })
-      if (!r.ok) { setError(describePlaceOrderError(r)); return }
+      if (!r.ok) {
+        // Prices moved under the basket: the cart screen re-reads the
+        // catalogue and shows what changed, so send the customer there.
+        if (r.error === 'PRICE_MISMATCH') { clearAttempt(); navigate('/cart?repriced=1'); return }
+        setError(describePlaceOrderError(r)); return
+      }
+      clearAttempt()
       cart.clear()
       navigate(`/order/${r.order_id}`, { replace: true })
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }

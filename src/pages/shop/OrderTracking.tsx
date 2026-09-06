@@ -13,7 +13,8 @@ import { SubPageBar } from '@/components/shop/SubPageBar'
 import { LABELS, addressLine } from '@/lib/address'
 import { telLink, waLink } from '@/lib/contact'
 import { describeTransitionError } from '@/lib/errors'
-import { cancelSecondsLeft, etaHeadline, formatClock, isTerminal, promisedAt } from '@/lib/eta'
+import { cancelSecondsLeft, etaHeadlineAt, formatClock, isTerminal, promiseOf } from '@/lib/eta'
+import { deliveryOf } from '@/lib/address'
 import { paiseToRupees } from '@/lib/money'
 import { formatIndianMobile } from '@/lib/phone'
 import { useCustomer } from '@/store/customerContext'
@@ -116,7 +117,8 @@ export default function OrderTracking() {
 
   const cancelled = order.status === 'CANCELLED' || order.status === 'FAILED'
   const sla = order.zones?.sla_minutes ?? BRAND.promiseMinutes
-  const due = promisedAt(order.placed_at, sla)
+  const due = promiseOf(order, sla)
+  const addr = deliveryOf(order, order.addresses)
   const windowMin = storeConfig?.cancel_window_minutes ?? 5
   const cancelLeft = cancelSecondsLeft(order.placed_at, windowMin, now)
   const canCancel = (order.status === 'PLACED' || order.status === 'CONFIRMED') && cancelLeft > 0
@@ -124,13 +126,13 @@ export default function OrderTracking() {
   const assigned = events.find((e) => e.note === 'RIDER_ASSIGNED')
   const cancelEvent = events.find((e) => e.to_status === 'CANCELLED' || e.to_status === 'FAILED')
   const reachedIdx = STEPS.findIndex((s) => s.status === order.status)
-  const label = order.addresses ? LABELS.find((l) => l.value === order.addresses?.label) : null
+  const label = addr ? LABELS.find((l) => l.value === addr.label) : null
 
   const headline = cancelled
     ? (order.status === 'FAILED' ? 'Delivery failed' : 'Order cancelled')
     : order.status === 'DELIVERED'
       ? `Delivered${order.delivered_at ? ` at ${formatClock(new Date(order.delivered_at))}` : ''}`
-      : etaHeadline(order.placed_at, sla, now)
+      : etaHeadlineAt(due, now)
 
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: '#F7F8FA', pb: 4 }}>
@@ -199,14 +201,14 @@ export default function OrderTracking() {
           </Paper>
         )}
 
-        {order.addresses && (
+        {addr && (
           <Paper sx={{ p: 1.5, mb: 1.5, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>DELIVERING TO</Typography>
             <Typography variant="body2" fontWeight={700}>
               {label?.icon} {label?.text}
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>{order.zones?.name}</Typography>
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>{addr.zone_name ?? order.zones?.name}</Typography>
             </Typography>
-            <Typography variant="body2" color="text.secondary">{addressLine(order.addresses)}</Typography>
+            <Typography variant="body2" color="text.secondary">{addressLine(addr)}</Typography>
             {order.note && <Typography variant="caption" color="text.secondary">Note: “{order.note}”</Typography>}
           </Paper>
         )}

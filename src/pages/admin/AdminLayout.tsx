@@ -7,6 +7,8 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
+import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/auth/authContext'
 import { BrandLockup } from '@/components/shop/BrandLockup'
@@ -14,12 +16,14 @@ import AdminLogin from './AdminLogin'
 
 const TABS = [
   { to: '/admin', label: 'Orders', icon: ReceiptLongOutlinedIcon },
+  { to: '/admin/history', label: 'History', icon: HistoryOutlinedIcon },
   { to: '/admin/new', label: 'New order', icon: AddCircleOutlineIcon },
   { to: '/admin/catalogue', label: 'Catalogue', icon: StorefrontOutlinedIcon },
   { to: '/admin/inventory', label: 'Inventory', icon: Inventory2OutlinedIcon },
   { to: '/admin/import', label: 'Import catalogue', icon: FileUploadOutlinedIcon },
   { to: '/admin/riders', label: 'Delivery partners', icon: LocalShippingOutlinedIcon },
   { to: '/admin/zones', label: 'Delivery areas', icon: MapOutlinedIcon },
+  { to: '/admin/settings', label: 'Store settings', icon: SettingsOutlinedIcon },
 ]
 
 export default function AdminLayout() {

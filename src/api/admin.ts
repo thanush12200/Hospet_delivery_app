@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type {
-  Address, Order, OrderItem, OrderStatus, PaymentMethod, PlaceOrderResult,
+  Address, Order, OrderItem, OrderStatus, PaymentMethod, PlaceOrderResult, StoreConfig,
   TransitionResult, Zone,
 } from '@/types/db'
 
@@ -8,13 +8,14 @@ export interface AdminOrder extends Order {
   customers: { name: string | null; phone: string } | null
   addresses: { line1: string; landmark: string | null } | null
   riders: { name: string; phone: string } | null
+  payments: { status: string; reported_method: PaymentMethod | null; reported_reference: string | null; reported_at: string | null }[]
   order_items: OrderItem[]
 }
 
 export interface Rider { id: string; name: string; phone: string; is_active: boolean }
 
 const ORDER_SELECT =
-  '*, customers(name, phone), addresses(line1, landmark), riders(name, phone), order_items(*)'
+  '*, customers(name, phone), addresses(line1, landmark), riders(name, phone), order_items(*), payments(status, reported_method, reported_reference, reported_at)'
 
 /** Orders currently in play. Terminal ones are excluded from the board. */
 export async function listActiveOrders(): Promise<AdminOrder[]> {
@@ -27,12 +28,47 @@ export async function listActiveOrders(): Promise<AdminOrder[]> {
   return data as unknown as AdminOrder[]
 }
 
-export async function listRecentOrders(limit = 50): Promise<AdminOrder[]> {
+/** Every order, newest first, including delivered/cancelled/failed ones. */
+export async function listRecentOrders(limit = 100): Promise<AdminOrder[]> {
   const { data, error } = await supabase
     .from('orders').select(ORDER_SELECT)
     .order('placed_at', { ascending: false }).limit(limit)
   if (error) throw error
   return data as unknown as AdminOrder[]
+}
+
+/** Staff confirmed the UPI credit for an order the rider reported as paid by UPI. */
+export async function verifyPayment(orderId: string): Promise<TransitionResult> {
+  const { data, error } = await supabase.rpc('admin_verify_payment', { p_order_id: orderId })
+  if (error) throw error
+  return data as TransitionResult
+}
+
+/**
+ * A failed delivery's goods came back. Lines omitted from `items` count as
+ * fully returned in good condition; only good units are restocked.
+ */
+export async function receiveReturn(orderId: string, items?: { product_id: string; good_qty: number }[]) {
+  const { data, error } = await supabase.rpc('admin_receive_return', {
+    p_order_id: orderId, p_items: items ?? null,
+  })
+  if (error) throw error
+  return data as { ok: boolean; error?: string; not_resellable?: number }
+}
+
+export async function getStoreConfigForAdmin(): Promise<StoreConfig | null> {
+  const { data, error } = await supabase
+    .from('store_config').select('phone, whatsapp, cancel_window_minutes, is_open, closed_message').maybeSingle()
+  if (error) throw error
+  return (data as StoreConfig | null) ?? null
+}
+
+/** Owner/staff edit of the single store_config row (RLS: is_admin()). */
+export async function updateStoreConfig(patch: Partial<StoreConfig>): Promise<void> {
+  const { error, count } = await supabase
+    .from('store_config').update(patch, { count: 'exact' }).eq('id', true)
+  if (error) throw error
+  if (!count) throw new Error('Nothing was saved. Is this account staff?')
 }
 
 export async function getAdminOrder(id: string): Promise<AdminOrder> {
@@ -118,6 +154,7 @@ export async function findOrCreateCustomer(phone: string, name?: string): Promis
 export async function listAddresses(customerId: string): Promise<Address[]> {
   const { data, error } = await supabase
     .from('addresses').select('*').eq('customer_id', customerId)
+    .is('deleted_at', null)
     .order('is_default', { ascending: false })
   if (error) throw error
   return data as Address[]

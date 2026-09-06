@@ -108,6 +108,36 @@ export interface Order {
   note: string | null
   placed_at: string
   delivered_at: string | null
+  /** Stamped at placement from the zone's promise; the ETA the customer was shown. */
+  promised_at: string | null
+  /** The address as it was when the order was placed; edits to the address book do not touch it. */
+  delivery_snapshot: DeliverySnapshot | null
+  /** Set when a failed delivery's goods were received back at the store. */
+  returned_at: string | null
+}
+
+export interface DeliverySnapshot {
+  line1: string
+  landmark: string | null
+  label: AddressLabel
+  lat: number | null
+  lng: number | null
+  zone_id: string
+  zone_name: string
+  phone: string | null
+}
+
+export interface Payment {
+  id: string
+  order_id: string
+  method: PaymentMethod
+  amount_paise: number
+  status: PaymentStatus
+  /** What the rider says was collected at the door. */
+  reported_method: PaymentMethod | null
+  reported_reference: string | null
+  reported_at: string | null
+  verified_at: string | null
 }
 
 /** Single-row store settings (0011). Readable by everyone, edited by staff. */
@@ -126,7 +156,7 @@ export type PlaceOrderError =
 
 /** Discriminated result of the place_order() RPC. */
 export type PlaceOrderResult =
-  | { ok: true; order_id: string; order_no: string; total_paise: number }
+  | { ok: true; order_id: string; order_no: string; total_paise: number; replayed?: boolean }
   | {
       ok: false
       error: PlaceOrderError
@@ -144,6 +174,7 @@ export type PlaceOrderResult =
 export type TransitionError =
   | 'NO_SUCH_ORDER' | 'ILLEGAL_TRANSITION' | 'NOT_AUTHORIZED'
   | 'CANCEL_WINDOW_CLOSED' | 'NO_RIDER' | 'INVALID_RIDER' | 'ORDER_CLOSED'
+  | 'NOTHING_PACKED' | 'INVALID_QTY' | 'NOT_FAILED' | 'ALREADY_RETURNED'
 
 export type TransitionResult =
   | { ok: true; from: OrderStatus; to: OrderStatus; total_paise: number }

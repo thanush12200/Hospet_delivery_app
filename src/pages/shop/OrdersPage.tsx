@@ -5,7 +5,7 @@ import { ORDERS_PAGE, listMyOrders, type OrderWithItems } from '@/api/customer'
 import { useAuth } from '@/auth/authContext'
 import { useToast } from '@/components/toastContext'
 import { useCatalogue } from '@/hooks/useCatalogue'
-import { etaHeadline, isTerminal } from '@/lib/eta'
+import { etaHeadlineAt, isTerminal, promiseOf } from '@/lib/eta'
 import { paiseToRupees } from '@/lib/money'
 import { buildReorderLines } from '@/lib/reorder'
 import { useCart } from '@/store/cartContext'
@@ -57,6 +57,7 @@ export default function OrdersPage() {
     if (!catalogue) { toast.show('Catalogue is still loading, try again in a moment.'); return }
     const plan = buildReorderLines(o.order_items, catalogue.products)
     if (plan.lines.length === 0) { toast.show('None of those items are available right now.'); return }
+    if (cart.lines.length > 0 && !window.confirm(`Replace the ${cart.count} item${cart.count === 1 ? '' : 's'} already in your cart with this order?`)) return
     cart.replace(plan.lines)
     const notes: string[] = []
     if (plan.skipped.length) notes.push(`Not available: ${plan.skipped.join(', ')}`)
@@ -126,7 +127,7 @@ export default function OrdersPage() {
           </Typography>
           {!isTerminal(o.status) && (
             <Typography variant="caption" color="primary" fontWeight={700} display="block">
-              {etaHeadline(o.placed_at, o.zones?.sla_minutes)}
+              {etaHeadlineAt(promiseOf(o, o.zones?.sla_minutes))}
             </Typography>
           )}
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.75 }}>

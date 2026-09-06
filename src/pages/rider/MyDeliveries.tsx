@@ -11,6 +11,7 @@ import {
   subscribeToMyOrders, type CashToday, type RiderOrder,
 } from '@/api/rider'
 import { drain, enqueue, pending } from '@/lib/offlineQueue'
+import { deliveryOf } from '@/lib/address'
 import { mapsLink } from '@/lib/geo'
 import { useAuth } from '@/auth/authContext'
 import { paiseToRupees } from '@/lib/money'
@@ -34,11 +35,13 @@ export default function MyDeliveries() {
   const [riderId, setRiderId] = useState<string | null>(null)
   const [orders, setOrders] = useState<RiderOrder[]>([])
   const [cash, setCash] = useState<CashToday | null>(null)
-  const [queued, setQueued] = useState(pending().length)
+  const [queued, setQueued] = useState(0)
   const [online, setOnline] = useState(navigator.onLine)
   const [failing, setFailing] = useState<RiderOrder | null>(null)
   const [failNote, setFailNote] = useState('')
   const [delivering, setDelivering] = useState<RiderOrder | null>(null)
+  const [collect, setCollect] = useState<'COD' | 'UPI'>('COD')
+  const [reference, setReference] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
@@ -55,19 +58,22 @@ export default function MyDeliveries() {
   }, [])
 
   const sync = useCallback(async () => {
-    const r = await drain(async (a) =>
-      a.kind === 'DELIVERED' ? await markDelivered(a.orderId, a.riderId)
+    if (!riderId) return
+    const r = await drain(riderId, async (a) =>
+      a.kind === 'DELIVERED' ? await markDelivered(a.orderId, a.method ?? 'COD', a.reference)
       : a.kind === 'PICKED_UP' ? await markPickedUp(a.orderId, a.riderId)
       : await markFailed(a.orderId, a.riderId, a.note ?? ''),
     )
-    setQueued(pending().length)
-    if (r.dropped > 0) setNotice('An order was already updated by the office; your copy is refreshed.')
-    if (r.sent > 0 || r.dropped > 0) await refresh()
-  }, [refresh])
+    setQueued(pending(riderId).length)
+    if (r.dropped.length > 0) {
+      setNotice(`${r.dropped.length} update${r.dropped.length === 1 ? ' was' : 's were'} refused by the server (already handled by the office, or the order moved on). Your list is refreshed; check the office if something looks wrong.`)
+    }
+    if (r.sent > 0 || r.dropped.length > 0) await refresh()
+  }, [riderId, refresh])
 
   useEffect(() => {
     if (!session) { setReady(true); return }
-    void refresh().then(() => sync())
+    void refresh()
     const on = () => { setOnline(true); void sync() }
     const off = () => setOnline(false)
     window.addEventListener('online', on)
@@ -75,15 +81,18 @@ export default function MyDeliveries() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
   }, [session, refresh, sync])
 
+  // Once we know who the rider is: drain their queue, then keep in sync.
   // New assignments arrive live; a poll and a focus refetch cover the rest.
   useEffect(() => {
     if (!riderId) return
+    setQueued(pending(riderId).length)
+    void sync()
     const unsub = subscribeToMyOrders(riderId, () => { void refresh() })
     const t = setInterval(() => { void refresh() }, POLL_MS)
     const onVisible = () => { if (document.visibilityState === 'visible') void refresh() }
     document.addEventListener('visibilitychange', onVisible)
     return () => { unsub(); clearInterval(t); document.removeEventListener('visibilitychange', onVisible) }
-  }, [riderId, refresh])
+  }, [riderId, refresh, sync])
 
   if (authLoading) return <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}><CircularProgress /></Box>
   if (!session) return <AdminLogin />
@@ -102,14 +111,18 @@ export default function MyDeliveries() {
     )
   }
 
-  async function act(o: RiderOrder, kind: 'PICKED_UP' | 'DELIVERED' | 'FAILED', note?: string) {
+  async function act(o: RiderOrder, kind: 'PICKED_UP' | 'DELIVERED' | 'FAILED',
+                     extra: { note?: string; method?: 'COD' | 'UPI'; reference?: string | null } = {}) {
     if (!riderId) return
-    // Optimistic: reflect the change immediately so the rider can move on.
+    // Save first; only then show it as done. If the phone refuses to save the
+    // action, say so instead of pretending.
+    try {
+      enqueue({ kind, orderId: o.id, riderId, ...extra })
+    } catch (e) { setError((e as Error).message); return }
     setOrders((prev) => kind === 'PICKED_UP'
       ? prev.map((x) => (x.id === o.id ? { ...x, status: 'OUT_FOR_DELIVERY' } : x))
       : prev.filter((x) => x.id !== o.id))
-    enqueue({ kind, orderId: o.id, riderId, note })
-    setQueued(pending().length)
+    setQueued(pending(riderId).length)
     await sync()
   }
 
@@ -175,9 +188,9 @@ export default function MyDeliveries() {
             <OrderCard key={o.id} o={o}>
               <Button
                 fullWidth size="large" variant="contained" sx={{ mt: 1, py: 1.5, fontSize: 16 }}
-                onClick={() => (o.payment_method === 'COD' ? setDelivering(o) : void act(o, 'DELIVERED'))}
+                onClick={() => { setCollect(o.payment_method === 'UPI' ? 'UPI' : 'COD'); setReference(''); setDelivering(o) }}
               >
-                Delivered{o.payment_method === 'COD' ? ` · collect ${paiseToRupees(o.total_paise)}` : ''}
+                Delivered · collect {paiseToRupees(o.total_paise)}
               </Button>
               <Button fullWidth size="small" color="inherit" sx={{ mt: 0.5 }}
                 onClick={() => { setFailing(o); setFailNote('') }}>
@@ -201,16 +214,33 @@ export default function MyDeliveries() {
       )}
 
       <Dialog open={!!delivering} onClose={() => setDelivering(null)} fullWidth maxWidth="xs">
-        <DialogTitle>Collected {delivering ? paiseToRupees(delivering.total_paise) : ''}?</DialogTitle>
+        <DialogTitle>How did they pay {delivering ? paiseToRupees(delivering.total_paise) : ''}?</DialogTitle>
         <DialogContent>
-          <Typography variant="body2">
-            This adds {delivering ? paiseToRupees(delivering.total_paise) : ''} to the cash you hand in today.
-            If the customer paid the store by UPI instead, tell the office when you settle.
-          </Typography>
+          <Stack direction="row" spacing={1} sx={{ mt: 0.5, mb: 1.5 }}>
+            <Button fullWidth size="large" variant={collect === 'COD' ? 'contained' : 'outlined'} onClick={() => setCollect('COD')}>Cash</Button>
+            <Button fullWidth size="large" variant={collect === 'UPI' ? 'contained' : 'outlined'} onClick={() => setCollect('UPI')}>UPI to store</Button>
+          </Stack>
+          {collect === 'COD' ? (
+            <Typography variant="body2">
+              Adds {delivering ? paiseToRupees(delivering.total_paise) : ''} to the cash you hand in today.
+            </Typography>
+          ) : (
+            <>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Paid to the store&apos;s UPI QR. The office confirms it once the credit shows; it will not count as your cash.
+              </Typography>
+              <TextField fullWidth size="small" label="UPI reference (optional)" value={reference}
+                onChange={(e) => setReference(e.target.value)} inputProps={{ maxLength: 64 }}
+                placeholder="Last digits of the transaction ID" />
+            </>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDelivering(null)}>Not yet</Button>
-          <Button variant="contained" onClick={() => { const d = delivering!; setDelivering(null); void act(d, 'DELIVERED') }}>
+          <Button variant="contained" onClick={() => {
+            const d = delivering!; setDelivering(null)
+            void act(d, 'DELIVERED', { method: collect, reference: collect === 'UPI' ? reference.trim() || null : null })
+          }}>
             Yes, delivered
           </Button>
         </DialogActions>
@@ -231,7 +261,7 @@ export default function MyDeliveries() {
         <DialogActions>
           <Button onClick={() => setFailing(null)}>Cancel</Button>
           <Button color="error" variant="contained" disabled={!failNote.trim()}
-            onClick={() => { const f = failing!; setFailing(null); void act(f, 'FAILED', failNote.trim()) }}>
+            onClick={() => { const f = failing!; setFailing(null); void act(f, 'FAILED', { note: failNote.trim() }) }}>
             Confirm
           </Button>
         </DialogActions>
@@ -241,25 +271,25 @@ export default function MyDeliveries() {
 }
 
 function OrderCard({ o, children }: { o: RiderOrder; children: React.ReactNode }) {
+  const addr = deliveryOf(o, o.addresses)
   return (
     <Paper sx={{ p: 2, borderRadius: 2 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Typography sx={{ fontWeight: 800, fontSize: 17 }}>{o.order_no}</Typography>
-        <Chip size="small" label={o.payment_method === 'COD'
-          ? `Collect ${paiseToRupees(o.total_paise)}`
-          : o.payment_status === 'PAID' ? 'Prepaid' : `UPI ${paiseToRupees(o.total_paise)}`}
-          color={o.payment_method === 'COD' ? 'warning' : 'success'} />
+        <Chip size="small" label={o.payment_status === 'PAID' ? 'Paid'
+          : `Collect ${paiseToRupees(o.total_paise)}${o.payment_method === 'UPI' ? ' (UPI)' : ''}`}
+          color={o.payment_status === 'PAID' ? 'success' : 'warning'} />
       </Stack>
 
       <Typography sx={{ mt: 1, fontWeight: 600 }}>
         {o.customers?.name ?? 'Customer'}
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        {o.addresses?.line1}
+        {addr?.line1}
       </Typography>
-      {o.addresses?.landmark && (
+      {addr?.landmark && (
         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          📍 {o.addresses.landmark}
+          📍 {addr.landmark}
         </Typography>
       )}
       {o.note && (
@@ -281,8 +311,8 @@ function OrderCard({ o, children }: { o: RiderOrder; children: React.ReactNode }
         <Button
           fullWidth size="large" variant="outlined" startIcon={<NavigationIcon />}
           href={mapsLink({
-            lat: o.addresses?.lat, lng: o.addresses?.lng,
-            landmark: o.addresses?.landmark, line1: o.addresses?.line1,
+            lat: addr?.lat, lng: addr?.lng,
+            landmark: addr?.landmark, line1: addr?.line1,
           })}
           target="_blank" rel="noreferrer"
         >

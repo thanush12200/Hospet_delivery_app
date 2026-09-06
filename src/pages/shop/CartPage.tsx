@@ -1,11 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Alert, Button, IconButton } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useToast } from '@/components/toastContext'
 import { useCatalogue } from '@/hooks/useCatalogue'
+import { isFresh, reconcileCart } from '@/lib/reconcile'
 import { QtyStepper } from '@/components/QtyStepper'
 import { ProductImage } from '@/components/shop/ProductImage'
 import { usePricing } from '@/hooks/usePricing'
@@ -19,9 +21,30 @@ export default function CartPage() {
   const customer = useCustomer()
   const navigate = useNavigate()
   const pricing = usePricing()
-  const { availability: stock, refreshAvailability } = useCatalogue()
+  const { availability: stock, refreshAvailability, catalogue } = useCatalogue()
+  const toast = useToast()
+  const [params, setParams] = useSearchParams()
   const productIds = cart.lines.map((l) => l.product.id).join(',')
   useEffect(() => { if (productIds) void refreshAvailability(productIds.split(',')) }, [productIds, refreshAvailability])
+
+  // Bring the stored product copies up to today's catalogue: prices, names,
+  // photos, and anything delisted. Runs once per catalogue load.
+  const reconciledFor = useRef<number | null>(null)
+  useEffect(() => {
+    if (!catalogue || cart.lines.length === 0) return
+    if (reconciledFor.current === catalogue.version && !params.get('repriced')) return
+    reconciledFor.current = catalogue.version
+    if (isFresh(cart.lines, catalogue.products) && !params.get('repriced')) return
+    const r = reconcileCart(cart.lines, catalogue.products)
+    cart.replace(r.lines)
+    const notes: string[] = []
+    if (r.repriced.length) notes.push(`Prices updated: ${r.repriced.join(', ')}`)
+    if (r.removed.length) notes.push(`No longer available: ${r.removed.join(', ')}`)
+    if (notes.length) toast.show(notes.join('. '))
+    else if (params.get('repriced')) toast.show('Your basket is up to date. Try placing the order again.')
+    if (params.get('repriced')) { const next = new URLSearchParams(params); next.delete('repriced'); setParams(next, { replace: true }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogue, cart.lines.length])
   const short = cart.lines.filter((l) => {
     const available = stock.get(l.product.id)
     return available !== undefined && available < l.qty

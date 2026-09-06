@@ -43,9 +43,11 @@ export default function Login() {
   const e164 = toE164(phone)
 
   // Already signed in (back button, or a stale link): nothing to do here.
+  // Not while an OTP is in flight, and not when the link step just failed
+  // and the customer needs to read why.
   useEffect(() => {
-    if (!loading && session && !busy) navigate(returnTo, { replace: true })
-  }, [loading, session, busy, navigate, returnTo])
+    if (!loading && session && !busy && !sent && !error) navigate(returnTo, { replace: true })
+  }, [loading, session, busy, sent, error, navigate, returnTo])
 
   useEffect(() => {
     if (cooldown <= 0) return

@@ -1,0 +1,29 @@
+# Runs on every pull request and on pushes to non-main branches: the same
+# gates as the deploy, plus the customer bundle budget, without deploying.
+# (Findings F23 of docs/APP_FLOW_AUDIT.md.)
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: check-only-placeholder
+      - name: Customer bundle budget (200 KB gzipped for "/")
+        run: node scripts/bundle-budget.mjs

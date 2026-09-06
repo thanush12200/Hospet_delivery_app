@@ -8,6 +8,8 @@ No national quick-commerce platform serves Hospet. Blinkit, Zepto, Swiggy Instam
 
 This project serves that market from an existing FMCG distributorship — the stock, warehouse and vehicles already exist. It is a single dark store, not a marketplace.
 
+An end-to-end flow audit with the decisions taken on it lives in [docs/APP_FLOW_AUDIT.md](docs/APP_FLOW_AUDIT.md).
+
 ---
 
 ## What makes this different from a 10-minute clone
@@ -31,7 +33,7 @@ Deliberately boring: one repo, one database, three surfaces.
 - **Backend** — Supabase (Postgres + Auth + RLS). No separate API tier.
 - **Database region** — `ap-south-1` (Mumbai). Non-negotiable for latency.
 - **PWA** — `vite-plugin-pwa` + Workbox. Installable, offline catalogue, no Play Store.
-- **Payments** — Cash on delivery, and UPI via Razorpay (UPI has zero MDR in India).
+- **Payments** — Cash or UPI at the door, paid to the store's own UPI QR. The rider records what was collected; staff confirm UPI credits before an order counts as paid. No gateway yet; see the flow audit for the reasoning.
 
 There is intentionally **no Node backend**. Row Level Security plus a handful of Postgres functions covers this domain; an API tier would be a month of work that buys nothing at this scale.
 

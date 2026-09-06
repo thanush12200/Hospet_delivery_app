@@ -33,6 +33,8 @@ const Catalogue    = lazy(() => import('@/pages/admin/Catalogue'))
 const Riders       = lazy(() => import('@/pages/admin/Riders'))
 const ImportCsv    = lazy(() => import('@/pages/admin/ImportCsv'))
 const Zones        = lazy(() => import('@/pages/admin/Zones'))
+const History      = lazy(() => import('@/pages/admin/History'))
+const Settings     = lazy(() => import('@/pages/admin/Settings'))
 
 const MyDeliveries = lazy(() => import('@/pages/rider/MyDeliveries'))
 
@@ -93,6 +95,8 @@ export default function App() {
                       <Route path="inventory" element={<Inventory />} />
                       <Route path="riders" element={<Riders />} />
                       <Route path="zones" element={<Zones />} />
+                      <Route path="history" element={<History />} />
+                      <Route path="settings" element={<Settings />} />
                     </Route>
 
                     <Route path="/rider" element={<MyDeliveries />} />

@@ -62,11 +62,23 @@ export async function getCashToday(): Promise<CashToday> {
   return data as CashToday
 }
 
-export async function markDelivered(orderId: string, riderId: string) {
-  const { data, error } = await supabase.rpc('transition_order', {
-    p_order_id: orderId, p_to_status: 'DELIVERED', p_actor_type: 'RIDER',
-    p_actor_id: riderId, p_note: null, p_fulfilment: null, p_rider_id: riderId,
+/**
+ * Deliver, recording what was actually collected. Cash marks the payment paid
+ * and adds to the rider's cash; UPI (paid to the store's QR) stays pending
+ * until the office confirms the credit.
+ */
+export async function markDelivered(orderId: string, method: 'COD' | 'UPI', reference?: string | null) {
+  let { data, error } = await supabase.rpc('rider_deliver', {
+    p_order_id: orderId, p_method: method, p_reference: reference ?? null,
   })
+  // Before migration 0017 the database has no rider_deliver; use the plain
+  // transition so a delivery is never lost in the upgrade window.
+  if (error && error.code === 'PGRST202') {
+    ({ data, error } = await supabase.rpc('transition_order', {
+      p_order_id: orderId, p_to_status: 'DELIVERED', p_actor_type: 'RIDER',
+      p_actor_id: null, p_note: null, p_fulfilment: null, p_rider_id: null,
+    }))
+  }
   if (error) throw error
   return data as { ok: boolean; error?: string }
 }
