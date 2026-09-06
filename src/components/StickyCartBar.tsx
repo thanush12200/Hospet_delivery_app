@@ -11,9 +11,12 @@ export function StickyCartBar() {
     <Slide direction="up" in={count > 0} mountOnEnter unmountOnExit>
       <Box
         sx={{
-          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 1200,
-          p: 1.5, pb: 'calc(12px + env(safe-area-inset-bottom))',
+          position: 'fixed', left: 8, right: 8, zIndex: 1200,
+          // Sits directly above the tab bar, not underneath it.
+          bottom: 'calc(58px + env(safe-area-inset-bottom) + 8px)',
+          p: 1.25, px: 2, borderRadius: 3,
           bgcolor: 'primary.main', color: '#fff',
+          boxShadow: '0 6px 20px rgba(11,110,79,0.35)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
       >
