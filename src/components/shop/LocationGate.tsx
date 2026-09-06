@@ -92,7 +92,7 @@ export default function LocationGate() {
         </Typography>
 
         <Button
-          fullWidth variant="contained" color="success" size="large" onClick={() => void locate()} disabled={locating}
+          fullWidth variant="contained" size="large" onClick={() => void locate()} disabled={locating}
           startIcon={locating ? <CircularProgress size={18} color="inherit" /> : <MyLocationIcon />}
         >
           {locating ? 'Finding you…' : 'Use my current location'}
@@ -128,7 +128,7 @@ export default function LocationGate() {
 
         {signedIn ? (
           <Button
-            fullWidth variant="outlined" color="success" sx={{ mt: 2 }} startIcon={<AddLocationAltOutlinedIcon />}
+            fullWidth variant="outlined" sx={{ mt: 2 }} startIcon={<AddLocationAltOutlinedIcon />}
             onClick={() => { close(); navigate('/account/addresses/new?returnTo=%2F') }}
           >
             Add your full address
@@ -136,7 +136,7 @@ export default function LocationGate() {
         ) : (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, textAlign: 'center' }}>
             <Box component="button" type="button" onClick={() => { close(); navigate('/login?returnTo=%2F') }}
-              sx={{ border: 0, background: 'none', p: 0, font: 'inherit', color: 'success.main', fontWeight: 700, cursor: 'pointer' }}>
+              sx={{ border: 0, background: 'none', p: 0, font: 'inherit', color: 'primary.main', fontWeight: 700, cursor: 'pointer' }}>
               Sign in
             </Box>{' '}to save your full address for faster checkout.
           </Typography>

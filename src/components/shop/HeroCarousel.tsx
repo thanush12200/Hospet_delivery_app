@@ -14,7 +14,7 @@ const ROTATE_MS = 4200
 
 interface Slide {
   key: string
-  tone: 'green' | 'amber' | 'red'
+  tone: 'brand' | 'amber' | 'deep'
   eyebrow: string
   title: ReactNode
   text: string
@@ -34,9 +34,9 @@ interface Slide {
  * Slides advance on their own, pause under a finger or the pointer, swipe on
  * touch, and stand still for people who asked for reduced motion.
  */
-export function HeroCarousel({ products, categories, config, freeAbovePaise, zoneName, minutes = BRAND.promiseMinutes }: {
+export function HeroCarousel({ products, categories, config, freeAbovePaise, minutes = BRAND.promiseMinutes }: {
   products: Product[]; categories: Category[]; config: StoreConfig | null
-  freeAbovePaise: number | null; zoneName?: string; minutes?: number
+  freeAbovePaise: number | null; minutes?: number
 }) {
   const navigate = useNavigate()
   const [index, setIndex] = useState(0)
@@ -65,7 +65,7 @@ export function HeroCarousel({ products, categories, config, freeAbovePaise, zon
 
     const list: Slide[] = [
       {
-        key: 'promise', tone: 'green', eyebrow: zoneName ? `YOUR STORE IN ${zoneName.toUpperCase()}` : 'YOUR HOSPET STORE',
+        key: 'promise', tone: 'brand', eyebrow: 'YOUR HOSPET STORE',
         title: <>Groceries in<br /><em>{minutes} minutes</em></>,
         text: 'From the first chai to the last-minute essentials, from a store in your own neighbourhood.',
         cta: 'Shop now', go: scrollTo('products'), photos: pick(/fruit|veg|dairy|rice|atta/i),
@@ -80,21 +80,21 @@ export function HeroCarousel({ products, categories, config, freeAbovePaise, zon
     if (deals.length > 0) {
       const top = deals[0]
       list.push({
-        key: 'deals', tone: 'red', eyebrow: (config?.promo_title || "TODAY'S DEALS").toUpperCase(),
+        key: 'deals', tone: 'deep', eyebrow: (config?.promo_title || "TODAY'S DEALS").toUpperCase(),
         title: <>Up to<br /><em>{discountPct(top as Product)}% off</em></>,
         text: config?.promo_subtitle || `${deals.slice(0, 3).map((p) => p.name).join(', ')} and more, while stocks last.`,
         cta: 'See the deals', go: scrollTo('deals'), photos: deals.slice(0, 3),
       })
     } else {
       list.push({
-        key: 'fresh', tone: 'red', eyebrow: 'FRESH EVERY MORNING',
+        key: 'fresh', tone: 'deep', eyebrow: 'FRESH EVERY MORNING',
         title: <>Fruits & veg<br /><em>picked today</em></>,
         text: 'Onions, tomatoes, greens and seasonal fruit, bought fresh at the Hospet market each morning.',
         cta: 'Shop fresh', go: () => navigate(fresh ? `/category/${fresh.id}` : '/categories'), photos: pick(/fruit|veg/i),
       })
     }
     return list
-  }, [products, categories, config, freeAbovePaise, zoneName, minutes, navigate])
+  }, [products, categories, config, freeAbovePaise, minutes, navigate])
 
   const count = slides.length
 
@@ -156,7 +156,7 @@ export function HeroCarousel({ products, categories, config, freeAbovePaise, zon
         )}
       </section>
       <div className="shop-promises">
-        <span><LocalShippingOutlinedIcon />{freeAbovePaise != null ? `Free delivery over ${paiseToRupees(freeAbovePaise)}${zoneName ? ` in ${zoneName}` : ''}` : 'Delivered from our Hospet store'}</span>
+        <span><LocalShippingOutlinedIcon />{freeAbovePaise != null ? `Free delivery over ${paiseToRupees(freeAbovePaise)}` : 'Delivered from our Hospet store'}</span>
         <span><VerifiedOutlinedIcon />No hidden charges</span>
         <span><PaymentsOutlinedIcon />Cash or UPI at your door</span>
       </div>

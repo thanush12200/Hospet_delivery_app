@@ -3,8 +3,9 @@ import { BRAND, PAGE_BG } from './brand'
 
 /**
  * Palette lifted from the FAA logo: the scooter red as primary, near-black
- * ink for text and the secondary button, green kept only for "success"
- * states (delivered, paid) where red would read as an error.
+ * ink for text and the secondary button, green kept only for semantic
+ * "success" states (delivered, paid) where red would read as an error;
+ * every accent in the storefront is the brand red.
  */
 export const theme = createTheme({
   palette: {
@@ -29,6 +30,6 @@ export const theme = createTheme({
   components: {
     MuiButton: { defaultProps: { disableElevation: true }, styleOverrides: { root: { borderRadius: 6, minHeight: 36 } } },
     MuiPaper:  { defaultProps: { elevation: 0 } },
-    MuiCssBaseline: { styleOverrides: { ':focus-visible': { outline: '3px solid #16734B', outlineOffset: 3 }, 'html': { scrollBehavior: 'smooth' }, 'body': { letterSpacing: 0 }, '@media (prefers-reduced-motion: reduce)': { 'html': { scrollBehavior: 'auto' }, '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important' } } } },
+    MuiCssBaseline: { styleOverrides: { ':focus-visible': { outline: '3px solid #E5231F', outlineOffset: 3 }, 'html': { scrollBehavior: 'smooth' }, 'body': { letterSpacing: 0 }, '@media (prefers-reduced-motion: reduce)': { 'html': { scrollBehavior: 'auto' }, '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important' } } } },
   },
 })

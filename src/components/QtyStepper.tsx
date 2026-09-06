@@ -23,14 +23,14 @@ export function QtyStepper({
     return (
       <Button
         variant="outlined"
-        color="success"
+        color="primary"
         size="small"
         onClick={onAdd}
         disabled={disabled}
         fullWidth={fullWidth}
         sx={{
           width: fullWidth ? '100%' : 80, minWidth: 80, height: 36, borderWidth: 1.5, fontWeight: 800,
-          fontSize: 12, px: 0.5, bgcolor: '#F0F8F1', flexShrink: 0,
+          fontSize: 12, px: 0.5, bgcolor: '#FFF2F1', flexShrink: 0,
           '&:hover': { borderWidth: 1.5 },
         }}
       >
@@ -42,7 +42,7 @@ export function QtyStepper({
     <Box
       sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        bgcolor: 'success.main', color: '#fff', borderRadius: '6px',
+        bgcolor: 'primary.main', color: '#fff', borderRadius: '6px',
         minWidth: 80, width: fullWidth ? '100%' : 80, height: 36, flexShrink: 0,
       }}
     >

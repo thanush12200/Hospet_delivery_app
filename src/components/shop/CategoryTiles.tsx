@@ -20,7 +20,7 @@ export function CategoryTiles({ categories, products, onSelect, limit }: {
   return (
     <section className="category-section">
       <div className="section-heading"><div><span className="eyebrow">SHOP BY CATEGORY</span><h2>What&apos;s on your list?</h2></div>
-        {limit && categories.length > limit && <Button color="success" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/categories')}>All categories</Button>}
+        {limit && categories.length > limit && <Button color="primary" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/categories')}>All categories</Button>}
       </div>
       <div className="category-grid">
         {shown.map((c, i) => {

@@ -146,7 +146,7 @@ export default function AddressEditPage() {
               onClick={() => void locate()} disabled={geoBusy}>
               {geoBusy ? 'Finding you…' : 'Use my location'}
             </Button>
-            {pin && <Typography variant="caption" color="success.main">Pinned. The rider gets an exact spot.</Typography>}
+            {pin && <Typography variant="caption" color="primary.main">Pinned. The rider gets an exact spot.</Typography>}
           </Stack>
           {geoNote && (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{geoNote}</Typography>
