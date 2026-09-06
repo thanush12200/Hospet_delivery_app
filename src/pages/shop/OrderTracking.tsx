@@ -17,7 +17,7 @@ import { cancelSecondsLeft, etaHeadline, formatClock, isTerminal, promisedAt } f
 import { paiseToRupees } from '@/lib/money'
 import { formatIndianMobile } from '@/lib/phone'
 import { useCustomer } from '@/store/customerContext'
-import { BRAND_GRADIENT, BRAND_TINT, MUTED_GRADIENT } from '@/theme/brand'
+import { BRAND_GRADIENT, BRAND_TINT, CARD_SHADOW, MUTED_GRADIENT } from '@/theme/brand'
 import type { OrderEvent, OrderStatus } from '@/types/db'
 
 const STEPS: { status: OrderStatus; label: string; hint: string }[] = [
@@ -154,7 +154,7 @@ export default function OrderTracking() {
 
       <Box sx={{ px: 2, pt: 2 }}>
         {rider && (
-          <Paper sx={{ p: 1.5, mb: 1.5, border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Paper sx={{ p: 1.5, mb: 1.5, boxShadow: CARD_SHADOW, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: BRAND_TINT, display: 'grid', placeItems: 'center', fontSize: 22 }} aria-hidden>🛵</Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="body2" fontWeight={700}>{rider.name} is bringing your order</Typography>
@@ -165,7 +165,7 @@ export default function OrderTracking() {
         )}
 
         {!cancelled && (
-          <Paper sx={{ p: 2, mb: 1.5, border: '1px solid', borderColor: 'divider' }}>
+          <Paper sx={{ p: 2, mb: 1.5, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
             <Stack spacing={0}>
               {STEPS.map((s, i) => {
                 const done = i <= reachedIdx
@@ -200,7 +200,7 @@ export default function OrderTracking() {
         )}
 
         {order.addresses && (
-          <Paper sx={{ p: 1.5, mb: 1.5, border: '1px solid', borderColor: 'divider' }}>
+          <Paper sx={{ p: 1.5, mb: 1.5, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>DELIVERING TO</Typography>
             <Typography variant="body2" fontWeight={700}>
               {label?.icon} {label?.text}
@@ -211,7 +211,7 @@ export default function OrderTracking() {
           </Paper>
         )}
 
-        <Paper sx={{ p: 2, mb: 1.5, border: '1px solid', borderColor: 'divider' }}>
+        <Paper sx={{ p: 2, mb: 1.5, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
           <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>Items</Typography>
           <Stack divider={<Divider />}>
             {order.order_items.map((i) => (
@@ -248,7 +248,7 @@ export default function OrderTracking() {
           </Button>
         )}
         {cancelOpen && (
-          <Paper sx={{ p: 1.5, mb: 1.5, border: '1px solid', borderColor: 'divider' }}>
+          <Paper sx={{ p: 1.5, mb: 1.5, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
             <Typography variant="body2" fontWeight={700} gutterBottom>Cancel this order?</Typography>
             <TextField size="small" fullWidth label="Reason (optional)" value={reason}
               onChange={(e) => setReason(e.target.value)} inputProps={{ maxLength: 200 }} sx={{ mb: 1 }} />
@@ -267,7 +267,7 @@ export default function OrderTracking() {
           </Typography>
         )}
 
-        <Paper sx={{ p: 1.5, mb: 1.5, border: '1px solid', borderColor: 'divider' }}>
+        <Paper sx={{ p: 1.5, mb: 1.5, boxShadow: CARD_SHADOW, borderRadius: 3 }}>
           <Typography variant="body2" fontWeight={700} gutterBottom>Need help with this order?</Typography>
           <Stack direction="row" spacing={1}>
             {storeConfig?.whatsapp && (

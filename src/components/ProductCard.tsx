@@ -2,6 +2,7 @@ import { Box, Card, Typography } from '@mui/material'
 import { QtyStepper } from './QtyStepper'
 import { paiseToRupees } from '@/lib/money'
 import { categoryIcon } from '@/constants/categoryIcons'
+import { CARD_SHADOW } from '@/theme/brand'
 import type { Product } from '@/types/db'
 
 export function ProductCard({
@@ -24,7 +25,7 @@ export function ProductCard({
   return (
     <Card
       sx={{
-        p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 2.5,
+        p: 1, borderRadius: 3, bgcolor: '#fff', boxShadow: CARD_SHADOW,
         display: 'flex', flexDirection: 'column', height: '100%', position: 'relative',
       }}
     >
@@ -45,7 +46,7 @@ export function ProductCard({
         onClick={onOpen}
         onKeyDown={(e) => { if (onOpen && e.key === 'Enter') onOpen() }}
         sx={{
-          aspectRatio: '1', bgcolor: '#F7F8FA', borderRadius: 2, mb: 1,
+          aspectRatio: '1', bgcolor: '#F6F7F9', borderRadius: 2.5, mb: 1,
           display: 'grid', placeItems: 'center', overflow: 'hidden',
           opacity: outOfStock ? 0.4 : 1, cursor: onOpen ? 'pointer' : undefined,
         }}

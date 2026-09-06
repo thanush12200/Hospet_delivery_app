@@ -44,3 +44,25 @@ export function describeTransitionError(code: TransitionError | string | undefin
     default:                    return 'The change was refused. Please refresh and try again.'
   }
 }
+
+/**
+ * Supabase Auth messages a customer should never see raw. "Unsupported phone
+ * provider" is the project having no SMS gateway configured (or the number
+ * not being on the test list); the customer cannot fix that, so say so.
+ */
+export function describeAuthError(message: string): string {
+  const m = message.toLowerCase()
+  if (m.includes('unsupported phone provider') || m.includes('sms provider') || m.includes('phone provider'))
+    return 'SMS sign-in is still being switched on for this store. Please try again a little later, or message the store.'
+  if (m.includes('signups not allowed') || m.includes('phone_provider_disabled'))
+    return 'Phone sign-in is turned off right now. Please message the store.'
+  if (m.includes('rate limit') || m.includes('too many'))
+    return 'Too many attempts. Please wait a minute and try again.'
+  if (m.includes('token has expired') || m.includes('otp_expired'))
+    return 'That code has expired. Tap "Resend code" for a new one.'
+  if (m.includes('invalid') && (m.includes('token') || m.includes('otp')))
+    return 'That code is not right. Check the SMS and try again.'
+  if (m.includes('invalid phone') || m.includes('phone number'))
+    return 'That does not look like a valid Indian mobile number.'
+  return message
+}

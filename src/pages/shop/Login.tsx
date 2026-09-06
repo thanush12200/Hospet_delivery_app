@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { linkMyCustomer } from '@/api/customer'
 import { useAuth } from '@/auth/authContext'
 import { safeReturnTo } from '@/lib/returnTo'
+import { describeAuthError } from '@/lib/errors'
 import { toE164 } from '@/lib/phone'
 import { BrandLockup } from '@/components/shop/BrandLockup'
 import { useCustomer } from '@/store/customerContext'
@@ -56,7 +57,7 @@ export default function Login() {
     if (!e164) { setError('Enter a 10-digit mobile number.'); return }
     setBusy(true); setError(null)
     const { error } = await supabase.auth.signInWithOtp({ phone: e164 })
-    if (error) setError(error.message)
+    if (error) setError(describeAuthError(error.message))
     else { setSent(true); setCooldown(RESEND_SECONDS) }
     setBusy(false)
   }
@@ -67,7 +68,7 @@ export default function Login() {
     const { error } = await supabase.auth.verifyOtp({
       phone: e164, token: code.trim(), type: 'sms',
     })
-    if (error) { setError(error.message); setBusy(false); return }
+    if (error) { setError(describeAuthError(error.message)); setBusy(false); return }
     try {
       await linkMyCustomer(e164, name.trim() || undefined)
       await customer.refresh()

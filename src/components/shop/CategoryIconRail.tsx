@@ -17,6 +17,7 @@ export function CategoryIconRail({
       sx={{
         display: 'flex', gap: 2.5, px: 2, py: 1.5,
         overflowX: 'auto', bgcolor: '#fff',
+        borderBottom: '1px solid', borderColor: 'divider',
         '&::-webkit-scrollbar': { display: 'none' },
         scrollbarWidth: 'none',
       }}
@@ -35,9 +36,10 @@ export function CategoryIconRail({
               sx={{
                 width: 52, height: 52, borderRadius: '50%',
                 display: 'grid', placeItems: 'center', fontSize: 24,
-                bgcolor: active ? 'primary.main' : '#F1F4F6',
-                border: active ? '2px solid' : '2px solid transparent',
-                borderColor: active ? 'primary.dark' : 'transparent',
+                bgcolor: active ? 'primary.main' : '#F4F5F7',
+                border: '2px solid',
+                borderColor: active ? 'primary.dark' : '#E9EBEF',
+                boxShadow: active ? '0 4px 10px rgba(229,35,31,0.3)' : 'none',
                 transition: 'background-color .15s',
               }}
             >

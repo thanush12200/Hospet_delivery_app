@@ -23,3 +23,8 @@ export const MUTED_GRADIENT = 'linear-gradient(165deg, #5B6472 0%, #3E4552 100%)
 /** Light red tint for selected states. */
 export const BRAND_TINT = '#FFF2F1'
 export const BRAND_SHADOW = 'rgba(229,35,31,0.35)'
+/** Page background: cool light grey so white cards read as cards. */
+export const PAGE_BG = '#F4F5F7'
+/** Card elevation, soft enough for a grocery app, visible on PAGE_BG. */
+export const CARD_SHADOW = '0 1px 2px rgba(20,24,31,0.05), 0 6px 16px rgba(20,24,31,0.06)'
+export const HEADER_SHADOW = '0 4px 14px rgba(0,0,0,0.14)'

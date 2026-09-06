@@ -14,7 +14,7 @@ import { useAuth } from '@/auth/authContext'
 import { formatIndianMobile } from '@/lib/phone'
 import { useCustomer } from '@/store/customerContext'
 import { addressLine } from '@/lib/address'
-import { BRAND, BRAND_GRADIENT } from '@/theme/brand'
+import { BRAND, BRAND_GRADIENT, CARD_SHADOW } from '@/theme/brand'
 
 export default function AccountPage() {
   const { signOut } = useAuth()
@@ -42,7 +42,7 @@ export default function AccountPage() {
   }
 
   return (
-    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh', bgcolor: '#F7F8FA' }}>
+    <Box sx={{ pb: 'calc(58px + env(safe-area-inset-bottom) + 8px)', minHeight: '100dvh' }}>
       <Box sx={{
         background: BRAND_GRADIENT, color: '#fff',
         px: 2, pt: 'calc(20px + env(safe-area-inset-top))', pb: 3, borderRadius: '0 0 20px 20px',
@@ -88,7 +88,7 @@ export default function AccountPage() {
       </Box>
 
       <Box sx={{ px: 2, pt: 2 }}>
-        <Box sx={{ bgcolor: '#fff', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ bgcolor: '#fff', borderRadius: 3, boxShadow: CARD_SHADOW }}>
           <Row
             icon={<LocationOnOutlinedIcon />} title="Saved addresses"
             subtitle={customer.defaultAddress ? addressLine(customer.defaultAddress) : 'Add where we should deliver'}
