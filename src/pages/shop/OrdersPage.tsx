@@ -1,25 +1,32 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Box, Button, Chip, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { listMyOrders, type OrderWithItems } from '@/api/customer'
+import { ORDERS_PAGE, listMyOrders, type OrderWithItems } from '@/api/customer'
 import { useAuth } from '@/auth/authContext'
 import { useToast } from '@/components/toastContext'
 import { useCatalogue } from '@/hooks/useCatalogue'
+import { etaHeadline, isTerminal } from '@/lib/eta'
 import { paiseToRupees } from '@/lib/money'
 import { buildReorderLines } from '@/lib/reorder'
 import { useCart } from '@/store/cartContext'
 import type { OrderStatus } from '@/types/db'
 
-const TONE: Record<OrderStatus, 'default' | 'primary' | 'success' | 'error'> = {
+const TONE: Record<OrderStatus, 'default' | 'primary' | 'success' | 'error' | 'warning'> = {
   PLACED: 'primary', CONFIRMED: 'primary', PICKING: 'primary',
-  PACKED: 'primary', OUT_FOR_DELIVERY: 'primary',
-  DELIVERED: 'success', CANCELLED: 'error', FAILED: 'error',
+  PACKED: 'primary', OUT_FOR_DELIVERY: 'warning',
+  DELIVERED: 'success', CANCELLED: 'default', FAILED: 'error',
+}
+const STATUS_TEXT: Record<OrderStatus, string> = {
+  PLACED: 'Placed', CONFIRMED: 'Accepted', PICKING: 'Packing', PACKED: 'Ready',
+  OUT_FOR_DELIVERY: 'On the way', DELIVERED: 'Delivered', CANCELLED: 'Cancelled', FAILED: 'Delivery failed',
 }
 
 export default function OrdersPage() {
   const { session, loading: authLoading } = useAuth()
   const [orders, setOrders] = useState<OrderWithItems[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [more, setMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const navigate = useNavigate()
   const cart = useCart()
   const toast = useToast()
@@ -27,11 +34,23 @@ export default function OrdersPage() {
 
   const load = useCallback(async () => {
     if (!session) { setOrders([]); return }
-    try { setOrders(await listMyOrders()); setError(null) }
-    catch (e) { setError((e as Error).message); setOrders([]) }
+    try {
+      const page = await listMyOrders()
+      setOrders(page); setMore(page.length === ORDERS_PAGE); setError(null)
+    } catch (e) { setError((e as Error).message); setOrders([]) }
   }, [session])
 
   useEffect(() => { void load() }, [load])
+
+  async function loadMore() {
+    const last = orders?.[orders.length - 1]
+    if (!last) return
+    setLoadingMore(true)
+    try {
+      const page = await listMyOrders(last.placed_at)
+      setOrders((o) => [...(o ?? []), ...page]); setMore(page.length === ORDERS_PAGE)
+    } catch (e) { toast.show((e as Error).message) } finally { setLoadingMore(false) }
+  }
 
   function reorder(o: OrderWithItems) {
     if (!catalogue) { toast.show('Catalogue is still loading, try again in a moment.'); return }
@@ -99,11 +118,16 @@ export default function OrdersPage() {
           onClick={() => navigate(`/order/${o.id}`)}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="body2" fontWeight={700}>{o.order_no}</Typography>
-            <Chip size="small" label={o.status.replace(/_/g, ' ')} color={TONE[o.status]} />
+            <Chip size="small" label={STATUS_TEXT[o.status]} color={TONE[o.status]} />
           </Stack>
           <Typography variant="caption" color="text.secondary" display="block">
-            {new Date(o.placed_at).toLocaleString('en-IN')} · {o.order_items.length} items
+            {new Date(o.placed_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })} · {o.order_items.length} items
           </Typography>
+          {!isTerminal(o.status) && (
+            <Typography variant="caption" color="primary" fontWeight={700} display="block">
+              {etaHeadline(o.placed_at, o.zones?.sla_minutes)}
+            </Typography>
+          )}
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.75 }}>
             <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, mr: 1 }}>
               {o.order_items.map((i) => i.product_name).join(', ')}
@@ -119,6 +143,11 @@ export default function OrdersPage() {
           )}
         </Paper>
       ))}
+      {more && (
+        <Button disabled={loadingMore} onClick={() => void loadMore()}>
+          {loadingMore ? 'Loading…' : 'Show older orders'}
+        </Button>
+      )}
     </Stack>,
   )
 }

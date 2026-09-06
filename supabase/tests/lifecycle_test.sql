@@ -638,5 +638,65 @@ begin
   perform as_service();
 end $$;
 
+-- ============================================================ TEST 13
+-- Tracking helpers (0014): the rider is visible only to the owner and only
+-- while out for delivery; cancel_my_order goes through the same rules.
+do $$
+declare r jsonb; v_order uuid;
+begin
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb,
+                   'COD');
+  v_order := (r->>'order_id')::uuid;
+  perform transition_order(v_order, 'CONFIRMED', 'ADMIN');
+  perform transition_order(v_order, 'PICKING',   'ADMIN');
+  perform transition_order(v_order, 'PACKED',    'ADMIN');
+  perform assign_rider(v_order, '66666666-0000-0000-0000-000000000001');
+
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := my_order_rider(v_order);
+  perform as_service();
+  perform assert_eq('T13 no rider shown before dispatch', r, null::jsonb);
+
+  perform transition_order(v_order, 'OUT_FOR_DELIVERY', 'ADMIN');
+
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := my_order_rider(v_order);
+  perform as_service();
+  perform assert_eq('T13 owner sees the rider while out', r->>'name', 'Test Rider');
+
+  perform as_user('77777777-0000-0000-0000-000000000002');
+  r := my_order_rider(v_order);
+  perform as_service();
+  perform assert_eq('T13 other customer sees nothing', r, null::jsonb);
+
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := cancel_my_order(v_order, 'too late now');
+  perform as_service();
+  perform assert_eq('T13 cannot cancel once out', r->>'error', 'NOT_AUTHORIZED');
+
+  perform transition_order(v_order, 'DELIVERED', 'RIDER', '66666666-0000-0000-0000-000000000001');
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := my_order_rider(v_order);
+  perform as_service();
+  perform assert_eq('T13 rider hidden after delivery', r, null::jsonb);
+
+  -- A fresh order cancels through the wrapper, with the reason on the event.
+  perform as_user('77777777-0000-0000-0000-000000000001');
+  r := place_order('44444444-0000-0000-0000-000000000001',
+                   '55555555-0000-0000-0000-000000000001',
+                   '[{"product_id":"22222222-0000-0000-0000-000000000002","qty":1}]'::jsonb,
+                   'COD');
+  v_order := (r->>'order_id')::uuid;
+  r := cancel_my_order(v_order, '  ordered by mistake  ');
+  perform as_service();
+  perform assert_eq('T13 cancel_my_order ok', r->>'ok', 'true');
+  perform assert_eq('T13 reason recorded',
+    (select note from order_events where order_id = v_order and to_status = 'CANCELLED'), 'ordered by mistake');
+  perform assert_eq('T13 recorded as the customer',
+    (select actor_type::text from order_events where order_id = v_order and to_status = 'CANCELLED'), 'CUSTOMER');
+end $$;
+
 drop function as_user(text, text);
 drop function as_service();

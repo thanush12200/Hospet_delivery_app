@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type {
-  Address, AddressLabel, Customer, Order, OrderItem, PaymentMethod, PlaceOrderResult,
-  StoreConfig, Zone,
+  Address, AddressLabel, Customer, Order, OrderEvent, OrderItem, PaymentMethod, PlaceOrderResult,
+  StoreConfig, TransitionResult, Zone,
 } from '@/types/db'
 
 // ---------------------------------------------------------------- identity
@@ -138,21 +138,60 @@ export async function placeMyOrder(args: {
   return data as PlaceOrderResult
 }
 
-export interface OrderWithItems extends Order { order_items: OrderItem[] }
+export interface OrderWithItems extends Order {
+  order_items: OrderItem[]
+  zones: { name: string; sla_minutes: number } | null
+}
 
-export async function listMyOrders(): Promise<OrderWithItems[]> {
-  const { data, error } = await supabase
-    .from('orders').select('*, order_items(*)')
-    .order('placed_at', { ascending: false }).limit(30)
+export interface OrderDetail extends OrderWithItems {
+  addresses: { line1: string; landmark: string | null; label: AddressLabel } | null
+}
+
+const ORDER_LIST_SELECT = '*, order_items(*), zones(name, sla_minutes)'
+
+export const ORDERS_PAGE = 20
+
+/** Newest first, a page at a time; pass the oldest placed_at seen to get the next page. */
+export async function listMyOrders(before?: string): Promise<OrderWithItems[]> {
+  let q = supabase
+    .from('orders').select(ORDER_LIST_SELECT)
+    .order('placed_at', { ascending: false }).limit(ORDERS_PAGE)
+  if (before) q = q.lt('placed_at', before)
+  const { data, error } = await q
   if (error) throw error
   return data as unknown as OrderWithItems[]
 }
 
-export async function getMyOrder(id: string): Promise<OrderWithItems> {
+export async function getMyOrder(id: string): Promise<OrderDetail> {
   const { data, error } = await supabase
-    .from('orders').select('*, order_items(*)').eq('id', id).single()
+    .from('orders')
+    .select(`${ORDER_LIST_SELECT}, addresses(line1, landmark, label)`)
+    .eq('id', id).single()
   if (error) throw error
-  return data as unknown as OrderWithItems
+  return data as unknown as OrderDetail
+}
+
+export async function listOrderEvents(orderId: string): Promise<OrderEvent[]> {
+  const { data, error } = await supabase
+    .from('order_events').select('id, order_id, from_status, to_status, actor_type, note, created_at')
+    .eq('order_id', orderId).order('created_at', { ascending: true })
+  if (error) throw error
+  return data as OrderEvent[]
+}
+
+/** Rider name and phone, only while the order is out for delivery; null otherwise. */
+export async function getOrderRider(orderId: string): Promise<{ name: string; phone: string } | null> {
+  const { data, error } = await supabase.rpc('my_order_rider', { p_order_id: orderId })
+  if (error) throw error
+  return (data as { name: string; phone: string } | null) ?? null
+}
+
+export async function cancelMyOrder(orderId: string, reason?: string): Promise<TransitionResult> {
+  const { data, error } = await supabase.rpc('cancel_my_order', {
+    p_order_id: orderId, p_reason: reason ?? null,
+  })
+  if (error) throw error
+  return data as TransitionResult
 }
 
 /** Live status for the tracking screen — no polling. */
