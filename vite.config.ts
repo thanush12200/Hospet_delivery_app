@@ -27,7 +27,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'brand/*'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'brand/*', 'storefront/groceries-cutout.webp'],
       manifest: {
         name: 'FAA — Fast at any Accuracy',
         short_name: 'FAA',
@@ -47,9 +47,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Catalogue photos ship with the site but must not bloat the precache;
-        // they are cached on first view like the uploaded product images.
-        globIgnores: ['**/catalogue/**'],
+        // Catalogue photos (public/catalogue) and the preview's sample photos
+        // ship with the site but must not bloat the precache; catalogue photos
+        // are cached on first view like the uploaded product images.
+        globIgnores: ['**/catalogue/**', '**/storefront/products/**'],
         runtimeCaching: [
           {
             urlPattern: /\/catalogue\/.*\.(?:jpg|png|webp)$/,

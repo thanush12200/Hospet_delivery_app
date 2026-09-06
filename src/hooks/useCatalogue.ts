@@ -8,7 +8,7 @@ export interface CatalogueState {
   error: Error | null
   loading: boolean
   /** Live stock is never cached; call this when it matters (sheet open, tab focus). */
-  refreshAvailability: () => Promise<void>
+  refreshAvailability: (productIds?: string[]) => Promise<void>
 }
 
 /**
@@ -21,10 +21,11 @@ export function useCatalogueLoader(): CatalogueState {
   const [availability, setAvailability] = useState<Map<string, number>>(new Map())
   const [error, setError] = useState<Error | null>(null)
 
-  const refreshAvailability = useCallback(async () => {
-    if (!catalogue) return
+  const refreshAvailability = useCallback(async (productIds?: string[]) => {
+    if (!catalogue && !productIds) return
     try {
-      setAvailability(await getAvailability(catalogue.products.map((p) => p.id)))
+      const fresh = await getAvailability(productIds ?? catalogue!.products.map((p) => p.id))
+      setAvailability((previous) => productIds ? new Map([...previous, ...fresh]) : fresh)
     } catch { /* offline: keep what we have, optimistic in-stock otherwise */ }
   }, [catalogue])
 

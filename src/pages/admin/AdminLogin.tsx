@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { useAuth } from '@/auth/authContext'
+import { BrandLockup } from '@/components/shop/BrandLockup'
 
 export default function AdminLogin() {
   const { signIn } = useAuth()
@@ -19,9 +20,10 @@ export default function AdminLogin() {
 
   return (
     <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '100dvh', p: 2 }}>
-      <Paper sx={{ p: 3, width: '100%', maxWidth: 380, border: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main' }}>FAA</Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>Staff sign in</Typography>
+      <Box sx={{ p: 3, width: '100%', maxWidth: 400 }}>
+        <BrandLockup height={28} />
+        <Typography variant="h5" sx={{ fontWeight: 800, mt: 4, mb: 1 }}>Welcome to your store</Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>Sign in to manage orders and deliveries.</Typography>
 
         <form onSubmit={onSubmit}>
           <Stack spacing={2} sx={{ mt: 2 }}>
@@ -39,7 +41,7 @@ export default function AdminLogin() {
             </Button>
           </Stack>
         </form>
-      </Paper>
+      </Box>
     </Box>
   )
 }

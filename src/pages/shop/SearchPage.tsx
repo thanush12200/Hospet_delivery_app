@@ -121,7 +121,7 @@ export default function SearchPage() {
                 </Stack>
               </Box>
             ) : (
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 1.25 }}>
+              <Box className="product-grid">
                 {results.map((p) => (
                   <ProductCard
                     key={p.id}

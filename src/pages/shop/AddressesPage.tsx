@@ -90,7 +90,7 @@ export default function AddressesPage() {
         )}
       </Box>
 
-      <Box sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, p: 2, pb: 'calc(16px + env(safe-area-inset-bottom))',
+      <Box className="flow-action" sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, p: 2, pb: 'calc(16px + env(safe-area-inset-bottom))',
                  bgcolor: '#fff', borderTop: '1px solid', borderColor: 'divider' }}>
         <Button fullWidth size="large" variant="contained" startIcon={<AddIcon />}
           onClick={() => navigate('/account/addresses/new')}>

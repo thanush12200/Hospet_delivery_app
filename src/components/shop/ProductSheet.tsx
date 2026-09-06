@@ -2,12 +2,14 @@ import { useEffect, useMemo } from 'react'
 import { Box, Chip, Stack, Typography } from '@mui/material'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BottomSheet } from '@/components/BottomSheet'
+import { ProductImage } from './ProductImage'
 import { QtyStepper } from '@/components/QtyStepper'
 import { categoryIcon } from '@/constants/categoryIcons'
 import { useCatalogue } from '@/hooks/useCatalogue'
 import { paiseToRupees } from '@/lib/money'
 import { useCart } from '@/store/cartContext'
 import type { Product } from '@/types/db'
+import { BRAND } from '@/theme/brand'
 
 export const PRODUCT_PARAM = 'product'
 
@@ -64,9 +66,9 @@ export function ProductSheet() {
             aspectRatio: '4 / 3', bgcolor: '#F7F8FA', borderRadius: 3, display: 'grid', placeItems: 'center',
             overflow: 'hidden', mb: 1.5, opacity: outOfStock ? 0.5 : 1,
           }}>
-            {product.image_url
-              ? <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              : <Typography sx={{ fontSize: 72 }} aria-hidden>{categoryIcon(category?.name ?? product.name)}</Typography>}
+            <Box sx={{ width: '100%', height: '100%', minHeight: 0, '& > img': { width: '100%', height: '100%', objectFit: 'contain' } }}>
+              <ProductImage src={product.image_url} name={product.name} eager />
+            </Box>
           </Box>
 
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
@@ -102,7 +104,7 @@ export function ProductSheet() {
             <Typography variant="body2" sx={{ mb: 2, whiteSpace: 'pre-line' }}>{product.description}</Typography>
           ) : (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Sold at MRP, delivered from our Hospet store in about 45 minutes.
+              Sold at MRP, delivered from our Hospet store in about {BRAND.promiseMinutes} minutes.
             </Typography>
           )}
 

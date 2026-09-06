@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Alert, Box, Button, Chip, CircularProgress, Paper, Stack, Typography,
+  Alert, Box, Button, Chip, CircularProgress, IconButton, Paper, Stack, Typography,
 } from '@mui/material'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import AddIcon from '@mui/icons-material/Add'
+import SearchIcon from '@mui/icons-material/Search'
 import { useNavigate } from 'react-router-dom'
 import { listActiveOrders, subscribeToOrders, transitionOrder, type AdminOrder } from '@/api/admin'
 import { describeTransitionError } from '@/lib/errors'
@@ -28,6 +31,7 @@ export default function OrderBoard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
   const navigate = useNavigate()
 
   const refresh = useCallback(async () => {
@@ -71,19 +75,23 @@ export default function OrderBoard() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <Typography variant="h6">Live orders</Typography>
-        <Chip size="small" label={`${orders.length} active`} />
-        <Button size="small" onClick={() => void refresh()}>Refresh</Button>
-      </Stack>
+      <div className="section-heading"><div><span className="eyebrow">STORE OPERATIONS</span><h2>Live orders</h2></div>
+        <Button variant="contained" color="success" startIcon={<AddIcon />} onClick={() => navigate('/admin/new')}>New order</Button></div>
+      <div className="board-totals"><div><span>Active orders</span><strong>{orders.length}</strong></div>
+        <div><span>Awaiting acceptance</span><strong>{orders.filter((o) => o.status === 'PLACED').length}</strong></div>
+        <div><span>On the road</span><strong>{orders.filter((o) => o.status === 'OUT_FOR_DELIVERY').length}</strong></div>
+        <div><span>Active order value</span><strong>{paiseToRupees(orders.reduce((sum, o) => sum + o.total_paise, 0))}</strong></div></div>
+      <div className="board-toolbar"><label><SearchIcon /><input aria-label="Find an order" placeholder="Search order, customer or phone" value={query} onChange={(e) => setQuery(e.target.value)} /></label>
+        <IconButton title="Refresh orders" aria-label="Refresh orders" onClick={() => void refresh()}><RefreshIcon fontSize="small" /></IconButton></div>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
       <Stack direction="row" spacing={1.5} sx={{ overflowX: 'auto', pb: 2, alignItems: 'flex-start' }}>
         {COLUMNS.map((col) => {
-          const items = orders.filter((o) => o.status === col.status)
+          const needle = query.trim().toLowerCase()
+          const items = orders.filter((o) => o.status === col.status && `${o.order_no} ${o.customers?.name ?? ''} ${o.customers?.phone ?? ''}`.toLowerCase().includes(needle))
           return (
-            <Paper key={col.status} sx={{ minWidth: 280, width: 280, p: 1.5, bgcolor: '#F4F6F8', borderRadius: 2 }}>
+            <Box key={col.status} className={`order-lane lane-${col.status.toLowerCase()}`} sx={{ minWidth: 220, flex: 1, width: 220, p: 1, bgcolor: '#F2F5EF' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Typography variant="subtitle2">{col.label}</Typography>
                 <Chip size="small" label={items.length} />
@@ -98,7 +106,9 @@ export default function OrderBoard() {
                 {items.map((o) => (
                   <Paper
                     key={o.id}
-                    sx={{ p: 1.25, border: '1px solid', borderColor: 'divider', cursor: 'pointer' }}
+                    role="link" tabIndex={0} aria-label={`Open order ${o.order_no}`}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) navigate(`/admin/orders/${o.id}`) }}
+                    sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', cursor: 'pointer' }}
                     onClick={() => navigate(`/admin/orders/${o.id}`)}
                   >
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -141,7 +151,7 @@ export default function OrderBoard() {
                   </Paper>
                 ))}
               </Stack>
-            </Paper>
+            </Box>
           )
         })}
       </Stack>
