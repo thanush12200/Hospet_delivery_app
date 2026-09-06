@@ -25,9 +25,11 @@ export async function listMyAddresses(): Promise<Address[]> {
 
 export async function addMyAddress(args: {
   zoneId: string; line1: string; landmark?: string
+  lat?: number | null; lng?: number | null
 }): Promise<string> {
   const { data, error } = await supabase.rpc('add_my_address', {
     p_zone_id: args.zoneId, p_line1: args.line1, p_landmark: args.landmark ?? null,
+    p_lat: args.lat ?? null, p_lng: args.lng ?? null,
   })
   if (error) throw error
   return data as string

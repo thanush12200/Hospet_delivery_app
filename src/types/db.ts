@@ -36,6 +36,11 @@ export interface Zone {
   delivery_fee_paise: number
   min_order_paise: number
   is_active: boolean
+  /** Optional centre point, used to guess the customer's area without paying
+   *  for reverse geocoding. Null until an admin sets it. */
+  lat: number | null
+  lng: number | null
+  radius_m: number | null
 }
 
 export interface Address {
@@ -44,6 +49,8 @@ export interface Address {
   zone_id: string
   line1: string
   landmark: string | null
+  lat: number | null
+  lng: number | null
   is_default: boolean
 }
 

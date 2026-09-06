@@ -4,11 +4,13 @@ import {
   Paper, Stack, TextField, Toolbar, Typography,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import MyLocationIcon from '@mui/icons-material/MyLocation'
 import { useNavigate } from 'react-router-dom'
 import {
   addMyAddress, getMyCustomerId, listMyAddresses, listZones, placeMyOrder,
 } from '@/api/customer'
 import { useAuth } from '@/auth/authContext'
+import { GEO_MESSAGE, getCurrentCoords, nearestZone, type Coords, type GeoError } from '@/lib/geo'
 import { useCart } from '@/store/cartContext'
 import { paiseToRupees } from '@/lib/money'
 import type { Address, PaymentMethod, Zone } from '@/types/db'
@@ -31,6 +33,9 @@ export default function Checkout() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [ready, setReady] = useState(false)
+  const [coords, setCoords] = useState<Coords | null>(null)
+  const [geoBusy, setGeoBusy] = useState(false)
+  const [geoNote, setGeoNote] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -56,12 +61,46 @@ export default function Checkout() {
   const total = cart.subtotalPaise + fee
   const belowMin = cart.subtotalPaise < minOrder
 
+  /**
+   * Asked only on a button press, never automatically on load: an unprompted
+   * permission dialog on a first visit loses customers, and about half deny it
+   * anyway. A refusal is not an error here -- the dropdown still works.
+   */
+  async function captureLocation() {
+    setGeoBusy(true); setGeoNote(null)
+    try {
+      const c = await getCurrentCoords()
+      setCoords(c)
+      const near = nearestZone(c, zones
+        .filter((z) => z.lat != null && z.lng != null)
+        .map((z) => ({ id: z.id, name: z.name, lat: z.lat as number, lng: z.lng as number, radius_m: z.radius_m })))
+
+      if (!near) {
+        setGeoNote('Location saved for the rider. Please still pick your area below.')
+      } else if (near.withinRadius) {
+        setZoneId(near.id)
+        setGeoNote(`Looks like you're in ${near.name}. Change it below if that's wrong.`)
+      } else {
+        setGeoNote(
+          `Nearest area is ${near.name}, about ${Math.round(near.distanceM / 100) / 10} km away — ` +
+          'we may not deliver there yet.')
+      }
+    } catch (e) {
+      setGeoNote(GEO_MESSAGE[e as GeoError] ?? GEO_MESSAGE.UNAVAILABLE)
+    } finally { setGeoBusy(false) }
+  }
+
   async function saveAddress() {
     setBusy(true); setError(null)
     try {
-      const id = await addMyAddress({ zoneId, line1: line1.trim(), landmark: landmark.trim() || undefined })
+      const id = await addMyAddress({
+        zoneId, line1: line1.trim(), landmark: landmark.trim() || undefined,
+        // Optional: the rider gets an exact pin when present, and falls back
+        // to a landmark search when not.
+        lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+      })
       setAddresses(await listMyAddresses())
-      setAddressId(id); setLine1(''); setLandmark('')
+      setAddressId(id); setLine1(''); setLandmark(''); setCoords(null); setGeoNote(null)
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
 
@@ -129,7 +168,26 @@ export default function Checkout() {
             </TextField>
           )}
           <Typography variant="caption" color="text.secondary">Add a new address</Typography>
-          <Stack spacing={1} sx={{ mt: 1 }}>
+
+          <Button
+            fullWidth size="small" variant="outlined" startIcon={<MyLocationIcon />}
+            onClick={() => void captureLocation()} disabled={geoBusy}
+            sx={{ mt: 1 }}
+          >
+            {geoBusy ? 'Finding you…' : coords ? 'Location captured ✓' : 'Use my current location'}
+          </Button>
+          {geoNote && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+              {geoNote}
+            </Typography>
+          )}
+          {coords && (
+            <Typography variant="caption" color="success.main" sx={{ display: 'block' }}>
+              Accurate to about {Math.round(coords.accuracyM)} m — your rider will get an exact pin.
+            </Typography>
+          )}
+
+          <Stack spacing={1} sx={{ mt: 1.5 }}>
             <TextField size="small" label="House / street" value={line1}
               onChange={(e) => setLine1(e.target.value)} />
             <Stack direction="row" spacing={1}>
