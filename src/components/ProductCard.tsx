@@ -21,7 +21,6 @@ export function ProductCard({ product, qty, available, categoryName, onAdd, onRe
         <div className="product-info">
           <span className="product-brand">{product.brand || categoryName || 'Everyday essentials'}</span>
           <h3>{product.name}</h3>
-          <span className="product-kannada">{product.name_kn || '\u00a0'}</span>
           <span className="product-unit">{product.unit_label}</span>
         </div>
       </button>

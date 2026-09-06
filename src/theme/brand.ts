@@ -19,11 +19,8 @@ export const BRAND = {
   ink: '#14181F',
 } as const
 
-/**
- * Solid status surfaces complement the red identity. Legacy constant names
- * remain shared by the existing account, tracking and rider screens.
- */
-export const BRAND_GRADIENT = '#16734B'
+/** Header surface for the categories, orders, tracking and rider screens. */
+export const BRAND_GRADIENT = 'linear-gradient(135deg, #F04A45 0%, #B8181C 100%)'
 export const MUTED_GRADIENT = '#59645E'
 /** Light red tint for selected states. */
 export const BRAND_TINT = '#FFF2F1'

@@ -180,7 +180,7 @@ export default function AddressEditPage() {
           />
           <TextField select label="Area" value={zoneId} fullWidth onChange={(e) => setZoneId(e.target.value)}>
             {customer.zones.map((z) => (
-              <MenuItem key={z.id} value={z.id}>{z.name}{z.name_kn ? ` · ${z.name_kn}` : ''}</MenuItem>
+              <MenuItem key={z.id} value={z.id}>{z.name}</MenuItem>
             ))}
             {customer.zones.length === 0 && <MenuItem value="" disabled>Loading areas…</MenuItem>}
           </TextField>

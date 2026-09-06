@@ -66,7 +66,7 @@ button:disabled { cursor: default; }
 .sold-out .product-photo img { opacity: .45; }
 .product-info { padding: 3px 13px 0; }.product-brand { display: block; font-size: 9px; color: #71836a; height: 15px; overflow: hidden; }
 .product-info h3 { font-size: 13px; line-height: 1.45; font-weight: 700; margin: 3px 0; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.product-kannada { display: block; font-size: 10px; color: #86907f; height: 20px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
 .product-unit { display: block; font-size: 11px; color: #717a6a; }
 .product-purchase { margin-top: auto; padding: 15px 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .product-purchase strong { font-size: 15px; display: block; color: #263221; }.product-purchase small { font-size: 8px; display: block; color: var(--muted); margin-top: 2px; }
@@ -306,3 +306,7 @@ button:disabled { cursor: default; }
   .cart-page .MuiAppBar-root { margin: 0; border-radius: 14px 14px 0 0; }
   .cart-footer { position: sticky; bottom: 0; margin-top: 12px; border-radius: 14px; border: 1px solid var(--line); }
 }
+.free-delivery.is-compact.is-reached { background: #fff; border-color: var(--brand-soft); color: var(--brand-dark); }
+.free-delivery.is-compact.is-reached .free-delivery-icon { background: var(--brand); color: #fff; }
+.free-delivery.is-compact.is-reached .free-delivery-fill { background: var(--brand); }
+.free-delivery.is-compact.is-reached .free-delivery-track { background: rgba(0,0,0,.08); }

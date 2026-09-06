@@ -114,7 +114,7 @@ export function AddressChooserSheet({
                     }}
                   >
                     <Typography variant="body2" fontWeight={active ? 700 : 500}>
-                      {z.name}{z.name_kn ? ` · ${z.name_kn}` : ''}
+                      {z.name}
                     </Typography>
                     {active && <CheckCircleIcon color="primary" fontSize="small" />}
                   </Box>
