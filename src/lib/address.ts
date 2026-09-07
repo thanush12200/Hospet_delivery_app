@@ -31,3 +31,8 @@ export function deliveryOf(
   if (!live) return null
   return { line1: live.line1, landmark: live.landmark, label: live.label ?? 'HOME', lat: live.lat ?? null, lng: live.lng ?? null }
 }
+
+/** "Chittawadgi, Hospet" for an area; just "Hospet" when the area is the city itself. */
+export function placeName(area: string, city = 'Hospet'): string {
+  return area.trim().toLowerCase() === city.toLowerCase() ? city : `${area}, ${city}`
+}

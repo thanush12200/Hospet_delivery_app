@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@mui/material'
 import ReplayIcon from '@mui/icons-material/Replay'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { listMyOrders, type OrderWithItems } from '@/api/customer'
 import { QtyStepper } from '@/components/QtyStepper'
 import { ProductImage } from './ProductImage'
 import { PRODUCT_PARAM } from './ProductSheet'
-import { useToast } from '@/components/toastContext'
-import { buildReorderLines } from '@/lib/reorder'
+import { useReorder } from '@/hooks/useReorder'
 import { paiseToRupees } from '@/lib/money'
 import { unitPrice } from '@/lib/price'
 import { useCart } from '@/store/cartContext'
@@ -27,8 +26,7 @@ const MAX_ITEMS = 12
  */
 export default function BuyAgain({ products, availability }: { products: Product[]; availability: Map<string, number> }) {
   const cart = useCart()
-  const toast = useToast()
-  const navigate = useNavigate()
+  const reorder = useReorder(products)
   const [params, setParams] = useSearchParams()
   const [orders, setOrders] = useState<OrderWithItems[] | null>(null)
 
@@ -57,21 +55,11 @@ export default function BuyAgain({ products, availability }: { products: Product
   const last = orders?.find((o) => o.status === 'DELIVERED') ?? null
   if (past.length === 0 || !last) return null
 
-  function repeatLast() {
-    if (!last) return
-    const plan = buildReorderLines(last.order_items, products)
-    if (plan.lines.length === 0) { toast.show('None of those items are available right now.'); return }
-    if (cart.lines.length > 0 && !window.confirm(`Replace the ${cart.count} item${cart.count === 1 ? '' : 's'} already in your cart with your last order?`)) return
-    cart.replace(plan.lines)
-    toast.show(plan.skipped.length ? `${plan.lines.length} items added. Not available: ${plan.skipped.join(', ')}.` : `${plan.lines.length} items added from your last order`)
-    navigate('/cart')
-  }
-
   return (
     <section className="buy-again" aria-label="Buy again">
       <div className="section-heading">
         <div><span className="eyebrow">YOUR USUALS</span><h2>Buy again</h2></div>
-        <Button size="small" variant="outlined" startIcon={<ReplayIcon />} onClick={repeatLast}>Repeat last order</Button>
+        <Button size="small" variant="outlined" startIcon={<ReplayIcon />} onClick={() => reorder(last)}>Repeat last order</Button>
       </div>
       <div className="buy-again-rail">
         {past.map((p) => {

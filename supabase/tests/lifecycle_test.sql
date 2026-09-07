@@ -1078,5 +1078,36 @@ begin
   delete from addresses where id = v_addr;
 end $$;
 
+-- ============================================================ TEST 22
+-- Zone boundary (0024): zone_contains, and upsert_my_address refuses a pin
+-- outside the radius of the area it names; an area without a centre or an
+-- address without a pin is accepted as before.
+do $$
+declare r jsonb; v_zone uuid := '33333333-0000-0000-0000-000000000001'; v_addr uuid;
+begin
+  perform assert_eq('T22 no centre: contains anything', zone_contains(v_zone, 12.97, 77.59), true);
+  perform assert_eq('T22 unknown zone: contains nothing', zone_contains('33333333-0000-0000-0000-00000000dead', 15.28, 76.375), false);
+  update zones set lat = 15.28, lng = 76.375, radius_m = 1500 where id = v_zone;
+  perform assert_eq('T22 inside radius', zone_contains(v_zone, 15.281, 76.376), true);
+  perform assert_eq('T22 outside radius', zone_contains(v_zone, 12.97, 77.59), false);
+  perform assert_eq('T22 no pin: accepted', zone_contains(v_zone, null, null), true);
+
+  perform as_user('77777777-0000-0000-0000-000000000001', '+919900000001');
+  r := upsert_my_address(null, v_zone, 'MG Road, Bengaluru', null, 'OTHER', false, 12.97, 77.59);
+  perform assert_eq('T22 named area, pin outside: refused', r->>'error', 'OUTSIDE_DELIVERY_AREA');
+  r := upsert_my_address(null, v_zone, '5th Cross, Chittawadgi', null, 'OTHER', false, 15.281, 76.376);
+  perform assert_eq('T22 named area, pin inside: saved', r->>'ok', 'true');
+  v_addr := (r->>'id')::uuid;
+  r := upsert_my_address(v_addr, v_zone, '5th Cross, Chittawadgi', null, 'OTHER', false, 12.97, 77.59);
+  perform assert_eq('T22 moving the pin outside is refused', r->>'error', 'OUTSIDE_DELIVERY_AREA');
+  r := upsert_my_address(null, v_zone, 'No pin yet', null, 'OTHER', false, null, null);
+  perform assert_eq('T22 no pin: saved', r->>'ok', 'true');
+  delete from addresses where id = (r->>'id')::uuid;
+  perform as_service();
+
+  update zones set lat = null, lng = null, radius_m = null where id = v_zone;
+  delete from addresses where id = v_addr;
+end $$;
+
 drop function as_user(text, text);
 drop function as_service();

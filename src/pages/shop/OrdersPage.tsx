@@ -8,8 +8,7 @@ import { useCatalogue } from '@/hooks/useCatalogue'
 import { etaHeadlineAt, isTerminal, promiseOf } from '@/lib/eta'
 import { paiseToRupees } from '@/lib/money'
 import ReplayIcon from '@mui/icons-material/Replay'
-import { buildReorderLines } from '@/lib/reorder'
-import { useCart } from '@/store/cartContext'
+import { useReorder } from '@/hooks/useReorder'
 import type { OrderStatus } from '@/types/db'
 import { BRAND_GRADIENT, CARD_SHADOW } from '@/theme/brand'
 
@@ -30,7 +29,6 @@ export default function OrdersPage() {
   const [more, setMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const navigate = useNavigate()
-  const cart = useCart()
   const toast = useToast()
   const { catalogue } = useCatalogue()
 
@@ -54,18 +52,7 @@ export default function OrdersPage() {
     } catch (e) { toast.show((e as Error).message) } finally { setLoadingMore(false) }
   }
 
-  function reorder(o: OrderWithItems) {
-    if (!catalogue) { toast.show('Catalogue is still loading, try again in a moment.'); return }
-    const plan = buildReorderLines(o.order_items, catalogue.products)
-    if (plan.lines.length === 0) { toast.show('None of those items are available right now.'); return }
-    if (cart.lines.length > 0 && !window.confirm(`Replace the ${cart.count} item${cart.count === 1 ? '' : 's'} already in your cart with this order?`)) return
-    cart.replace(plan.lines)
-    const notes: string[] = []
-    if (plan.skipped.length) notes.push(`Not available: ${plan.skipped.join(', ')}`)
-    if (plan.repriced.length) notes.push('Some prices have changed')
-    toast.show(notes.length ? `${plan.lines.length} items added. ${notes.join('. ')}.` : `${plan.lines.length} items added to your cart`)
-    navigate('/cart')
-  }
+  const reorder = useReorder(catalogue?.products)
 
   const shell = (children: React.ReactNode) => (
     <Box sx={{ pb: 'calc(var(--nav-clearance) + 8px)', minHeight: '100dvh' }}>

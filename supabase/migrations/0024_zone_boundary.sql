@@ -1,47 +1,26 @@
--- FAA: migrations 0023-0023 in one paste for the Supabase SQL editor.
--- Safe to run more than once. Generated from supabase/migrations/ by scripts/live-bundle.sh.
+-- 0024: delivery area boundary.
+--
+-- A delivery area with a centre pin and radius is a boundary, not a hint.
+-- zone_contains() says whether a point lies inside an area (always true for
+-- an area with no centre yet), and upsert_my_address refuses a pin that lies
+-- outside the area it names, so a customer ordering "for someone in Hospet"
+-- still has to put the door inside Hospet.
 
--- ======================= supabase/migrations/0023_auto_zone.sql =======================
--- 0023_auto_zone.sql — the delivery area is found, not asked for.
---
--- The address form no longer has an "Area" dropdown. The pin (GPS or a
--- place search) decides the zone:
---
---   resolve_zone(lat, lng)
---     1. the nearest active zone that has a centre, when the pin is inside
---        its radius (no radius = unlimited);
---     2. else, if no zone has a centre yet and exactly one zone is active,
---        that zone — a one-store town needs no geography to work;
---     3. else null: we do not deliver there, or the zones are ambiguous.
---
--- upsert_my_address() accepts a null zone and resolves it the same way, so
--- an old client that still sends a zone keeps working and a new one need
--- not. OUTSIDE_DELIVERY_AREA replaces INVALID_ZONE for customers.
-
-create or replace function resolve_zone(p_lat double precision, p_lng double precision)
-returns uuid
-language sql stable security definer set search_path = public as $$
-  with placed as (
-    select z.id,
-           2 * 6371000 * asin(sqrt(
-             power(sin(radians(z.lat - p_lat) / 2), 2)
-             + cos(radians(p_lat)) * cos(radians(z.lat)) * power(sin(radians(z.lng - p_lng) / 2), 2)
-           )) as d,
-           z.radius_m
-      from zones z
-     where z.is_active and z.lat is not null and z.lng is not null
-       and p_lat is not null and p_lng is not null
-  )
-  select coalesce(
-    (select id from placed where d <= coalesce(radius_m, 1e12) order by d limit 1),
-    (select id from zones
-      where is_active
-        and not exists (select 1 from zones z2 where z2.is_active and z2.lat is not null and z2.lng is not null)
-        and (select count(*) from zones z3 where z3.is_active) = 1)
-  )
+create or replace function zone_contains(p_zone_id uuid, p_lat double precision, p_lng double precision)
+returns boolean language sql stable security definer set search_path = public as $$
+  select case
+    when z.id is null then false
+    when z.lat is null or z.lng is null then true
+    when p_lat is null or p_lng is null then true
+    else 2 * 6371000 * asin(sqrt(
+           power(sin(radians(p_lat - z.lat) / 2), 2)
+         + cos(radians(z.lat)) * cos(radians(p_lat)) * power(sin(radians(p_lng - z.lng) / 2), 2)))
+         <= coalesce(z.radius_m, 1e12)
+  end
+  from (select 1) _
+  left join zones z on z.id = p_zone_id;
 $$;
-
-grant execute on function resolve_zone(double precision, double precision) to anon, authenticated;
+grant execute on function zone_contains(uuid, double precision, double precision) to anon, authenticated;
 
 create or replace function upsert_my_address(
   p_id         uuid,
@@ -78,6 +57,11 @@ begin
   end if;
   if not exists (select 1 from zones where id = v_zone and is_active) then
     return jsonb_build_object('ok', false, 'error', 'INVALID_ZONE');
+  end if;
+  -- A pinned area is a boundary: a pin outside its radius is refused even
+  -- when the client names the area. Areas without a centre accept any pin.
+  if not zone_contains(v_zone, p_lat, p_lng) then
+    return jsonb_build_object('ok', false, 'error', 'OUTSIDE_DELIVERY_AREA');
   end if;
 
   -- Serialise per customer so two saves cannot both become the default.
@@ -117,3 +101,5 @@ begin
 
   return jsonb_build_object('ok', true, 'id', v_id);
 end $$;
+
+grant execute on function upsert_my_address(uuid, uuid, text, text, text, boolean, double precision, double precision) to authenticated;

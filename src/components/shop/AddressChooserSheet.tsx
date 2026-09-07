@@ -9,7 +9,9 @@ import { setDefaultAddress } from '@/api/customer'
 import { useCustomer } from '@/store/customerContext'
 import { addressLabel, addressLine } from '@/lib/address'
 import { GEO_MESSAGE, getCurrentCoords, pickZone, type GeoError } from '@/lib/geo'
-import { BRAND_TINT } from '@/theme/brand'
+import { SpotPicker } from '@/components/shop/SpotPicker'
+import { getSpot } from '@/lib/spot'
+import { BRAND, BRAND_TINT } from '@/theme/brand'
 
 /**
  * "Deliver to" chooser used by the home header and by checkout.
@@ -33,6 +35,8 @@ export function AddressChooserSheet({
   const [locating, setLocating] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [showList, setShowList] = useState(false)
+  const [showSpot, setShowSpot] = useState(false)
+  const unpinned = !customer.zones.some((z) => z.is_active && z.lat != null && z.lng != null)
 
   async function locate() {
     setLocating(true); setNote(null)
@@ -40,11 +44,13 @@ export function AddressChooserSheet({
       const at = await getCurrentCoords()
       const zone = pickZone(at, customer.zones)
       if (zone) { customer.setSelectedZoneId(zone.id); onClose(); return }
-      setNote("We don't deliver at your location yet. You can still browse."); setShowList(true)
+      if (unpinned) { setNote('We could not match a delivery area. Pick yours below.'); setShowList(true); return }
+      setNote(`You seem to be outside ${BRAND.city}. Ordering for someone there? Tell us where the order goes.`); setShowSpot(true)
     } catch (e) {
       const fallback = pickZone(null, customer.zones)
       if (fallback) { customer.setSelectedZoneId(fallback.id); onClose(); return }
-      setNote(GEO_MESSAGE[e as GeoError] ?? GEO_MESSAGE.UNAVAILABLE); setShowList(true)
+      setNote(GEO_MESSAGE[e as GeoError] ?? GEO_MESSAGE.UNAVAILABLE)
+      if (unpinned) setShowList(true); else setShowSpot(true)
     } finally { setLocating(false) }
   }
 
@@ -113,7 +119,9 @@ export function AddressChooserSheet({
         ) : (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {customer.activeZone ? `Showing prices and delivery time for ${customer.activeZone.name}.` : 'Allow location so prices and delivery time are right for where you are.'}
+              {getSpot()?.forSomeoneElse && customer.activeZone ? `Delivering near ${getSpot()?.label}, ${BRAND.city}.`
+                : customer.activeZone ? `Showing prices and delivery time for ${customer.activeZone.name}.`
+                : 'Allow location so prices and delivery time are right for where you are.'}
             </Typography>
             <Button
               fullWidth variant="contained" startIcon={locating ? <CircularProgress size={18} color="inherit" /> : <MyLocationIcon />}
@@ -121,7 +129,13 @@ export function AddressChooserSheet({
             >
               {locating ? 'Finding you…' : 'Use my current location'}
             </Button>
+            {!showSpot && (
+              <Button fullWidth variant="text" onClick={() => { setNote(null); setShowSpot(true) }} sx={{ mb: 1 }}>
+                Ordering for someone in {BRAND.city}
+              </Button>
+            )}
             {note && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>{note}</Typography>}
+            {showSpot && <Box sx={{ mb: 1.5 }}><SpotPicker forSomeoneElse onDone={onClose} /></Box>}
             {showList && customer.zones.length > 1 && (
               <Stack spacing={0.75} sx={{ mb: 1.5 }}>
                 {customer.zones.map((z) => {

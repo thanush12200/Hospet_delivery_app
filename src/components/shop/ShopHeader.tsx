@@ -17,9 +17,10 @@ const AddressChooserSheet = lazy(() => import('./AddressChooserSheet').then((m) 
 const BrandSheet = lazy(() => import('./BrandSheet').then((m) => ({ default: m.BrandSheet })))
 import { useCustomer } from '@/store/customerContext'
 import { useCart } from '@/store/cartContext'
-import { addressLabel, addressLine } from '@/lib/address'
+import { addressLabel, addressLine, placeName } from '@/lib/address'
 import { paiseToRupees } from '@/lib/money'
 import { BRAND } from '@/theme/brand'
+import { getSpot } from '@/lib/spot'
 
 export function ShopHeader() {
   const customer = useCustomer()
@@ -36,8 +37,10 @@ export function ShopHeader() {
     if (final && text) navigate(`/search?q=${encodeURIComponent(text)}`)
   })
   const address = customer.defaultAddress
+  const spot = !address && customer.activeZone ? getSpot() : null
   const destination = address ? `${addressLabel(address)} - ${addressLine(address)}`
-    : customer.activeZone ? `${customer.activeZone.name}, Hospet` : 'Set your location'
+    : spot ? `Near ${spot.label}`
+    : customer.activeZone ? placeName(customer.activeZone.name) : 'Set your location'
 
   return (
     <>
