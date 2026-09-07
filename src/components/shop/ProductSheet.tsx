@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { Box, Chip, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BottomSheet } from '@/components/BottomSheet'
 import { ProductImage } from './ProductImage'
@@ -73,10 +73,10 @@ export function ProductSheet() {
           </Box>
 
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-            {category && <Chip size="small" label={category.name} />}
-            {product.brand && <Chip size="small" variant="outlined" label={product.brand} />}
-            {low && <Chip size="small" color="warning" label={`Only ${available} left`} />}
-            {outOfStock && <Chip size="small" color="error" label="Out of stock" />}
+            {category && <span className="pill-tag">{category.name}</span>}
+            {product.brand && <span className="pill-tag is-outlined">{product.brand}</span>}
+            {low && <span className="pill-tag is-warning">Only {available} left</span>}
+            {outOfStock && <span className="pill-tag is-error">Out of stock</span>}
           </Stack>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{product.unit_label}</Typography>
 
@@ -89,7 +89,7 @@ export function ProductSheet() {
                     {paiseToRupees(product.mrp_paise)}
                   </Typography>
                 )}
-                {onDeal(product) && <Chip size="small" color="primary" label={`${discountPct(product)}% off`} sx={{ ml: 1, height: 20 }} />}
+                {onDeal(product) && <span className="pill-tag is-brand" style={{ marginLeft: 8, height: 20, verticalAlign: 'middle' }}>{discountPct(product)}% off</span>}
               </Typography>
               <Typography variant="caption" color="text.secondary">MRP, inclusive of all taxes</Typography>
             </Box>

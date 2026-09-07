@@ -17,6 +17,7 @@ const SearchPage      = lazy(() => import('@/pages/shop/SearchPage'))
 const CartPage        = lazy(() => import('@/pages/shop/CartPage'))
 const CategoriesPage  = lazy(() => import('@/pages/shop/CategoriesPage'))
 const OrdersPage      = lazy(() => import('@/pages/shop/OrdersPage'))
+const ReorderPage     = lazy(() => import('@/pages/shop/ReorderPage'))
 const Checkout        = lazy(() => import('@/pages/shop/Checkout'))
 const OrderTracking   = lazy(() => import('@/pages/shop/OrderTracking'))
 const Login           = lazy(() => import('@/pages/shop/Login'))
@@ -71,6 +72,7 @@ export default function App() {
                       <Route path="/search" element={<SearchPage />} />
                       <Route path="/cart" element={<CartPage />} />
                       <Route path="/orders" element={<OrdersPage />} />
+                      <Route path="/reorder" element={<ReorderPage />} />
                       <Route path="/help" element={<HelpPage />} />
                       <Route element={<RequireAuth />}>
                         <Route path="/account" element={<AccountPage />} />

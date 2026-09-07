@@ -190,6 +190,21 @@ update store_config set phone = '+91XXXXXXXXXX', whatsapp = '+91XXXXXXXXXX',
   cancel_window_minutes = 5, is_open = true;
 ```
 
+### Delivery area boundary
+
+A delivery area with a centre pin and a radius is a boundary (migrations 0023
+and 0024). On landing the app reads the phone's position: inside the circle
+the customer walks straight in; outside it they are asked "are you ordering
+for someone in Hospet?" and pick the spot by name, which becomes the starting
+pin of their address. The server refuses an address whose pin lies outside
+the area, whatever the client says. An area with no centre accepts anyone,
+which is why a fresh store starts that way. Set the pin from Admin → Delivery
+areas ("Use my location" at the shop) or in SQL:
+
+```sql
+update zones set lat = 15.2689, lng = 76.3909, radius_m = 6000 where name = 'Hospet';
+```
+
 ### Creating the first admin
 
 The admin console needs a Supabase auth user linked to an `admin_users` row. Being signed in is not enough — every admin RPC re-checks `is_admin()` server-side.
@@ -284,6 +299,7 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 | **Stock** | Set on-hand per SKU via `admin_adjust_stock()`, which records a `stock_movements` row every time. Reserved units belong to live orders and cannot be adjusted away. |
 | **Riders** | Add riders, activate/deactivate, and settle each day's cash against what the system expects. |
 | **Big-screen display** (`/admin/display`) | Every live order in large type for a TV or tablet by the packing table. A new order chimes, flashes the tab title, raises a browser notification and pulses until tapped; one-tap Accept. The Orders board carries the same alarm. |
+| **Reorder** tab | Everything a customer has had delivered, ready to add again: Repeat last order, every past product with a stepper, and each recent order with its own Order again. |
 | **Order alerts** (Store settings) | The database pushes every new order to the owner's phone via the ntfy app or a Telegram bot the moment it is placed (`pg_net`, migration 0022), with no server to run and no tab to keep open. |
 
 **Rider** (`/rider`) — orders assigned to them, live (a new assignment appears without a reload), with the customer's name, phone, landmark and map link; "Picked up" at the store, then Delivered (with a cash confirmation on COD) or Couldn't deliver. Built for one thumb in sunlight.

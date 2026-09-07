@@ -4,8 +4,7 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import GridViewIcon from '@mui/icons-material/GridView'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
-import PersonIcon from '@mui/icons-material/Person'
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
+import ReplayIcon from '@mui/icons-material/Replay'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '@/store/cartContext'
 
@@ -14,7 +13,7 @@ const TABS = [
   { to: '/categories', label: 'Categories', icon: GridViewIcon,     activeIcon: GridViewIcon },
   { to: '/orders',     label: 'Orders',     icon: ReceiptLongIcon,  activeIcon: ReceiptLongIcon },
   { to: '/cart',       label: 'Cart',       icon: ShoppingCartIcon, activeIcon: ShoppingCartIcon },
-  { to: '/account',    label: 'Account',    icon: PersonOutlineIcon, activeIcon: PersonIcon },
+  { to: '/reorder',    label: 'Reorder',    icon: ReplayIcon,       activeIcon: ReplayIcon },
 ]
 
 /**

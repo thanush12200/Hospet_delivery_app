@@ -12,7 +12,11 @@ const DEBOUNCE_MS = 350
  * customer then drags it to their door if needed. Results come from
  * OpenStreetMap via Photon, restricted to the Hospet area.
  */
-export function PlaceSearch({ near, onPick }: { near: LatLng; onPick: (p: Place) => void }) {
+export function PlaceSearch({ near, onPick, inline = false }: {
+  near: LatLng; onPick: (p: Place) => void
+  /** Results in the flow of the page (inside a sheet) instead of a floating dropdown. */
+  inline?: boolean
+}) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Place[]>([])
   const [busy, setBusy] = useState(false)
@@ -53,7 +57,7 @@ export function PlaceSearch({ near, onPick }: { near: LatLng; onPick: (p: Place)
         inputProps={{ 'aria-label': 'Search a place or landmark', autoComplete: 'off', enterKeyHint: 'search' }}
         onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
         onFocus={() => { if (results.length) setOpen(true) }}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onBlur={() => { if (!inline) setTimeout(() => setOpen(false), 150) }}
         onKeyDown={(e) => { if (e.key === 'Enter' && results[0]) { e.preventDefault(); pick(results[0]) } if (e.key === 'Escape') setOpen(false) }}
         InputProps={{
           startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
@@ -61,7 +65,7 @@ export function PlaceSearch({ near, onPick }: { near: LatLng; onPick: (p: Place)
         }}
       />
       {open && results.length > 0 && (
-        <Paper elevation={6} sx={{ position: 'absolute', left: 0, right: 0, top: '100%', mt: 0.5, zIndex: 1200, maxHeight: 280, overflowY: 'auto', borderRadius: 2 }}>
+        <Paper elevation={inline ? 0 : 6} variant={inline ? 'outlined' : 'elevation'} sx={inline ? { mt: 1, borderRadius: 2 } : { position: 'absolute', left: 0, right: 0, top: '100%', mt: 0.5, zIndex: 1200, maxHeight: 280, overflowY: 'auto', borderRadius: 2 }}>
           <List dense disablePadding>
             {results.map((p) => (
               <ListItemButton key={p.id} onMouseDown={(e) => e.preventDefault()} onClick={() => pick(p)}>

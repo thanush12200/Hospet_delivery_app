@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { Button, Chip, Skeleton } from '@mui/material'
+import { Button, Skeleton } from '@mui/material'
 import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ProductCard } from '@/components/ProductCard'
@@ -65,8 +65,7 @@ export default function ShopHome() {
         </div>
         <CategoryIconRail categories={shelf} selected={categoryId} onSelect={(id) => navigate(id ? `/category/${id}` : '/')} />
         <div className="product-meta"><span>{loading ? 'Loading your essentials...' : `${visible.length} products`}</span>
-          <Chip size="small" label="In stock only" color={inStock ? 'primary' : 'default'} variant={inStock ? 'filled' : 'outlined'}
-            onClick={() => setInStock((v) => !v)} aria-pressed={inStock} />
+          <button type="button" className={`pill-toggle${inStock ? ' is-on' : ''}`} onClick={() => setInStock((v) => !v)} aria-pressed={inStock}>In stock only</button>
         </div>
         {error ? <div className="empty-state"><WifiOffOutlinedIcon /><h3>We couldn&apos;t reach the shop</h3><p>Check your connection and try again.</p>
           <Button variant="outlined" onClick={() => window.location.reload()}>Try again</Button></div>

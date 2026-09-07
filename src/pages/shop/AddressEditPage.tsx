@@ -4,6 +4,7 @@ import {
   TextField, Typography,
 } from '@mui/material'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
+import { getSpot, setSpot } from '@/lib/spot'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { upsertMyAddress } from '@/api/customer'
 import { safeReturnTo } from '@/lib/returnTo'
@@ -14,7 +15,7 @@ import {
   GEO_MESSAGE, geoPermission, getCurrentCoords, nearestZone, pickZone, type GeoError, type LatLng,
 } from '@/lib/geo'
 import { useCustomer } from '@/store/customerContext'
-import { BRAND_TINT } from '@/theme/brand'
+import { BRAND, BRAND_TINT } from '@/theme/brand'
 import type { AddressLabel } from '@/types/db'
 
 // Leaflet (~40 KB gzipped + tiles) is only ever needed here.
@@ -60,6 +61,13 @@ export default function AddressEditPage() {
       // First address, or one added on the way to checkout, is where this
       // order goes: make it the default rather than leaving the old one selected.
       setIsDefault(customer.addresses.length === 0 || returnTo === '/checkout')
+      // Ordering for someone else: the pin starts at the spot chosen on
+      // landing, not at this customer's own position.
+      const spot = getSpot()
+      if (spot) {
+        setPin({ lat: spot.lat, lng: spot.lng }); setShowMap(true)
+        if (spot.forSomeoneElse) { setLabel('OTHER'); setLandmark((l) => l || `Near ${spot.label}`) }
+      }
     }
     setLoaded(true)
   }, [loaded, isNew, existing, customer, navigate, returnTo])
@@ -112,6 +120,7 @@ export default function AddressEditPage() {
         id: existing?.id ?? null, zoneId: zoneId || null, line1: line1.trim(), landmark: landmark.trim() || null,
         label, isDefault, lat: pin?.lat ?? null, lng: pin?.lng ?? null,
       })
+      setSpot(null)
       await customer.refresh()
       navigate(returnTo, { replace: true })
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
@@ -119,7 +128,7 @@ export default function AddressEditPage() {
 
   // A new address on a device that already allows location: find it at once.
   useEffect(() => {
-    if (!loaded || !isNew || pin) return
+    if (!loaded || !isNew || pin || getSpot()) return
     let cancelled = false
     void geoPermission().then((perm) => { if (!cancelled && perm === 'granted') void locate() })
     return () => { cancelled = true }
@@ -202,7 +211,7 @@ export default function AddressEditPage() {
                     {activeZones.map((z) => <Chip key={z.id} label={z.name} variant="outlined" onClick={() => customer.setSelectedZoneId(z.id)} />)}
                   </Stack>
                 </Box>
-              : pin && <Typography variant="caption" color="error.main">We don't deliver at this spot yet. Move the pin closer to the store.</Typography>}
+              : pin && <Typography variant="caption" color="error.main">We don't deliver at this spot yet. Move the pin inside {BRAND.city}.</Typography>}
           <FormControlLabel
             control={<Switch checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)}
               disabled={existing?.is_default === true} />}

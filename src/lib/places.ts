@@ -59,8 +59,10 @@ export async function searchPlaces(query: string, near: LatLng = HOSPET, signal?
       .filter((x, i, a) => a.indexOf(x) === i)
       .join(', ')
     const id = `${p.osm_type ?? ''}${p.osm_id ?? ''}` || `${lat},${lng}`
-    if (seen.has(id)) continue
-    seen.add(id)
+    // A long road comes back once per OSM segment; one entry per name+locality is enough.
+    const key = `${name}|${detail}`.toLowerCase()
+    if (seen.has(id) || seen.has(key)) continue
+    seen.add(id); seen.add(key)
     out.push({ id, name, detail, lat, lng })
   }
   return out
