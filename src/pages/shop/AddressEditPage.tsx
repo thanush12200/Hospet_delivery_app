@@ -64,10 +64,19 @@ export default function AddressEditPage() {
     setLoaded(true)
   }, [loaded, isNew, existing, customer, navigate, returnTo])
 
-  // The area comes from the pin (or the store's only area); never from a form field.
-  const resolvedZone = useMemo(
-    () => pickZone(pin, customer.zones) ?? (existing ? customer.zones.find((z) => z.id === existing.zone_id) ?? null : null),
-    [pin, customer.zones, existing])
+  // The area comes from the pin (or the store's only area); never from a form
+  // field. While no area has a centre pin yet, the pin cannot decide, so the
+  // area already on this address, else the one chosen on landing, stands in.
+  const unpinned = !customer.zones.some((z) => z.is_active && z.lat != null && z.lng != null)
+  const pinZone = useMemo(() => pickZone(pin, customer.zones), [pin, customer.zones])
+  const resolvedZone = useMemo(() => {
+    if (pinZone) return pinZone
+    const keep = existing ? customer.zones.find((z) => z.id === existing.zone_id) ?? null : null
+    if (keep) return keep
+    if (unpinned && customer.selectedZoneId) return customer.zones.find((z) => z.id === customer.selectedZoneId && z.is_active) ?? null
+    return null
+  }, [pinZone, unpinned, customer.zones, customer.selectedZoneId, existing])
+  const activeZones = customer.zones.filter((z) => z.is_active)
   const zoneId = resolvedZone?.id ?? ''
   const zone = resolvedZone
   const mapCenter: LatLng = zone?.lat != null && zone.lng != null ? { lat: zone.lat, lng: zone.lng } : HOSPET
@@ -185,8 +194,15 @@ export default function AddressEditPage() {
             helperText="Riders find a landmark faster than a pin in Hospet's lanes."
           />
           {resolvedZone
-            ? <Typography variant="caption" color="text.secondary">Delivery area: <strong>{resolvedZone.name}</strong>, worked out from the pin.</Typography>
-            : pin && <Typography variant="caption" color="error.main">We don't deliver at this spot yet. Move the pin closer to the store.</Typography>}
+            ? <Typography variant="caption" color="text.secondary">Delivery area: <strong>{resolvedZone.name}</strong>{pinZone ? ', worked out from the pin.' : '.'}</Typography>
+            : unpinned && activeZones.length > 1
+              ? <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>Which area is this address in?</Typography>
+                  <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                    {activeZones.map((z) => <Chip key={z.id} label={z.name} variant="outlined" onClick={() => customer.setSelectedZoneId(z.id)} />)}
+                  </Stack>
+                </Box>
+              : pin && <Typography variant="caption" color="error.main">We don't deliver at this spot yet. Move the pin closer to the store.</Typography>}
           <FormControlLabel
             control={<Switch checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)}
               disabled={existing?.is_default === true} />}

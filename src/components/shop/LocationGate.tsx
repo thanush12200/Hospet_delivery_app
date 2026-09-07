@@ -7,7 +7,7 @@ import { BottomSheet } from '@/components/BottomSheet'
 import { SPLASH_TOTAL_MS } from '@/components/SplashScreen'
 import { useCustomer } from '@/store/customerContext'
 import { GEO_MESSAGE, geoPermission, getCurrentCoords, pickZone, type GeoError } from '@/lib/geo'
-import { markWelcomeSeen } from '@/lib/welcome'
+import { locationSkipped, markLocationSkipped, markWelcomeSeen } from '@/lib/welcome'
 import { BRAND, BRAND_TINT } from '@/theme/brand'
 
 /** After the splash has faded. */
@@ -20,6 +20,7 @@ const AFTER_SPLASH_MS = SPLASH_TOTAL_MS + 100
  * worked out silently. Refusing (or a phone with no fix) falls back to the
  * store's only area when there is exactly one, so the shop still works;
  * only when several areas exist and none could be matched is a list shown.
+ * Dismissing always closes the prompt; browsing never depends on it.
  *
  * Mounted by ShopLayout only while no delivery address or area is known.
  */
@@ -64,7 +65,7 @@ export default function LocationGate() {
   // Once per load, the first time the home page is reached: if location is
   // already allowed, find the area quietly; otherwise ask after the splash.
   useEffect(() => {
-    if (decided.current || pathname !== '/' || customer.zones.length === 0) return
+    if (decided.current || pathname !== '/' || customer.zones.length === 0 || locationSkipped()) return
     decided.current = true
     let cancelled = false
     void (async () => {
@@ -77,11 +78,17 @@ export default function LocationGate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, customer.zones.length])
 
+  /**
+   * "Not now", the X, Escape: the prompt goes away, always. With a single
+   * area the shop is priced for it; otherwise the customer browses without an
+   * area and the header chip still offers "Set your location". Remembered for
+   * the rest of this tab session so a reload does not nag again.
+   */
   function skip() {
     const fallback = pickZone(null, zonesRef.current)
-    if (fallback) { setZoneRef.current(fallback.id); finish(); return }
-    setShowList(true)
-    setNote('Pick your area to continue.')
+    if (fallback) setZoneRef.current(fallback.id)
+    else markLocationSkipped()
+    finish()
   }
 
   function choose(id: string) { setZoneRef.current(id); finish() }

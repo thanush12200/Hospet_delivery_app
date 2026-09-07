@@ -20,3 +20,17 @@ export function welcomeDue(now = Date.now()): boolean {
 export function markWelcomeSeen(now = Date.now()): void {
   try { localStorage.setItem(KEY, String(now)) } catch { /* private mode */ }
 }
+
+/**
+ * The landing location prompt was dismissed without choosing an area. Kept
+ * for this tab session only: the next visit asks again, a reload does not.
+ */
+const SKIP_KEY = 'location.skipped.v1'
+
+export function locationSkipped(): boolean {
+  try { return sessionStorage.getItem(SKIP_KEY) === '1' } catch { return false }
+}
+
+export function markLocationSkipped(): void {
+  try { sessionStorage.setItem(SKIP_KEY, '1') } catch { /* private mode */ }
+}
