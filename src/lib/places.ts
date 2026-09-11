@@ -53,7 +53,7 @@ interface PhotonFeature {
   }
 }
 
-export async function searchPlacesPhoton(query: string, near: LatLng = HOSPET, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
+export async function searchPlacesPhoton(query: string, near: LatLng = HOSPET, signal?: AbortSignal, radiusM: number = RADIUS_M): Promise<PlaceSuggestion[]> {
   const q = query.trim()
   if (q.length < 2) return []
   const url = new URL('https://photon.komoot.io/api/')
@@ -73,7 +73,7 @@ export async function searchPlacesPhoton(query: string, near: LatLng = HOSPET, s
     const p = f.properties
     const name = p.name ?? [p.housenumber, p.street].filter(Boolean).join(' ')
     if (!name) continue
-    if (distanceM({ lat, lng }, near) > RADIUS_M) continue
+    if (distanceM({ lat, lng }, near) > radiusM) continue
     const detail = [p.street !== name ? p.street : null, p.locality, p.district, p.city ?? p.county]
       .filter((x): x is string => !!x && x !== name)
       .filter((x, i, a) => a.indexOf(x) === i)
@@ -105,33 +105,37 @@ function shouldFallBack(e: unknown): e is PlacesHttpError {
   return e instanceof PlacesHttpError && [400, 401, 403, 429].includes(e.status)
 }
 
-export async function searchPlaces(query: string, near: LatLng = HOSPET, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
+/**
+ * @param radiusM how far from `near` to look; callers pass the delivery
+ * area's radius (searchRadiusM) so nothing beyond it is ever offered.
+ */
+export async function searchPlaces(query: string, near: LatLng = HOSPET, signal?: AbortSignal, radiusM: number = RADIUS_M): Promise<PlaceSuggestion[]> {
   const q = query.trim()
   if (q.length < 2) return []
   if (hasGoogleMaps()) {
-    try { return await google.search(q, near, signal) }
+    try { return await google.search(q, near, signal, radiusM) }
     catch (e) {
       if (!shouldFallBack(e)) throw e
       disableGoogleMaps(`places ${e.status}`)
     }
   }
   if (hasOlaMaps()) {
-    try { return await ola.search(q, near, signal) }
+    try { return await ola.search(q, near, signal, radiusM) }
     catch (e) {
       if (!(e instanceof OlaHttpError && isOlaRefusal(e.status))) throw e
       disableOlaMaps(`places ${e.status}`)
     }
   }
-  return searchPlacesPhoton(q, near, signal)
+  return searchPlacesPhoton(q, near, signal, radiusM)
 }
 
 /**
  * The only way a caller gets coordinates: OSM and Ola hits resolve at once,
  * Google hits cost one Place Details call (which also closes the billing session).
  */
-export async function resolvePlace(s: PlaceSuggestion, near: LatLng = HOSPET, signal?: AbortSignal): Promise<Place> {
+export async function resolvePlace(s: PlaceSuggestion, near: LatLng = HOSPET, signal?: AbortSignal, radiusM: number = RADIUS_M): Promise<Place> {
   if (s.location) return { id: s.id, name: s.name, detail: s.detail, lat: s.location.lat, lng: s.location.lng, source: s.source }
-  try { return await google.resolve(s, near, signal) }
+  try { return await google.resolve(s, near, signal, radiusM) }
   catch (e) {
     if (shouldFallBack(e)) disableGoogleMaps(`details ${e.status}`)
     throw e

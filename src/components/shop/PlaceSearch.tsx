@@ -16,10 +16,12 @@ const DEBOUNCE_MS = 350
  * Photon; all restricted to the Hospet area. A Google hit costs one lookup
  * on pick, so onPick only ever receives a place with coordinates.
  */
-export function PlaceSearch({ near, onPick, inline = false }: {
+export function PlaceSearch({ near, onPick, inline = false, radiusM }: {
   near: LatLng; onPick: (p: Place) => void
   /** Results in the flow of the page (inside a sheet) instead of a floating dropdown. */
   inline?: boolean
+  /** How far from `near` to look; default: the whole city. */
+  radiusM?: number
 }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PlaceSuggestion[]>([])
@@ -41,7 +43,7 @@ export function PlaceSearch({ near, onPick, inline = false }: {
       const ctl = new AbortController()
       abort.current = ctl
       try {
-        const r = await searchPlaces(q, near, ctl.signal)
+        const r = await searchPlaces(q, near, ctl.signal, radiusM)
         if (ctl.signal.aborted) return
         setResults(r); setOpen(true)
         setNote(r.length === 0 ? 'Nothing found nearby. Try a landmark, a temple, a school, a road name, or put the pin on the map.' : null)
@@ -51,13 +53,13 @@ export function PlaceSearch({ near, onPick, inline = false }: {
       } finally { if (!ctl.signal.aborted) setBusy(false) }
     }, DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [query, near])
+  }, [query, near, radiusM])
 
   async function pick(s: PlaceSuggestion) {
     if (resolving) return
     setQuery(s.name); setOpen(false); setNote(null); setResolving(s.id)
     try {
-      const place = await resolvePlace(s, near)
+      const place = await resolvePlace(s, near, undefined, radiusM)
       setResults([])
       onPick(place)
     } catch (e) {

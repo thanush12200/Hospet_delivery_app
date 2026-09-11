@@ -77,7 +77,7 @@ export function createGooglePlaces(deps: GooglePlacesDeps) {
   let token: string | null = null
   const session = () => (token ??= deps.newToken())
   return {
-    async search(query: string, near: LatLng, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
+    async search(query: string, near: LatLng, signal?: AbortSignal, radiusM: number = deps.radiusM): Promise<PlaceSuggestion[]> {
       const res = await deps.fetch(AUTOCOMPLETE_URL, {
         method: 'POST',
         signal,
@@ -89,13 +89,13 @@ export function createGooglePlaces(deps: GooglePlacesDeps) {
           regionCode: 'IN',
           includedRegionCodes: ['in'],
           origin: { latitude: near.lat, longitude: near.lng },
-          locationRestriction: { circle: { center: { latitude: near.lat, longitude: near.lng }, radius: deps.radiusM } },
+          locationRestriction: { circle: { center: { latitude: near.lat, longitude: near.lng }, radius: radiusM } },
         }),
       })
       if (!res.ok) throw new PlacesHttpError(res.status, `Place search failed (${res.status})`)
       return mapAutocomplete(await res.json() as AutocompleteResponse)
     },
-    async resolve(s: PlaceSuggestion, near: LatLng, signal?: AbortSignal): Promise<Place> {
+    async resolve(s: PlaceSuggestion, near: LatLng, signal?: AbortSignal, radiusM: number = deps.radiusM): Promise<Place> {
       const t = session()
       token = null // a details call closes the session, whatever the outcome
       const res = await deps.fetch(`${DETAILS_URL}${encodeURIComponent(s.id)}?sessionToken=${encodeURIComponent(t)}&languageCode=en`, {
@@ -103,7 +103,7 @@ export function createGooglePlaces(deps: GooglePlacesDeps) {
         headers: { 'X-Goog-Api-Key': deps.key, 'X-Goog-FieldMask': DETAILS_FIELDS },
       })
       if (!res.ok) throw new PlacesHttpError(res.status, `Place lookup failed (${res.status})`)
-      return mapPlaceDetails(await res.json() as PlaceDetailsResponse, s, near, deps.radiusM)
+      return mapPlaceDetails(await res.json() as PlaceDetailsResponse, s, near, radiusM)
     },
     endSession(): void { token = null },
   }

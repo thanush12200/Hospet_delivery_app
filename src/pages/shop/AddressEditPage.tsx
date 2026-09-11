@@ -10,10 +10,11 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { upsertMyAddress } from '@/api/customer'
 import { safeReturnTo } from '@/lib/returnTo'
 import { PlaceSearch } from '@/components/shop/PlaceSearch'
+import { RADIUS_M } from '@/lib/places'
 import { SubPageBar } from '@/components/shop/SubPageBar'
 import { LABELS } from '@/lib/address'
 import {
-  GEO_MESSAGE, distanceM, geoPermission, getCurrentCoords, nearestZone, pickZone, type GeoError, type LatLng,
+  GEO_MESSAGE, distanceM, geoPermission, getCurrentCoords, nearestZone, pickZone, searchRadiusM, type GeoError, type LatLng,
 } from '@/lib/geo'
 import { useCustomer } from '@/store/customerContext'
 import { BRAND, BRAND_TINT } from '@/theme/brand'
@@ -174,7 +175,7 @@ export default function AddressEditPage() {
         {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
         <Box sx={{ mb: 2 }}>
-          <PlaceSearch near={mapCenter} onPick={(place) => {
+          <PlaceSearch near={mapCenter} radiusM={searchRadiusM(customer.zones, RADIUS_M)} onPick={(place) => {
             applyPin({ lat: place.lat, lng: place.lng }, true)
             setLandmark((l) => l.trim() ? l : place.name)
             setGeoNote((n) => `Pin moved to ${place.name}. Put it on your door if needed.${n ? ` ${n}` : ''}`)
