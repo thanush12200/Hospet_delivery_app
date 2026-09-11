@@ -12,9 +12,9 @@ const DEBOUNCE_MS = 350
 /**
  * "Search a place or landmark": type, pick, and the pin jumps there. The
  * customer then puts the pin on their door if needed. Results come from
- * Google Places when a key is set, otherwise OpenStreetMap via Photon; both
- * restricted to the Hospet area. A Google hit costs one lookup on pick,
- * so onPick only ever receives a place with coordinates.
+ * Google Places or Ola Maps when a key is set, otherwise OpenStreetMap via
+ * Photon; all restricted to the Hospet area. A Google hit costs one lookup
+ * on pick, so onPick only ever receives a place with coordinates.
  */
 export function PlaceSearch({ near, onPick, inline = false }: {
   near: LatLng; onPick: (p: Place) => void
@@ -68,7 +68,7 @@ export function PlaceSearch({ near, onPick, inline = false }: {
     } finally { setResolving(null) }
   }
 
-  const fromGoogle = results[0]?.source === 'google'
+  const source = results[0]?.source
 
   return (
     <Box sx={{ position: 'relative', mb: 1 }}>
@@ -95,14 +95,14 @@ export function PlaceSearch({ near, onPick, inline = false }: {
               </ListItemButton>
             ))}
           </List>
-          {fromGoogle ? (
+          {source === 'google' ? (
             // Google's policy: place data shown away from a Google map carries the Google Maps logo.
             <Box sx={{ px: 2, py: 0.75, borderTop: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'flex-end' }}>
               <img src="/brand/google-maps-logo.svg" alt="Google Maps" height={14} width={76} />
             </Box>
           ) : (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', px: 2, py: 0.75, borderTop: '1px solid', borderColor: 'divider' }}>
-              Places from OpenStreetMap
+              {source === 'ola' ? 'Places from Ola Maps' : 'Places from OpenStreetMap'}
             </Typography>
           )}
         </Paper>

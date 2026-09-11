@@ -1,13 +1,14 @@
 import type { LatLng } from './geo'
-import { loadGoogleMaps } from './googleMaps'
+import { hasGoogleMaps, loadGoogleMaps } from './googleMaps'
+import { disableOlaMaps, hasOlaMaps, isOlaRefusal, olaHeaders, olaUrl } from './olaMaps'
 
 /**
  * Turn a pin into a street suggestion for the "House / flat / street" line.
  * A convenience only: the delivery area is always worked out from the pin
  * by pure arithmetic (geo.ts), never from what Google calls the place.
  *
- * Goes through the Maps JS Geocoder because Google's REST geocoder does not
- * answer browsers (no CORS). One Geocoding call per settled pin.
+ * Google goes through the Maps JS Geocoder because its REST geocoder does
+ * not answer browsers (no CORS); Ola is a plain GET. One call per settled pin.
  */
 export interface AddressHint {
   street?: string
@@ -15,11 +16,13 @@ export interface AddressHint {
   formatted?: string
 }
 
-/** Structural subset of google.maps.GeocoderResult, so the derivation is testable in node. */
+/** Structural subset of google.maps.GeocoderResult (Ola returns the same shape), testable in node. */
 export interface GeocodeResultLike {
   types: string[]
   formatted_address: string
   address_components: { long_name: string; short_name: string; types: string[] }[]
+  /** Ola names the matched feature ("Bus Stand Road"); Google has no such field. */
+  name?: string
 }
 
 const SPECIFIC = ['street_address', 'premise', 'subpremise', 'route', 'establishment', 'point_of_interest']
@@ -39,10 +42,13 @@ export function deriveAddressHint(results: GeocodeResultLike[]): AddressHint | n
   if (!pick) return null
   const comp = (t: string) => pick.address_components.find((c) => c.types.includes(t))?.long_name
   const route = comp('route')
-  const street = [comp('street_number'), comp('premise'), route && route !== 'Unnamed Road' ? route : undefined]
+  const area = AREA.map(comp).find((x): x is string => !!x)
+  let street = [comp('street_number'), comp('premise'), route && route !== 'Unnamed Road' ? route : undefined]
     .filter((x, i, a): x is string => !!x && a.indexOf(x) === i)
     .join(', ')
-  const area = AREA.map(comp).find((x): x is string => !!x)
+  // Ola often names the road only in `name`; use it when it is not the area or the town.
+  const named = pick.name?.trim()
+  if (!street && named && named !== area && !pick.types.some((t) => t === 'locality' || t === 'political') && !/^Unnamed/i.test(named)) street = named
   const formatted = pick.formatted_address.replace(PLUS_CODE, '').replace(/,\s*India$/, '').trim()
   if (!street && !area && !formatted) return null
   return { street: street || undefined, area, formatted: formatted || undefined }
@@ -54,19 +60,41 @@ export function suggestLine1(h: AddressHint): string | null {
   return s || null
 }
 
-let broken = false
+/** Ola's reverse-geocode body: Google-shaped results plus a `name` per result. */
+export interface OlaReverseResponse { status?: string; results?: GeocodeResultLike[] }
+
+export function mapOlaReverse(json: OlaReverseResponse): GeocodeResultLike[] {
+  return (json.results ?? []).filter((r) => Array.isArray(r.types) && typeof r.formatted_address === 'string')
+    .map((r) => ({ ...r, address_components: r.address_components ?? [] }))
+}
+
+/** Whether any provider can turn a pin into a street suggestion right now. */
+export function hasReverseGeocode(): boolean {
+  return hasGoogleMaps() || hasOlaMaps()
+}
+
+let googleBroken = false
 
 /** Reverse geocode a pin. Never throws; null = no usable hint. */
-export async function describePoint(p: LatLng): Promise<AddressHint | null> {
-  if (broken) return null
-  try {
-    const g = await loadGoogleMaps()
-    const { Geocoder } = await g.importLibrary('geocoding') as google.maps.GeocodingLibrary
-    const { results } = await new Geocoder().geocode({ location: p, region: 'IN' })
-    return deriveAddressHint(results)
-  } catch (e) {
-    // OVER_QUERY_LIMIT / REQUEST_DENIED: stop asking for the session. ZERO_RESULTS: just no hint.
-    if (/OVER_QUERY_LIMIT|OVER_DAILY_LIMIT|REQUEST_DENIED/.test(String((e as Error)?.message ?? e))) broken = true
-    return null
+export async function describePoint(p: LatLng, fetchFn: typeof fetch = (i, o) => fetch(i, o)): Promise<AddressHint | null> {
+  if (hasGoogleMaps() && !googleBroken) {
+    try {
+      const g = await loadGoogleMaps()
+      const { Geocoder } = await g.importLibrary('geocoding') as google.maps.GeocodingLibrary
+      const { results } = await new Geocoder().geocode({ location: p, region: 'IN' })
+      return deriveAddressHint(results)
+    } catch (e) {
+      // OVER_QUERY_LIMIT / REQUEST_DENIED: stop asking Google for the session. ZERO_RESULTS: just no hint.
+      if (/OVER_QUERY_LIMIT|OVER_DAILY_LIMIT|REQUEST_DENIED/.test(String((e as Error)?.message ?? e))) googleBroken = true
+      else return null
+    }
   }
+  if (hasOlaMaps()) {
+    try {
+      const res = await fetchFn(olaUrl('/places/v1/reverse-geocode', { latlng: `${p.lat},${p.lng}`, language: 'en' }), { headers: olaHeaders() })
+      if (!res.ok) { if (isOlaRefusal(res.status)) disableOlaMaps(`reverse ${res.status}`); return null }
+      return deriveAddressHint(mapOlaReverse(await res.json() as OlaReverseResponse))
+    } catch { return null }
+  }
+  return null
 }

@@ -62,7 +62,7 @@ FAA is a single-store grocery delivery system for Hospet. The same React app ser
 - `shop/ProductSheet`: URL-driven details, tax-inclusive MRP, live stock and related products.
 - `shop/AddressChooserSheet`: common delivery-area/address selection across home and checkout.
 - `shop/BrandLockup`, `BrandSheet`, `SubPageBar`: brand identity and navigation for secondary screens.
-- `AddressMap`: lazily loaded map pin editor; switches between `GoogleAddressMap` (fixed centre pin, needs `VITE_GOOGLE_MAPS_KEY`) and `LeafletAddressMap` (OpenStreetMap fallback).
+- `AddressMap`: lazily loaded map pin editor; switches between `GoogleAddressMap` (needs `VITE_GOOGLE_MAPS_KEY`), `OlaAddressMap` (MapLibre + Ola tiles, needs `VITE_OLA_MAPS_KEY`), both with a fixed centre pin, and `LeafletAddressMap` (OpenStreetMap fallback).
 - `Toast`, `toastContext`, `ErrorBoundary`: transient feedback and recoverable render failures.
 - `theme/index.ts`, `theme/brand.ts`, `theme/storefront.css`: shared tokens, MUI defaults and responsive layouts.
 - `constants/categoryIcons.ts`: legacy category glyph fallback used on secondary screens.

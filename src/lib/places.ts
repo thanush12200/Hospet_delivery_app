@@ -1,22 +1,24 @@
 import { distanceM, type LatLng } from './geo'
 import { randomNonce } from './google'
 import { GOOGLE_MAPS_KEY, disableGoogleMaps, hasGoogleMaps } from './googleMaps'
+import { OLA_MAPS_KEY, disableOlaMaps, hasOlaMaps, isOlaRefusal } from './olaMaps'
 import { createGooglePlaces, PlacesHttpError } from './placesGoogle'
+import { createOlaPlaces, OlaHttpError } from './placesOla'
 
 /**
  * Place search for the address form and the landing "Where in Hospet?"
  * prompt, so a customer can type "Anjaneya temple" or "Vidyanagar" instead
  * of hunting across the map.
  *
- * Google Places (New) when VITE_GOOGLE_MAPS_KEY is set: far better coverage
- * of Hospet's shops, temples and lanes. Otherwise Photon (photon.komoot.io),
- * OpenStreetMap's free, keyless geocoder built for typeahead. Either way
- * results are biased to the store and anything beyond the radius below is
- * dropped, so "Nehru Nagar" resolves to the one nearby and not to Delhi.
- * If Google refuses mid-session (daily cap, bad key) the search silently
- * continues on Photon.
+ * Providers, best data first, each used only when its key is set: Google
+ * Places (New), then Ola Maps (Indian data, no card needed), then Photon
+ * (photon.komoot.io), OpenStreetMap's free, keyless geocoder built for
+ * typeahead. Whichever answers, results are biased to the store and anything
+ * beyond the radius below is dropped, so "Nehru Nagar" resolves to the one
+ * nearby and not to Delhi. A provider that refuses mid-session (cap, bad
+ * key) is skipped for the rest of the session and the search continues.
  */
-export type PlaceSource = 'google' | 'osm'
+export type PlaceSource = 'google' | 'ola' | 'osm'
 
 export interface Place {
   id: string
@@ -28,7 +30,7 @@ export interface Place {
   source: PlaceSource
 }
 
-/** A search hit. OSM hits carry `location`; Google predictions do not until resolvePlace(). */
+/** A search hit. OSM and Ola hits carry `location`; Google predictions do not until resolvePlace(). */
 export interface PlaceSuggestion {
   id: string
   name: string
@@ -93,9 +95,11 @@ const google = createGooglePlaces({
   radiusM: RADIUS_M,
 })
 
+const ola = createOlaPlaces({ key: OLA_MAPS_KEY, fetch: (input, init) => fetch(input, init), radiusM: RADIUS_M })
+
 /**
  * Google refused the request (bad or restricted key, API not enabled, daily
- * cap reached): finish this session on Photon. Anything else is a real error.
+ * cap reached): finish this session without it. Anything else is a real error.
  */
 function shouldFallBack(e: unknown): e is PlacesHttpError {
   return e instanceof PlacesHttpError && [400, 401, 403, 429].includes(e.status)
@@ -111,12 +115,19 @@ export async function searchPlaces(query: string, near: LatLng = HOSPET, signal?
       disableGoogleMaps(`places ${e.status}`)
     }
   }
+  if (hasOlaMaps()) {
+    try { return await ola.search(q, near, signal) }
+    catch (e) {
+      if (!(e instanceof OlaHttpError && isOlaRefusal(e.status))) throw e
+      disableOlaMaps(`places ${e.status}`)
+    }
+  }
   return searchPlacesPhoton(q, near, signal)
 }
 
 /**
- * The only way a caller gets coordinates: OSM hits resolve at once, Google
- * hits cost one Place Details call (which also closes the billing session).
+ * The only way a caller gets coordinates: OSM and Ola hits resolve at once,
+ * Google hits cost one Place Details call (which also closes the billing session).
  */
 export async function resolvePlace(s: PlaceSuggestion, near: LatLng = HOSPET, signal?: AbortSignal): Promise<Place> {
   if (s.location) return { id: s.id, name: s.name, detail: s.detail, lat: s.location.lat, lng: s.location.lng, source: s.source }

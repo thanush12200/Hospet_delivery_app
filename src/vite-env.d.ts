@@ -8,5 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_CLIENT_ID?: string
   /** Google Maps browser key (public, referrer-restricted); unset = OpenStreetMap map + Photon search. */
   readonly VITE_GOOGLE_MAPS_KEY?: string
+  /** Ola Maps browser key (public); map, place search and street suggestion when no Google key. */
+  readonly VITE_OLA_MAPS_KEY?: string
 }
 interface ImportMeta { readonly env: ImportMetaEnv }

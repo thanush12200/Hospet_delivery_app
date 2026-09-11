@@ -52,6 +52,8 @@ jobs:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
           # Google Maps browser key (public, referrer-restricted). Unset = OpenStreetMap map + Photon search.
           VITE_GOOGLE_MAPS_KEY: ${{ vars.VITE_GOOGLE_MAPS_KEY }}
+          # Ola Maps browser key (public). Used when no Google key; unset = OpenStreetMap map + Photon search.
+          VITE_OLA_MAPS_KEY: ${{ vars.VITE_OLA_MAPS_KEY }}
 
       # The site lives at the "faa" Pages project (faa-dfz.pages.dev; Cloudflare added the
       # suffix because faa.pages.dev was taken). Creating it is idempotent.

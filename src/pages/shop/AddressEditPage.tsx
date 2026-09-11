@@ -5,8 +5,7 @@ import {
 } from '@mui/material'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import { getSpot, setSpot } from '@/lib/spot'
-import { hasGoogleMaps } from '@/lib/googleMaps'
-import { describePoint, suggestLine1 } from '@/lib/reverseGeocode'
+import { describePoint, hasReverseGeocode, suggestLine1 } from '@/lib/reverseGeocode'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { upsertMyAddress } from '@/api/customer'
 import { safeReturnTo } from '@/lib/returnTo'
@@ -20,7 +19,7 @@ import { useCustomer } from '@/store/customerContext'
 import { BRAND, BRAND_TINT } from '@/theme/brand'
 import type { AddressLabel } from '@/types/db'
 
-// The map (Google when VITE_GOOGLE_MAPS_KEY is set, Leaflet otherwise) is only ever needed here.
+// The map (Google or Ola when a key is set, Leaflet otherwise) is only ever needed here.
 const AddressMap = lazy(() => import('@/components/AddressMap'))
 
 /** Hospet town centre: where the map looks before anything is pinned. */
@@ -128,12 +127,12 @@ export default function AddressEditPage() {
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
 
-  // With Google, a settled pin suggests the street line. Only while the
+  // With Google or Ola, a settled pin suggests the street line. Only while the
   // customer has not typed one: a typed value is never overwritten.
   const autoLine1 = useRef('')
   const described = useRef<LatLng | null>(null)
   useEffect(() => {
-    if (!pin || !hasGoogleMaps()) return
+    if (!pin || !hasReverseGeocode()) return
     if (described.current && distanceM(described.current, pin) < 3) return
     const t = setTimeout(() => {
       described.current = pin
