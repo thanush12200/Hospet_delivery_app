@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import { PlaceSearch } from '@/components/shop/PlaceSearch'
 import { useCustomer } from '@/store/customerContext'
-import { pickZone } from '@/lib/geo'
-import { HOSPET, type Place } from '@/lib/places'
+import { pickZone, searchCentre, searchRadiusM } from '@/lib/geo'
+import { HOSPET, RADIUS_M, type Place } from '@/lib/places'
 import { setSpot } from '@/lib/spot'
 import { BRAND } from '@/theme/brand'
 
@@ -28,7 +28,7 @@ export function SpotPicker({ forSomeoneElse, onDone }: { forSomeoneElse: boolean
 
   return (
     <Box>
-      <PlaceSearch near={HOSPET} onPick={pick} inline />
+      <PlaceSearch near={searchCentre(customer.zones, HOSPET)} radiusM={searchRadiusM(customer.zones, RADIUS_M)} onPick={pick} inline />
       {note && <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1 }}>{note}</Typography>}
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
         A street, an area or a landmark is enough. You'll pin the exact door when you add the address.

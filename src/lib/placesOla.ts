@@ -49,17 +49,17 @@ export interface OlaPlacesDeps { key: string; fetch: typeof fetch; radiusM: numb
 
 export function createOlaPlaces(deps: OlaPlacesDeps) {
   return {
-    async search(query: string, near: LatLng, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
+    async search(query: string, near: LatLng, signal?: AbortSignal, radiusM: number = deps.radiusM): Promise<PlaceSuggestion[]> {
       const url = olaUrl('/places/v1/autocomplete', {
         input: query,
         location: `${near.lat},${near.lng}`,
-        radius: String(deps.radiusM),
+        radius: String(radiusM),
         strictbounds: 'true',
         language: 'en',
       }, deps.key)
       const res = await deps.fetch(url, { signal, headers: olaHeaders() })
       if (!res.ok) throw new OlaHttpError(res.status, `Place search failed (${res.status})`)
-      return mapOlaAutocomplete(await res.json() as OlaAutocompleteResponse, near, deps.radiusM)
+      return mapOlaAutocomplete(await res.json() as OlaAutocompleteResponse, near, radiusM)
     },
   }
 }

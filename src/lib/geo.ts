@@ -130,3 +130,25 @@ export async function geoPermission(): Promise<'granted' | 'denied' | 'prompt' |
     return s.state
   } catch { return 'unknown' }
 }
+
+/** Room beyond an area's edge so a landmark just outside it still shows. */
+const SEARCH_MARGIN_M = 1500
+
+/**
+ * How far a place search should look: the largest active area with a centre,
+ * plus a margin, so results never come from beyond where the store delivers.
+ * With no centred area the caller's fallback (the whole city) applies.
+ */
+export function searchRadiusM(zones: ZoneLike[], fallbackM: number): number {
+  const placed = zones.filter((z) => z.is_active && z.lat != null && z.lng != null && z.radius_m != null)
+  if (placed.length === 0) return fallbackM
+  return Math.min(fallbackM, Math.max(...placed.map((z) => z.radius_m as number)) + SEARCH_MARGIN_M)
+}
+
+/** Where a place search should be centred: the largest centred area, else the given point. */
+export function searchCentre(zones: ZoneLike[], fallback: LatLng): LatLng {
+  const placed = zones.filter((z) => z.is_active && z.lat != null && z.lng != null)
+  if (placed.length === 0) return fallback
+  const z = placed.reduce((a, b) => ((b.radius_m ?? 0) > (a.radius_m ?? 0) ? b : a))
+  return { lat: z.lat as number, lng: z.lng as number }
+}
