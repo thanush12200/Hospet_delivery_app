@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Skeleton } from '@mui/material'
-import { Map as MapLibreMap, NavigationControl, type ErrorEvent, type RequestParameters } from 'maplibre-gl'
+import { Map as MapLibreMap, NavigationControl, setWorkerUrl, type ErrorEvent, type RequestParameters } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+// MapLibre parses tiles in a web worker and guesses that worker's URL from
+// its own script URL, which is wrong once Vite has renamed the chunk (the
+// worker then 404s and no tile ever draws). Vite bundles the worker and
+// hands back its real URL with ?worker&url; tell MapLibre about it.
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
+
+setWorkerUrl(maplibreWorkerUrl)
 import { OLA_STYLE, disableOlaMaps, isOlaRefusal, onOlaMapsFailure, withOlaKey } from '@/lib/olaMaps'
 import type { LatLng } from '@/lib/geo'
 import type { AddressMapProps } from './AddressMap'
@@ -38,14 +45,29 @@ export default function OlaAddressMap({ value, center, onChange, onFail, height 
         // Every tile, sprite and glyph under api.olamaps.io needs the key too.
         transformRequest: (url: string): RequestParameters | undefined => (url.startsWith('https://api.olamaps.io') ? { url: withOlaKey(url) } : undefined),
       })
-    } catch { latest.current.onFail(); return () => off() }
+    } catch (e) { console.warn('[maps] Ola map could not start, using the fallback map', e); latest.current.onFail(); return () => off() }
     m.addControl(new NavigationControl({ showCompass: false }), 'bottom-right')
-    m.on('load', () => { loaded.current = true; setReady(true) })
+    // "Ready" = the style is in and a frame has been drawn; MapLibre's own
+    // 'load' also waits for every tile, which a slow connection can stretch.
+    const drawn = () => { if (!loaded.current && m.isStyleLoaded()) { loaded.current = true; setReady(true) } }
+    m.on('load', drawn)
+    m.on('render', drawn)
+    // MapLibre reports plenty of non-fatal things here (the Ola style names a
+    // 3D source layer that its tiles lack). Only a refused or unreachable
+    // style/tile counts; anything else before 'load' is left to the watchdog.
     m.on('error', (e: ErrorEvent) => {
-      const status = (e.error as { status?: number } | undefined)?.status
-      if (status !== undefined && isOlaRefusal(status)) disableOlaMaps(`map ${status}`)
-      else if (!loaded.current) latest.current.onFail() // style or first tiles failed: no map at all
+      const err = e.error as { status?: number; message?: string } | undefined
+      const status = err?.status
+      if (status !== undefined && isOlaRefusal(status)) { console.warn('[maps] Ola refused the map', status); disableOlaMaps(`map ${status}`); return }
+      if (loaded.current) return
+      if (status !== undefined || /fetch|network|WebGL/i.test(err?.message ?? '')) {
+        console.warn('[maps] Ola map failed before it drew, using the fallback map', err)
+        latest.current.onFail()
+      }
     })
+    const watchdog = setTimeout(() => {
+      if (!loaded.current) { console.warn('[maps] Ola map did not draw in time, using the fallback map'); latest.current.onFail() }
+    }, 20000)
     m.on('moveend', () => {
       const c = m.getCenter()
       const p = { lat: c.lat, lng: c.lng }
@@ -53,8 +75,20 @@ export default function OlaAddressMap({ value, center, onChange, onFail, height 
       if (v ? same(p, v) : same(p, start)) return // we panned there ourselves, or nothing moved yet
       latest.current.onChange(p)
     })
+    if (import.meta.env.DEV) {
+      // Dev-only handle for headless checks: window.__faaMap / window.__faaMapErrors.
+      const w = window as unknown as { __faaMap?: MapLibreMap; __faaMapErrors?: string[]; __faaMapEvents?: string[] }
+      w.__faaMap = m; w.__faaMapErrors = []; w.__faaMapEvents = []
+      m.on('error', (e: ErrorEvent) => { w.__faaMapErrors?.push(String((e.error as Error | undefined)?.message ?? e.error)) })
+      for (const ev of ['styledata', 'sourcedata', 'dataloading', 'render', 'idle', 'load'] as const) {
+        m.on(ev, (raw: unknown) => {
+          const e = raw as { sourceId?: string; dataType?: string; tile?: unknown; isSourceLoaded?: boolean }
+          if ((w.__faaMapEvents?.length ?? 0) < 60) w.__faaMapEvents?.push(`${ev}${e.dataType ? ':' + e.dataType : ''}${e.sourceId ? ':' + e.sourceId : ''}${e.tile ? ':tile' : ''}${e.isSourceLoaded ? ':loaded' : ''}`)
+        })
+      }
+    }
     map.current = m
-    return () => { off(); m.remove(); map.current = null }
+    return () => { off(); clearTimeout(watchdog); m.remove(); map.current = null }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

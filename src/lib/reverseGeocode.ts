@@ -14,6 +14,8 @@ export interface AddressHint {
   street?: string
   area?: string
   formatted?: string
+  /** Nearest named place (a shop, a temple), for the landmark line; Ola returns these, Google does not. */
+  landmark?: string
 }
 
 /** Structural subset of google.maps.GeocoderResult (Ola returns the same shape), testable in node. */
@@ -27,6 +29,10 @@ export interface GeocodeResultLike {
 
 const SPECIFIC = ['street_address', 'premise', 'subpremise', 'route', 'establishment', 'point_of_interest']
 const AREA = ['sublocality_level_2', 'sublocality_level_1', 'sublocality', 'neighborhood']
+const ROAD_TYPES = ['route', 'street_address', 'road', 'street', 'intersection']
+const PLACE_NOT_POI = ['locality', 'political', 'plus_code', 'sublocality', 'administrative_area_level_1', 'administrative_area_level_2', 'administrative_area_level_3', 'country', 'postal_code', 'natural_feature']
+/** "Bus Stand Road", "2nd Cross", "College Rd": a road-like name for the street line. */
+const ROAD_NAME = /\b(road|rd|cross|main|street|lane|circle|layout|highway|bypass)\b/i
 const PLUS_CODE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3},?\s*/
 
 /**
@@ -46,12 +52,20 @@ export function deriveAddressHint(results: GeocodeResultLike[]): AddressHint | n
   let street = [comp('street_number'), comp('premise'), route && route !== 'Unnamed Road' ? route : undefined]
     .filter((x, i, a): x is string => !!x && a.indexOf(x) === i)
     .join(', ')
-  // Ola often names the road only in `name`; use it when it is not the area or the town.
+  // Ola names the matched feature: a road goes into the street line, a shop
+  // or temple becomes the landmark, the town itself is neither.
   const named = pick.name?.trim()
-  if (!street && named && named !== area && !pick.types.some((t) => t === 'locality' || t === 'political') && !/^Unnamed/i.test(named)) street = named
+  let landmark: string | undefined
+  const town = comp('locality')
+  if (named && named !== area && named !== town && !/^Unnamed/i.test(named)) {
+    const isRoad = pick.types.some((t) => ROAD_TYPES.includes(t)) || ROAD_NAME.test(named)
+    const isPoi = !pick.types.some((t) => PLACE_NOT_POI.includes(t))
+    if (isRoad) { if (!street) street = named }
+    else if (isPoi) landmark = named
+  }
   const formatted = pick.formatted_address.replace(PLUS_CODE, '').replace(/,\s*India$/, '').trim()
-  if (!street && !area && !formatted) return null
-  return { street: street || undefined, area, formatted: formatted || undefined }
+  if (!street && !area && !formatted && !landmark) return null
+  return { street: street || undefined, area, formatted: formatted || undefined, landmark }
 }
 
 /** "College Road, Vidyanagar": what goes in the street line before the customer adds the number. */
