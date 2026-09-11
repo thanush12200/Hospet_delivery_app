@@ -51,6 +51,10 @@ export default defineConfig({
         // ship with the site but must not bloat the precache; catalogue photos
         // are cached on first view like the uploaded product images.
         globIgnores: ['**/catalogue/**', '**/storefront/products/**'],
+        // Deliberately nothing for map tiles or Google APIs: Google's terms
+        // forbid caching map and place data, and Workbox leaves cross-origin
+        // requests alone unless a route matches, so maps.googleapis.com,
+        // places.googleapis.com and tile.openstreetmap.org always hit the network.
         runtimeCaching: [
           {
             urlPattern: /\/catalogue\/.*\.(?:jpg|png|webp)$/,

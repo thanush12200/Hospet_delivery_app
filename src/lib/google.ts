@@ -33,7 +33,14 @@ interface GoogleAccountsId {
   renderButton: (el: HTMLElement, opts: GoogleButtonOptions) => void
 }
 declare global {
-  interface Window { google?: { accounts: { id: GoogleAccountsId } } }
+  interface Window {
+    /**
+     * One global shared by two Google scripts: sign-in adds `accounts`, Maps
+     * JS adds `maps`; each does `window.google = window.google || {}`, so
+     * load order does not matter. Declared once, here.
+     */
+    google?: { accounts?: { id: GoogleAccountsId }; maps?: typeof google.maps }
+  }
 }
 
 let loading: Promise<GoogleAccountsId> | null = null

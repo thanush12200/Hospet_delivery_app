@@ -285,7 +285,7 @@ MUI is deliberately **not** forced into a single manual chunk. Doing that pulled
 
 ### The three surfaces
 
-**Customer** (`/`) — a one-tap location prompt on first landing (the area is worked out from GPS, or the store's only area is used); tap the logo for the brand sheet; home and category grids (`/category/:id`), a product sheet over any page (`?product=<id>`), search with recent searches (`/search`), a cart that shows the same zone fee as checkout, phone-OTP sign-in (`/login?returnTo=`), an account tab with name edit and sign-out, an address book with labels, a default, soft delete, place search and a Leaflet/OpenStreetMap pin that decides the delivery area (`/account/addresses`), checkout from the address book, live tracking with ETA, timeline, rider card, cancel-within-window and WhatsApp/call to the store (`/order/:id`), order history with paging and a reorder that rebuilds the cart, and Help (`/help`).
+**Customer** (`/`) — a one-tap location prompt on first landing (the area is worked out from GPS, or the store's only area is used); tap the logo for the brand sheet; home and category grids (`/category/:id`), a product sheet over any page (`?product=<id>`), search with recent searches (`/search`), a cart that shows the same zone fee as checkout, phone-OTP sign-in (`/login?returnTo=`), an account tab with name edit and sign-out, an address book with labels, a default, soft delete, place search and a map pin that decides the delivery area, Google Maps with a fixed centre pin when a key is set and OpenStreetMap otherwise (`/account/addresses`), checkout from the address book, live tracking with ETA, timeline, rider card, cancel-within-window and WhatsApp/call to the store (`/order/:id`), order history with paging and a reorder that rebuilds the cart, and Help (`/help`).
 
 **Admin** (`/admin`)
 
@@ -321,6 +321,35 @@ A Google account carries a verified email and no phone, so `customers.phone` is 
 number the rider calls is `customers.contact_phone`: copied from the sign-in number for phone customers, typed
 once at checkout by a Google customer (no OTP; a wrong digit costs one delivery, never someone's account).
 `place_order()` refuses `NO_CONTACT_PHONE` until it is set.
+
+### Google Maps
+
+With `VITE_GOOGLE_MAPS_KEY` set the address page shows a Google map with a fixed centre pin (pan the map
+under the pin), every place search asks Google Places, and a settled pin suggests the street line by reverse
+geocoding. Without the key the app uses OpenStreetMap tiles (Leaflet) and Photon search, and it falls back to
+them for the rest of a session if Google ever refuses (daily cap, bad key). The delivery area is never taken
+from Google: it is the nearest zone centre within its radius, pure arithmetic.
+
+Every call is an "Essentials" SKU with 10,000 free calls a month (Dynamic Maps, Autocomplete requests,
+Place Details Essentials, Geocoding). A session costs about one map load per address page with the map open,
+one Place Details call per picked place (the keystrokes are free inside a session), and one geocode per settled
+pan. Setup, in the same Google Cloud project as the sign-in client:
+
+1. Billing → link a card (Google issues keys only on billed projects). The caps in step 4 keep it at ₹0.
+2. APIs & Services → Library → enable **Maps JavaScript API**, **Places API (New)**, **Geocoding API**.
+3. Credentials → Create credentials → API key → edit it: Application restrictions = Websites
+   `https://faa-dfz.pages.dev/*`, `http://localhost:3020/*`, `http://127.0.0.1:3020/*`; API restrictions =
+   the three APIs above. Never add a `no-referrer` policy to the site: the restriction relies on the Referer.
+4. Quotas (each API → Quotas & System Limits, edit the per-day limit): Maps JavaScript API map loads 300;
+   Places API (New) autocomplete requests 500 and place details 200; Geocoding requests 300. A cap that is hit
+   degrades that day's sessions to OpenStreetMap; raise it when the store grows.
+5. Billing → Budgets & alerts → ₹100 a month with alerts at 50/90/100 %.
+6. `.env`: `VITE_GOOGLE_MAPS_KEY=AIza…`. Deploy: `gh variable set VITE_GOOGLE_MAPS_KEY --body "AIza…"` from the
+   repo (a variable, not a secret: like the OAuth client id it ships in the bundle and is protected by the
+   referrer restriction), then push.
+
+Place results shown away from a Google map carry the Google Maps logo, as Google's policy requires; only the
+chosen coordinates and name are stored, never place IDs.
 
 ### Product images
 

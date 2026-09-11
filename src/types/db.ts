@@ -50,8 +50,9 @@ export interface Zone {
   delivery_fee_paise: number
   min_order_paise: number
   is_active: boolean
-  /** Optional centre point, used to guess the customer's area without paying
-   *  for reverse geocoding. Null until an admin sets it. */
+  /** Optional centre point; the customer's area is the nearest centre within
+   *  `radius_m`, pure arithmetic, so it needs no maps key. Null until an admin
+   *  sets it. */
   lat: number | null
   lng: number | null
   radius_m: number | null

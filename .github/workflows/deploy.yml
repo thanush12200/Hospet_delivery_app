@@ -50,6 +50,8 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           # Google OAuth web client id (public). Unset = no Google button.
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          # Google Maps browser key (public, referrer-restricted). Unset = OpenStreetMap map + Photon search.
+          VITE_GOOGLE_MAPS_KEY: ${{ vars.VITE_GOOGLE_MAPS_KEY }}
 
       # The site lives at the "faa" Pages project (faa-dfz.pages.dev; Cloudflare added the
       # suffix because faa.pages.dev was taken). Creating it is idempotent.
