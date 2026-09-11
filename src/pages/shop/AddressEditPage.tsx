@@ -5,7 +5,7 @@ import {
 } from '@mui/material'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import { getSpot, setSpot } from '@/lib/spot'
-import { describePoint, hasReverseGeocode, suggestLine1 } from '@/lib/reverseGeocode'
+import { describePoint, hasReverseGeocode, roadLike, suggestLine1 } from '@/lib/reverseGeocode'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { upsertMyAddress } from '@/api/customer'
 import { safeReturnTo } from '@/lib/returnTo'
@@ -133,20 +133,26 @@ export default function AddressEditPage() {
   const autoLine1 = useRef('')
   const autoLandmark = useRef('')
   const described = useRef<LatLng | null>(null)
+  // A place picked by name: its name is the landmark and its street (if it
+  // has one) leads the street line; the pin's lookup then only adds the area.
+  const pickedPlace = useRef<{ at: LatLng; street: string | null } | null>(null)
   useEffect(() => {
     if (!pin || !hasReverseGeocode()) return
     if (described.current && distanceM(described.current, pin) < 3) return
     const t = setTimeout(() => {
       described.current = pin
+      const picked = pickedPlace.current && distanceM(pickedPlace.current.at, pin) < 3 ? pickedPlace.current : null
       void describePoint(pin).then((hint) => {
         if (!hint) return
-        if (hint.landmark) {
+        if (hint.landmark && !picked) {
           const near = `Near ${hint.landmark}`
           const previous = autoLandmark.current
           autoLandmark.current = near
           setLandmark((cur) => (cur.trim() === '' || cur === previous ? near : cur))
         }
-        const suggestion = suggestLine1(hint)
+        const suggestion = picked?.street
+          ? [picked.street, hint.area].filter((x): x is string => !!x).join(', ')
+          : suggestLine1(hint)
         if (!suggestion) return
         const previous = autoLine1.current
         autoLine1.current = suggestion
@@ -176,8 +182,20 @@ export default function AddressEditPage() {
 
         <Box sx={{ mb: 2 }}>
           <PlaceSearch near={mapCenter} radiusM={searchRadiusM(customer.zones, RADIUS_M)} onPick={(place) => {
+            const first = place.detail.split(',')[0]?.trim() ?? ''
+            const street = first && roadLike(first) ? first : null
+            pickedPlace.current = { at: { lat: place.lat, lng: place.lng }, street }
             applyPin({ lat: place.lat, lng: place.lng }, true)
-            setLandmark((l) => l.trim() ? l : place.name)
+            // The chosen place is the landmark, whatever a lookup said before.
+            const near = `Near ${place.name}`
+            const prevLandmark = autoLandmark.current
+            autoLandmark.current = near
+            setLandmark((l) => (l.trim() === '' || l === prevLandmark ? near : l))
+            if (street) {
+              const prevLine1 = autoLine1.current
+              autoLine1.current = street
+              setLine1((cur) => (cur.trim() === '' || cur === prevLine1 ? street : cur))
+            }
             setGeoNote((n) => `Pin moved to ${place.name}. Put it on your door if needed.${n ? ` ${n}` : ''}`)
           }} />
           {showMap ? (
