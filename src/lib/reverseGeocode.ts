@@ -33,6 +33,10 @@ const ROAD_TYPES = ['route', 'street_address', 'road', 'street', 'intersection']
 const PLACE_NOT_POI = ['locality', 'political', 'plus_code', 'sublocality', 'administrative_area_level_1', 'administrative_area_level_2', 'administrative_area_level_3', 'country', 'postal_code', 'natural_feature']
 /** "Bus Stand Road", "2nd Cross", "College Rd": a road-like name for the street line. */
 const ROAD_NAME = /\b(road|rd|cross|main|street|lane|circle|layout|highway|bypass)\b/i
+
+export function roadLike(name: string): boolean {
+  return ROAD_NAME.test(name)
+}
 const PLUS_CODE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3},?\s*/
 
 /**

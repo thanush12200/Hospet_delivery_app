@@ -30,13 +30,15 @@ export function PlaceSearch({ near, onPick, inline = false, radiusM }: {
   const [note, setNote] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const abort = useRef<AbortController | null>(null)
+  // The picked name is written into the box; that must not start a new search.
+  const picked = useRef<string | null>(null)
 
   // A search box left without a pick must not leak its billing session into the next one.
   useEffect(() => () => endPlacesSession(), [])
 
   useEffect(() => {
     const q = query.trim()
-    if (q.length < 2) { setResults([]); setNote(null); setBusy(false); return }
+    if (q.length < 2 || q === picked.current) { setResults([]); setNote(null); setBusy(false); return }
     setBusy(true)
     const t = setTimeout(async () => {
       abort.current?.abort()
@@ -57,6 +59,7 @@ export function PlaceSearch({ near, onPick, inline = false, radiusM }: {
 
   async function pick(s: PlaceSuggestion) {
     if (resolving) return
+    picked.current = s.name
     setQuery(s.name); setOpen(false); setNote(null); setResolving(s.id)
     try {
       const place = await resolvePlace(s, near, undefined, radiusM)
@@ -77,7 +80,7 @@ export function PlaceSearch({ near, onPick, inline = false, radiusM }: {
       <TextField
         size="small" fullWidth value={query} placeholder="Search a place or landmark"
         inputProps={{ 'aria-label': 'Search a place or landmark', autoComplete: 'off', enterKeyHint: 'search' }}
-        onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+        onChange={(e) => { picked.current = null; setQuery(e.target.value); setOpen(true) }}
         onFocus={() => { if (results.length) setOpen(true) }}
         onBlur={() => { if (!inline) setTimeout(() => setOpen(false), 150) }}
         onKeyDown={(e) => { if (e.key === 'Enter' && results[0]) { e.preventDefault(); void pick(results[0]) } if (e.key === 'Escape') setOpen(false) }}

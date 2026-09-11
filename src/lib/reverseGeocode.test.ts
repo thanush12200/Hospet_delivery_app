@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveAddressHint, mapOlaReverse, suggestLine1, type GeocodeResultLike } from './reverseGeocode'
+import { deriveAddressHint, mapOlaReverse, roadLike, suggestLine1, type GeocodeResultLike } from './reverseGeocode'
 
 const c = (long_name: string, ...types: string[]) => ({ long_name, short_name: long_name, types })
 const political = [c('Hosapete', 'locality', 'political'), c('Karnataka', 'administrative_area_level_1', 'political'), c('India', 'country', 'political')]
@@ -88,5 +88,12 @@ describe('Ola reverse geocode', () => {
   it('tolerates a body with no results', () => {
     expect(mapOlaReverse({})).toEqual([])
     expect(mapOlaReverse({ results: [{ types: ['route'], formatted_address: 'x' } as unknown as GeocodeResultLike] })[0]?.address_components).toEqual([])
+  })
+})
+
+describe('roadLike', () => {
+  it('recognises Indian street names and rejects places', () => {
+    for (const n of ['6th Cross Rd', 'Bus Stand Road', 'College Rd', '2nd Main', 'Station Street', 'Gandhi Circle']) expect(roadLike(n)).toBe(true)
+    for (const n of ['Axis Apartment', 'Megha Bakery', 'Hosapete', 'NC Colony']) expect(roadLike(n)).toBe(false)
   })
 })
