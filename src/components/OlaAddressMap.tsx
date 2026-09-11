@@ -41,7 +41,8 @@ export default function OlaAddressMap({ value, center, onChange, onFail, height 
         style: withOlaKey(OLA_STYLE),
         center: [start.lng, start.lat],
         zoom: latest.current.value ? 16 : 13,
-        attributionControl: { compact: true },
+        // Ola's style carries no attribution of its own; credit the data source.
+        attributionControl: { compact: true, customAttribution: '© Ola Maps' },
         // Every tile, sprite and glyph under api.olamaps.io needs the key too.
         transformRequest: (url: string): RequestParameters | undefined => (url.startsWith('https://api.olamaps.io') ? { url: withOlaKey(url) } : undefined),
       })
