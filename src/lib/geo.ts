@@ -6,9 +6,11 @@
  * landmark genuinely beats a pin. Everything that uses this must still work
  * when it returns nothing.
  *
- * Deliberately no reverse geocoding: turning lat/lng into an area name via
- * Google or Mapbox costs per call. Instead each zone stores a centre point and
- * we pick the nearest one — pure arithmetic, no API, no bill.
+ * The delivery area is never reverse geocoded: each zone stores a centre
+ * point and we pick the nearest one within its radius, pure arithmetic, no
+ * API, works with no key. With VITE_GOOGLE_MAPS_KEY set, reverseGeocode.ts
+ * additionally suggests the street line of an address; a convenience, never
+ * the source of the area.
  */
 
 export interface Coords { lat: number; lng: number; accuracyM: number }

@@ -31,10 +31,11 @@ const EMPTY: Draft = {
 /**
  * Delivery areas.
  *
- * A zone is a named locality, not a polygon. Customers pick their area from a
- * dropdown and add a landmark -- in Hospet an address is "near Anjaneya
- * temple, 2nd cross", not a street number, so geocoding it returns noise. A
- * short dropdown is both more accurate and free.
+ * A zone is a named locality with an optional centre and radius, not a
+ * polygon. The customer's area is the nearest centre within its radius,
+ * worked out from the pin by pure arithmetic, so it works without any maps
+ * key. Customers still add a landmark: in Hospet an address is "near
+ * Anjaneya temple, 2nd cross", and a landmark beats a street number.
  */
 export default function Zones() {
   const [zones, setZones] = useState<Zone[]>([])
@@ -163,10 +164,10 @@ export default function Zones() {
               </Stack>
               <Divider />
               <Typography variant="caption" color="text.secondary">
-                Centre point (optional). With one set, a customer who taps
-                &ldquo;use my location&rdquo; has this area chosen automatically —
-                no maps bill, just the nearest centre. Stand in the middle of
-                the locality and tap below.
+                Centre point (optional). With one set, a customer whose phone is
+                within the radius has this area chosen automatically, and pins
+                outside it are refused. Stand in the middle of the locality and
+                tap below.
               </Typography>
               <Button
                 size="small" variant="outlined" startIcon={<MyLocationIcon />}

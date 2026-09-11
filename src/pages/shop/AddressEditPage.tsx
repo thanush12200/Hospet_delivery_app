@@ -1,10 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert, Box, Button, Chip, FormControlLabel, Skeleton, Stack, Switch,
   TextField, Typography,
 } from '@mui/material'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import { getSpot, setSpot } from '@/lib/spot'
+import { hasGoogleMaps } from '@/lib/googleMaps'
+import { describePoint, suggestLine1 } from '@/lib/reverseGeocode'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { upsertMyAddress } from '@/api/customer'
 import { safeReturnTo } from '@/lib/returnTo'
@@ -12,13 +14,13 @@ import { PlaceSearch } from '@/components/shop/PlaceSearch'
 import { SubPageBar } from '@/components/shop/SubPageBar'
 import { LABELS } from '@/lib/address'
 import {
-  GEO_MESSAGE, geoPermission, getCurrentCoords, nearestZone, pickZone, type GeoError, type LatLng,
+  GEO_MESSAGE, distanceM, geoPermission, getCurrentCoords, nearestZone, pickZone, type GeoError, type LatLng,
 } from '@/lib/geo'
 import { useCustomer } from '@/store/customerContext'
 import { BRAND, BRAND_TINT } from '@/theme/brand'
 import type { AddressLabel } from '@/types/db'
 
-// Leaflet (~40 KB gzipped + tiles) is only ever needed here.
+// The map (Google when VITE_GOOGLE_MAPS_KEY is set, Leaflet otherwise) is only ever needed here.
 const AddressMap = lazy(() => import('@/components/AddressMap'))
 
 /** Hospet town centre: where the map looks before anything is pinned. */
@@ -107,7 +109,7 @@ export default function AddressEditPage() {
     try {
       const c = await getCurrentCoords()
       applyPin({ lat: c.lat, lng: c.lng }, true)
-      if (c.accuracyM > 150) setGeoNote((n) => `${n ?? ''} Accuracy is about ${Math.round(c.accuracyM)} m; drag the pin to your door.`.trim())
+      if (c.accuracyM > 150) setGeoNote((n) => `${n ?? ''} Accuracy is about ${Math.round(c.accuracyM)} m; put the pin on your door.`.trim())
     } catch (e) {
       setGeoNote(GEO_MESSAGE[e as GeoError] ?? GEO_MESSAGE.UNAVAILABLE)
     } finally { setGeoBusy(false) }
@@ -125,6 +127,26 @@ export default function AddressEditPage() {
       navigate(returnTo, { replace: true })
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
+
+  // With Google, a settled pin suggests the street line. Only while the
+  // customer has not typed one: a typed value is never overwritten.
+  const autoLine1 = useRef('')
+  const described = useRef<LatLng | null>(null)
+  useEffect(() => {
+    if (!pin || !hasGoogleMaps()) return
+    if (described.current && distanceM(described.current, pin) < 3) return
+    const t = setTimeout(() => {
+      described.current = pin
+      void describePoint(pin).then((hint) => {
+        const suggestion = hint && suggestLine1(hint)
+        if (!suggestion) return
+        const previous = autoLine1.current
+        autoLine1.current = suggestion
+        setLine1((cur) => (cur.trim() === '' || cur === previous ? suggestion : cur))
+      })
+    }, 600)
+    return () => clearTimeout(t)
+  }, [pin])
 
   // A new address on a device that already allows location: find it at once.
   useEffect(() => {
@@ -148,11 +170,11 @@ export default function AddressEditPage() {
           <PlaceSearch near={mapCenter} onPick={(place) => {
             applyPin({ lat: place.lat, lng: place.lng }, true)
             setLandmark((l) => l.trim() ? l : place.name)
-            setGeoNote((n) => `Pin moved to ${place.name}. Drag it to your door if needed.${n ? ` ${n}` : ''}`)
+            setGeoNote((n) => `Pin moved to ${place.name}. Put it on your door if needed.${n ? ` ${n}` : ''}`)
           }} />
           {showMap ? (
-            <Suspense fallback={<Skeleton variant="rounded" height={220} />}>
-              <AddressMap value={pin} center={mapCenter} onChange={(p) => applyPin(p, false)} />
+            <Suspense fallback={<Skeleton variant="rounded" height={260} />}>
+              <AddressMap value={pin} center={mapCenter} height={260} onChange={(p) => applyPin(p, false)} />
             </Suspense>
           ) : (
             <Box
@@ -195,6 +217,7 @@ export default function AddressEditPage() {
             label="House / flat / street" value={line1} fullWidth autoFocus={isNew}
             onChange={(e) => setLine1(e.target.value)} inputProps={{ maxLength: 120 }}
             placeholder="No. 12, 2nd Cross, Chittawadgi"
+            helperText={line1 !== '' && line1 === autoLine1.current ? 'From the map. Add your house or flat number.' : undefined}
           />
           <TextField
             label="Landmark" value={landmark} fullWidth
