@@ -44,7 +44,7 @@ describe('deriveAddressHint', () => {
 })
 
 describe('Ola reverse geocode', () => {
-  it('uses the feature name as the street when the components have no route', () => {
+  it('uses a road-like feature name as the street when the components have no route', () => {
     const results = mapOlaReverse({ status: 'ok', results: [
       { name: 'Bus Stand Road', types: ['route'], formatted_address: 'Bus Stand Road, Amaravati, Hosapete, Karnataka, 583201, India',
         address_components: [c('Amaravati', 'sublocality'), c('Hosapete', 'locality'), c('583201', 'postal_code'), ...political] },
@@ -52,7 +52,30 @@ describe('Ola reverse geocode', () => {
     const h = deriveAddressHint(results)
     expect(h?.street).toBe('Bus Stand Road')
     expect(h?.area).toBe('Amaravati')
+    expect(h?.landmark).toBeUndefined()
     expect(suggestLine1(h!)).toBe('Bus Stand Road, Amaravati')
+  })
+
+  it('turns the nearest shop into a landmark and keeps the street line to the area', () => {
+    const results = mapOlaReverse({ status: 'ok', results: [
+      { name: 'Basalingappa General Stores', types: ['food', 'restaurant'], formatted_address: 'Basalingappa General Stores, 100Bed Hospital Road, MJ Nagar, Hosapete',
+        address_components: [c('Chapparadahalli', 'sublocality'), c('Hosapete', 'locality'), ...political] },
+    ] })
+    const h = deriveAddressHint(results)
+    expect(h?.street).toBeUndefined()
+    expect(h?.area).toBe('Chapparadahalli')
+    expect(h?.landmark).toBe('Basalingappa General Stores')
+    expect(suggestLine1(h!)).toBe('Chapparadahalli')
+  })
+
+  it('never makes the town itself a landmark', () => {
+    const results = mapOlaReverse({ results: [
+      { name: 'Hospet', types: ['tourist_attraction', 'natural_feature'], formatted_address: 'Hospet, Hosapete, Karnataka, 583203, India',
+        address_components: [c('Kanamadugu', 'sublocality'), c('Hosapete', 'locality'), ...political] },
+    ] })
+    const h = deriveAddressHint(results)
+    expect(h?.landmark).toBeUndefined()
+    expect(h?.area).toBe('Kanamadugu')
   })
 
   it('does not promote a town name into the street line', () => {

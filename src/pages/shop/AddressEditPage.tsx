@@ -130,6 +130,7 @@ export default function AddressEditPage() {
   // With Google or Ola, a settled pin suggests the street line. Only while the
   // customer has not typed one: a typed value is never overwritten.
   const autoLine1 = useRef('')
+  const autoLandmark = useRef('')
   const described = useRef<LatLng | null>(null)
   useEffect(() => {
     if (!pin || !hasReverseGeocode()) return
@@ -137,7 +138,14 @@ export default function AddressEditPage() {
     const t = setTimeout(() => {
       described.current = pin
       void describePoint(pin).then((hint) => {
-        const suggestion = hint && suggestLine1(hint)
+        if (!hint) return
+        if (hint.landmark) {
+          const near = `Near ${hint.landmark}`
+          const previous = autoLandmark.current
+          autoLandmark.current = near
+          setLandmark((cur) => (cur.trim() === '' || cur === previous ? near : cur))
+        }
+        const suggestion = suggestLine1(hint)
         if (!suggestion) return
         const previous = autoLine1.current
         autoLine1.current = suggestion
