@@ -351,6 +351,20 @@ pan. Setup, in the same Google Cloud project as the sign-in client:
 Place results shown away from a Google map carry the Google Maps logo, as Google's policy requires; only the
 chosen coordinates and name are stored, never place IDs.
 
+### Ola Maps
+
+The card-free alternative. Ola Maps (maps.olakrutrim.com) has its own Indian map data, gives 100,000 calls a
+month free with no payment method on file, and charges prepaid credits only beyond that. With `VITE_OLA_MAPS_KEY`
+set and no Google key, the address page draws Ola's vector map in MapLibre (fixed centre pin, same as the Google
+map), every place search asks Ola's autocomplete (predictions already carry coordinates, so a pick costs nothing
+more), and a settled pin suggests the street line through Ola's reverse geocoding. When both keys are set Google
+is used first. A refusal from Ola (401/403/429: bad key, allowance used up) moves that session to OpenStreetMap.
+
+Setup: sign up at https://cloud.olakrutrim.com, create a project, create an API key (add the site origin if the
+console offers allowed origins), put it in `VITE_OLA_MAPS_KEY` (`.env` locally; `gh variable set VITE_OLA_MAPS_KEY
+--body "…"` for the deploy). The MapLibre chunk (about 230 KB gzipped) loads only when the Ola map opens and is
+kept out of the service-worker precache.
+
 ### Product images
 
 Photographs are taken on a phone in the admin console and uploaded to the `product-images` bucket (public read, admin write). Before upload the browser downscales to 480px and re-encodes: **WebP where supported, JPEG as fallback**. Safari lacked WebP encoding for years and some engines never invoke the `toBlob` callback at all rather than returning `null`, so the encoder is time-boxed — otherwise an admin on the wrong browser sits on a spinner with no error. Products without a photo fall back to a category glyph rather than an empty box.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveAddressHint, suggestLine1, type GeocodeResultLike } from './reverseGeocode'
+import { deriveAddressHint, mapOlaReverse, suggestLine1, type GeocodeResultLike } from './reverseGeocode'
 
 const c = (long_name: string, ...types: string[]) => ({ long_name, short_name: long_name, types })
 const political = [c('Hosapete', 'locality', 'political'), c('Karnataka', 'administrative_area_level_1', 'political'), c('India', 'country', 'political')]
@@ -40,5 +40,30 @@ describe('deriveAddressHint', () => {
   it('returns null for nothing or only plus codes', () => {
     expect(deriveAddressHint([])).toBeNull()
     expect(deriveAddressHint([{ types: ['plus_code'], formatted_address: '7JXW+5R', address_components: [] }])).toBeNull()
+  })
+})
+
+describe('Ola reverse geocode', () => {
+  it('uses the feature name as the street when the components have no route', () => {
+    const results = mapOlaReverse({ status: 'ok', results: [
+      { name: 'Bus Stand Road', types: ['route'], formatted_address: 'Bus Stand Road, Amaravati, Hosapete, Karnataka, 583201, India',
+        address_components: [c('Amaravati', 'sublocality'), c('Hosapete', 'locality'), c('583201', 'postal_code'), ...political] },
+    ] })
+    const h = deriveAddressHint(results)
+    expect(h?.street).toBe('Bus Stand Road')
+    expect(h?.area).toBe('Amaravati')
+    expect(suggestLine1(h!)).toBe('Bus Stand Road, Amaravati')
+  })
+
+  it('does not promote a town name into the street line', () => {
+    const results = mapOlaReverse({ results: [{ name: 'Hosapete', types: ['locality', 'political'], formatted_address: 'Hosapete, Karnataka, India', address_components: political }] })
+    const h = deriveAddressHint(results)
+    expect(h?.street).toBeUndefined()
+    expect(suggestLine1(h!)).toBeNull()
+  })
+
+  it('tolerates a body with no results', () => {
+    expect(mapOlaReverse({})).toEqual([])
+    expect(mapOlaReverse({ results: [{ types: ['route'], formatted_address: 'x' } as unknown as GeocodeResultLike] })[0]?.address_components).toEqual([])
   })
 })

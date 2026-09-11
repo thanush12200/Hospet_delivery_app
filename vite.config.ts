@@ -19,6 +19,8 @@ export default defineConfig({
         // it by actual usage keeps the shop lean.
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
+          // MapLibre (~230 KB gz) only ever loads behind the Ola address map.
+          maplibre: ['maplibre-gl'],
         },
       },
     },
@@ -50,7 +52,9 @@ export default defineConfig({
         // Catalogue photos (public/catalogue) and the preview's sample photos
         // ship with the site but must not bloat the precache; catalogue photos
         // are cached on first view like the uploaded product images.
-        globIgnores: ['**/catalogue/**', '**/storefront/products/**'],
+        // The MapLibre chunk is fetched on demand too: a map needs the network
+        // for its tiles anyway, and 230 KB gz has no place in every install.
+        globIgnores: ['**/catalogue/**', '**/storefront/products/**', '**/maplibre-*'],
         // Deliberately nothing for map tiles or Google APIs: Google's terms
         // forbid caching map and place data, and Workbox leaves cross-origin
         // requests alone unless a route matches, so maps.googleapis.com,
